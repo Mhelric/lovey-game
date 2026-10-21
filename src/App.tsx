@@ -1,47 +1,27 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import {
+  CatAvatarConfig,
+  CoupleRoomRow,
+  DEFAULT_P1_AVATAR,
+  DEFAULT_P2_AVATAR,
   FloatingReaction,
   GameMode,
   PlayerSlot,
-  QUICK_EMOJIS,
 } from './types/arcade';
+import { CatAvatarSvg } from './components/CatAvatarSvg';
+import { CatCustomizerModal } from './components/CatCustomizerModal';
+import { QuickChatBar } from './components/QuickChatBar';
+import {
+  CoupleRealtimeChannel,
+  fetchOrCreateCoupleRoom,
+  normalizeRoomCode,
+  RealtimeBroadcastEvent,
+  updatePlayerAvatarInDb,
+  updateRoomModeInDb,
+} from './services/supabaseService';
 
-function MiniCatAvatar({
-  furColor,
-  earColor,
-  crown,
-}: {
-  furColor: string;
-  earColor: string;
-  crown?: boolean;
-}) {
-  return (
-    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-      <g className="cat-ear-anim">
-        <polygon points="5,14 7,4 14,10" fill={furColor} />
-        <polygon points="7,12 8,6 12,10" fill={earColor} />
-      </g>
-      <polygon points="27,14 25,4 18,10" fill={furColor} />
-      <polygon points="25,12 24,6 20,10" fill={earColor} />
-      <circle cx="16" cy="18" r="10" fill={furColor} />
-      <g className="cat-eyes-anim">
-        <circle cx="12.5" cy="16.5" r="1.6" fill="#2b1810" />
-        <circle cx="19.5" cy="16.5" r="1.6" fill="#2b1810" />
-      </g>
-      <polygon points="16,18.5 14.6,20.2 17.4,20.2" fill="#ff758f" />
-      <ellipse cx="10.5" cy="19.5" rx="1.8" ry="1" fill="#ffb3c1" opacity="0.7" />
-      <ellipse cx="21.5" cy="19.5" rx="1.8" ry="1" fill="#ffb3c1" opacity="0.7" />
-      {crown && (
-        <polygon
-          points="11,9 13,4 16,7 19,4 21,9"
-          fill="#ffbe0b"
-          stroke="#b67d00"
-          strokeWidth="0.8"
-        />
-      )}
-    </svg>
-  );
-}
+const STORAGE_ROOM_KEY = 'lovey_arcade_room_code';
+const STORAGE_SLOT_KEY = 'lovey_arcade_player_slot';
 
 function DamaPreviewBoard() {
   const squares = [];
@@ -63,10 +43,7 @@ function DamaPreviewBoard() {
 
   return (
     <svg viewBox="0 0 100 100" className="board-svg" role="img" aria-label="Filipino Dama 8x8 Board">
-      {/* 8x8 Checker Grid */}
       {squares}
-
-      {/* Traditional Filipino Dama Diagonal Guide Lines on Playable Squares */}
       <g stroke="#9c6644" strokeWidth="0.55" opacity="0.55">
         <line x1="18.75" y1="6.25" x2="6.25" y2="18.75" />
         <line x1="43.75" y1="6.25" x2="6.25" y2="43.75" />
@@ -85,7 +62,6 @@ function DamaPreviewBoard() {
         <line x1="6.25" y1="81.25" x2="18.75" y2="93.75" />
       </g>
 
-      {/* Sample Cartoon Cat Pieces Preview */}
       {[0, 1, 2].map((r) =>
         [0, 1, 2, 3, 4, 5, 6, 7]
           .filter((c) => (r + c) % 2 === 1)
@@ -163,7 +139,6 @@ function SnakesPreviewBoard() {
   return (
     <svg viewBox="0 0 100 100" className="board-svg" role="img" aria-label="Snakes and Ladders 10x10 Board">
       {cells}
-      {/* Classic Wooden Ladder Preview */}
       <g stroke="#8b5a2b" strokeWidth="1.1" strokeLinecap="round">
         <line x1="23" y1="85" x2="43" y2="45" />
         <line x1="27" y1="85" x2="47" y2="45" />
@@ -172,7 +147,6 @@ function SnakesPreviewBoard() {
         <line x1="33" y1="62" x2="37" y2="62" strokeWidth="0.8" />
         <line x1="37" y1="54" x2="41" y2="54" strokeWidth="0.8" />
       </g>
-      {/* Classic Colorful Cartoon Snake Preview */}
       <path
         d="M 75 25 C 62 35, 85 50, 68 62 C 55 70, 75 78, 65 86"
         fill="none"
@@ -186,79 +160,262 @@ function SnakesPreviewBoard() {
 }
 
 export function App() {
-  const [mode, setMode] = useState<GameMode>('dama');
-  const [reactions, setReactions] = useState<FloatingReaction[]>([]);
-  const [viewport, setViewport] = useState({
-    w: typeof window !== 'undefined' ? window.innerWidth : 360,
-    h: typeof window !== 'undefined' ? window.innerHeight : 640,
+  const [roomCode, setRoomCode] = useState<string>(() => {
+    try {
+      return normalizeRoomCode(localStorage.getItem(STORAGE_ROOM_KEY) || 'LOVEY');
+    } catch {
+      return 'LOVEY';
+    }
   });
 
-  useEffect(() => {
-    const onResize = () =>
-      setViewport({ w: window.innerWidth, h: window.innerHeight });
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+  const [mySlot, setMySlot] = useState<PlayerSlot>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_SLOT_KEY);
+      return saved === 'p2' ? 'p2' : 'p1';
+    } catch {
+      return 'p1';
+    }
+  });
+
+  const [roomData, setRoomData] = useState<CoupleRoomRow>({
+    room_code: roomCode,
+    p1_avatar: DEFAULT_P1_AVATAR,
+    p2_avatar: DEFAULT_P2_AVATAR,
+    p1_dama_wins: 0,
+    p2_dama_wins: 0,
+    p1_snakes_wins: 0,
+    p2_snakes_wins: 0,
+    current_mode: 'dama',
+    updated_at: new Date().toISOString(),
+  });
+
+  const [reactions, setReactions] = useState<FloatingReaction[]>([]);
+  const [onlineSeen, setOnlineSeen] = useState<Record<PlayerSlot, number>>({
+    p1: Date.now(),
+    p2: 0,
+  });
+  const [wsConnected, setWsConnected] = useState(false);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+
+  const channelRef = useRef<CoupleRealtimeChannel | null>(null);
+
+  const spawnFloatingReaction = useCallback((reaction: FloatingReaction) => {
+    setReactions((prev) => [...prev.slice(-6), reaction]);
+    window.setTimeout(() => {
+      setReactions((prev) => prev.filter((item) => item.id !== reaction.id));
+    }, 2150);
   }, []);
 
-  const triggerReaction = (emoji: string, sender: PlayerSlot = 'p1') => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setReactions((prev) => [
-      ...prev.slice(-5),
-      { id, sender, content: emoji, kind: 'emoji', createdAt: Date.now() },
-    ]);
-    window.setTimeout(() => {
-      setReactions((prev) => prev.filter((item) => item.id !== id));
-    }, 1850);
+  const syncFromDatabase = useCallback(async (targetRoom: string) => {
+    const row = await fetchOrCreateCoupleRoom(targetRoom);
+    setRoomData(row);
+  }, []);
+
+  useEffect(() => {
+    syncFromDatabase(roomCode);
+
+    const channel = new CoupleRealtimeChannel(roomCode, mySlot, {
+      onBroadcast: (event: RealtimeBroadcastEvent) => {
+        if (event.type === 'reaction') {
+          spawnFloatingReaction(event.reaction);
+        } else if (event.type === 'avatar_update') {
+          setRoomData((prev) =>
+            event.slot === 'p1'
+              ? { ...prev, p1_avatar: event.avatar }
+              : { ...prev, p2_avatar: event.avatar }
+          );
+        } else if (event.type === 'mode_switch') {
+          setRoomData((prev) => ({ ...prev, current_mode: event.mode }));
+        }
+      },
+      onPartnerOnlineChange: (seenMap) => {
+        setOnlineSeen(seenMap);
+      },
+      onResyncRequested: () => {
+        syncFromDatabase(roomCode);
+      },
+      onConnectionChange: (connected) => {
+        setWsConnected(connected);
+      },
+    });
+
+    channel.connect();
+    channelRef.current = channel;
+
+    const handleVisibilityOrOnline = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromDatabase(roomCode);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrOnline);
+    window.addEventListener('online', handleVisibilityOrOnline);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrOnline);
+      window.removeEventListener('online', handleVisibilityOrOnline);
+      channel.destroy();
+      channelRef.current = null;
+    };
+  }, [roomCode, mySlot, spawnFloatingReaction, syncFromDatabase]);
+
+  const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
+    const reaction: FloatingReaction = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sender: mySlot,
+      content,
+      kind,
+      createdAt: Date.now(),
+    };
+    spawnFloatingReaction(reaction);
+    channelRef.current?.sendBroadcast({ type: 'reaction', reaction });
   };
+
+  const handleSwitchMode = (newMode: GameMode) => {
+    setRoomData((prev) => ({ ...prev, current_mode: newMode }));
+    channelRef.current?.sendBroadcast({
+      type: 'mode_switch',
+      mode: newMode,
+      sender: mySlot,
+    });
+    updateRoomModeInDb(roomCode, newMode);
+  };
+
+  const handleSaveLobby = async (
+    newRoomCode: string,
+    newSlot: PlayerSlot,
+    newAvatar: CatAvatarConfig
+  ) => {
+    setCustomizerOpen(false);
+    try {
+      localStorage.setItem(STORAGE_ROOM_KEY, newRoomCode);
+      localStorage.setItem(STORAGE_SLOT_KEY, newSlot);
+    } catch {
+      // Ignore storage errors
+    }
+
+    if (newRoomCode !== roomCode) {
+      setRoomCode(newRoomCode);
+    }
+    if (newSlot !== mySlot) {
+      setMySlot(newSlot);
+      channelRef.current?.updateSlot(newSlot);
+    }
+
+    setRoomData((prev) =>
+      newSlot === 'p1'
+        ? { ...prev, p1_avatar: newAvatar }
+        : { ...prev, p2_avatar: newAvatar }
+    );
+
+    channelRef.current?.sendBroadcast({
+      type: 'avatar_update',
+      slot: newSlot,
+      avatar: newAvatar,
+    });
+
+    await updatePlayerAvatarInDb(newRoomCode, newSlot, newAvatar);
+  };
+
+  const now = Date.now();
+  const p1Online = mySlot === 'p1' || now - (onlineSeen.p1 || 0) < 16000;
+  const p2Online = mySlot === 'p2' || now - (onlineSeen.p2 || 0) < 16000;
+
+  const p1Wins =
+    roomData.current_mode === 'dama'
+      ? roomData.p1_dama_wins
+      : roomData.p1_snakes_wins;
+  const p2Wins =
+    roomData.current_mode === 'dama'
+      ? roomData.p2_dama_wins
+      : roomData.p2_snakes_wins;
+
+  const myCurrentAvatar =
+    mySlot === 'p1' ? roomData.p1_avatar : roomData.p2_avatar;
 
   return (
     <main className="arcade-shell">
       {/* Zone 1: Top Couple Status & Mode Switcher */}
       <header className="top-bar">
         <div className="couple-row">
-          <div className="player-pill">
+          <button
+            type="button"
+            className={`player-pill ${mySlot === 'p1' ? 'is-me' : ''}`}
+            onClick={() => setCustomizerOpen(true)}
+            title="Tap to customize Cat Avatar or switch seat"
+          >
             <div className="cat-badge">
-              <MiniCatAvatar furColor="#ff758f" earColor="#ffb3c1" crown />
-              <span className="online-dot" title="Online" />
+              <CatAvatarSvg
+                breed={roomData.p1_avatar.breed}
+                accessory={roomData.p1_avatar.accessory}
+                size={30}
+                animateIdle
+              />
+              <span
+                className={`online-dot ${p1Online ? 'online' : ''}`}
+                title={p1Online ? 'Online' : 'Offline'}
+              />
             </div>
             <div className="player-meta">
-              <span className="player-name">Strawberry Cat</span>
-              <span className="player-score">P1 • Ready</span>
+              <span className="player-name">{roomData.p1_avatar.name}</span>
+              <span className="player-score">
+                P1 {mySlot === 'p1' ? '(You)' : ''} • 🏆 {p1Wins}
+              </span>
             </div>
-          </div>
+          </button>
 
-          <div className="room-center-pill">
-            <span className="room-code-label">🐾 LOVEY</span>
+          <button
+            type="button"
+            className="room-center-pill"
+            onClick={() => setCustomizerOpen(true)}
+            title="Tap to open Couple Room & Cat Customizer"
+          >
+            <span className="room-code-label">🐾 {roomData.room_code}</span>
             <span className="viewport-tag">
-              {viewport.w}×{viewport.h}
+              {wsConnected ? '● Live Sync' : '○ Connecting'}
             </span>
-          </div>
+          </button>
 
-          <div className="player-pill right">
+          <button
+            type="button"
+            className={`player-pill right ${mySlot === 'p2' ? 'is-me' : ''}`}
+            onClick={() => setCustomizerOpen(true)}
+            title="Tap to customize Cat Avatar or switch seat"
+          >
             <div className="cat-badge">
-              <MiniCatAvatar furColor="#ff9f1c" earColor="#ffe5ec" />
-              <span className="online-dot" title="Online" />
+              <CatAvatarSvg
+                breed={roomData.p2_avatar.breed}
+                accessory={roomData.p2_avatar.accessory}
+                size={30}
+                animateIdle
+              />
+              <span
+                className={`online-dot ${p2Online ? 'online' : ''}`}
+                title={p2Online ? 'Online' : 'Offline'}
+              />
             </div>
             <div className="player-meta">
-              <span className="player-name">Orange Tabby</span>
-              <span className="player-score">P2 • Ready</span>
+              <span className="player-name">{roomData.p2_avatar.name}</span>
+              <span className="player-score">
+                🏆 {p2Wins} • P2 {mySlot === 'p2' ? '(You)' : ''}
+              </span>
             </div>
-          </div>
+          </button>
         </div>
 
         <nav className="mode-tabs" aria-label="Game Switcher">
           <button
             type="button"
-            className={`mode-tab ${mode === 'dama' ? 'active' : ''}`}
-            onClick={() => setMode('dama')}
+            className={`mode-tab ${roomData.current_mode === 'dama' ? 'active' : ''}`}
+            onClick={() => handleSwitchMode('dama')}
           >
             <span>👑</span>
             <span>Filipino Dama</span>
           </button>
           <button
             type="button"
-            className={`mode-tab ${mode === 'snakes' ? 'active' : ''}`}
-            onClick={() => setMode('snakes')}
+            className={`mode-tab ${roomData.current_mode === 'snakes' ? 'active' : ''}`}
+            onClick={() => handleSwitchMode('snakes')}
           >
             <span>🐍</span>
             <span>Snakes & Ladders</span>
@@ -268,11 +425,13 @@ export function App() {
 
       {/* Zone 2: Square Responsive Vector Board Stage */}
       <section className="board-stage">
-        {mode === 'dama' ? <DamaPreviewBoard /> : <SnakesPreviewBoard />}
+        {roomData.current_mode === 'dama' ? (
+          <DamaPreviewBoard />
+        ) : (
+          <SnakesPreviewBoard />
+        )}
         <div className="shell-overlay-banner">
-          {mode === 'dama'
-            ? 'Filipino Dama 8×8 Shell Ready'
-            : 'Seeded Snakes & Ladders 10×10 Shell Ready'}
+          Tap your Cat Badge above to customize breed & room!
         </div>
       </section>
 
@@ -281,27 +440,25 @@ export function App() {
         {reactions.map((item) => (
           <div
             key={item.id}
-            className={`floating-bubble from-${item.sender}`}
+            className={`floating-bubble from-${item.sender} kind-${item.kind}`}
           >
             {item.content}
           </div>
         ))}
       </div>
 
-      {/* Zone 3: Persistent Couple Quick Reactions Bar (>= 42x42px targets) */}
-      <footer className="bottom-bar" aria-label="Quick Couple Reactions">
-        {QUICK_EMOJIS.map((emoji, idx) => (
-          <button
-            key={emoji}
-            type="button"
-            className="emoji-btn"
-            onClick={() => triggerReaction(emoji, idx % 2 === 0 ? 'p1' : 'p2')}
-            aria-label={`Send ${emoji} reaction`}
-          >
-            {emoji}
-          </button>
-        ))}
-      </footer>
+      {/* Zone 3: Persistent Couple Quick Reactions & Chat Bar */}
+      <QuickChatBar onSendReaction={handleSendReaction} />
+
+      {/* Cat Avatar & Couple Lobby Modal */}
+      <CatCustomizerModal
+        isOpen={customizerOpen}
+        roomCode={roomCode}
+        mySlot={mySlot}
+        currentAvatar={myCurrentAvatar}
+        onSave={handleSaveLobby}
+        onClose={() => setCustomizerOpen(false)}
+      />
     </main>
   );
 }
