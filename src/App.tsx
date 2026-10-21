@@ -12,10 +12,15 @@ import { CatAvatarSvg } from './components/CatAvatarSvg';
 import { CatCustomizerModal } from './components/CatCustomizerModal';
 import { QuickChatBar } from './components/QuickChatBar';
 import { DamaBoardView } from './components/DamaBoardView';
+import { SnakesBoardView } from './components/SnakesBoardView';
 import {
   createInitialDamaState,
   DamaGameState,
 } from './engines/damaEngine';
+import {
+  createInitialSnakesState,
+  SnakesGameState,
+} from './engines/snakesEngine';
 import {
   CoupleRealtimeChannel,
   fetchActiveMatch,
@@ -30,64 +35,6 @@ import {
 
 const STORAGE_ROOM_KEY = 'lovey_arcade_room_code';
 const STORAGE_SLOT_KEY = 'lovey_arcade_player_slot';
-
-function SnakesPreviewBoard() {
-  const cells = [];
-  for (let r = 0; r < 10; r++) {
-    for (let c = 0; c < 10; c++) {
-      const rowFromBottom = 9 - r;
-      const num =
-        rowFromBottom % 2 === 0
-          ? rowFromBottom * 10 + c + 1
-          : rowFromBottom * 10 + (10 - c);
-      const isEven = (r + c) % 2 === 0;
-      cells.push(
-        <g key={num}>
-          <rect
-            x={c * 10}
-            y={r * 10}
-            width="10"
-            height="10"
-            fill={isEven ? '#fff8f0' : '#fde2e4'}
-            stroke="#f0d4b8"
-            strokeWidth="0.25"
-          />
-          <text
-            x={c * 10 + 1.4}
-            y={r * 10 + 3.2}
-            fontSize="2.2"
-            fontWeight="700"
-            fill="#9c6644"
-          >
-            {num}
-          </text>
-        </g>
-      );
-    }
-  }
-
-  return (
-    <svg viewBox="0 0 100 100" className="board-svg" role="img" aria-label="Snakes and Ladders 10x10 Board">
-      {cells}
-      <g stroke="#8b5a2b" strokeWidth="1.1" strokeLinecap="round">
-        <line x1="23" y1="85" x2="43" y2="45" />
-        <line x1="27" y1="85" x2="47" y2="45" />
-        <line x1="25" y1="78" x2="29" y2="78" strokeWidth="0.8" />
-        <line x1="29" y1="70" x2="33" y2="70" strokeWidth="0.8" />
-        <line x1="33" y1="62" x2="37" y2="62" strokeWidth="0.8" />
-        <line x1="37" y1="54" x2="41" y2="54" strokeWidth="0.8" />
-      </g>
-      <path
-        d="M 75 25 C 62 35, 85 50, 68 62 C 55 70, 75 78, 65 86"
-        fill="none"
-        stroke="#2ec4b6"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <circle cx="75" cy="25" r="2.3" fill="#2ec4b6" />
-    </svg>
-  );
-}
 
 export function App() {
   const [roomCode, setRoomCode] = useState<string>(() => {
@@ -122,6 +69,9 @@ export function App() {
   const [damaState, setDamaState] = useState<DamaGameState>(() =>
     createInitialDamaState()
   );
+  const [snakesState, setSnakesState] = useState<SnakesGameState>(() =>
+    createInitialSnakesState(202610, true)
+  );
   const [passAndPlay, setPassAndPlay] = useState<boolean>(false);
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
   const [onlineSeen, setOnlineSeen] = useState<Record<PlayerSlot, number>>({
@@ -143,16 +93,21 @@ export function App() {
   const syncFromDatabase = useCallback(async (targetRoom: string) => {
     const [row, matchRow] = await Promise.all([
       fetchOrCreateCoupleRoom(targetRoom),
-      fetchActiveMatch<DamaGameState>(targetRoom),
+      fetchActiveMatch<unknown>(targetRoom),
     ]);
     setRoomData(row);
-    if (
-      matchRow &&
-      matchRow.game_mode === 'dama' &&
-      matchRow.state_json &&
-      Array.isArray(matchRow.state_json.board)
-    ) {
-      setDamaState(matchRow.state_json);
+    if (matchRow && matchRow.state_json) {
+      if (matchRow.game_mode === 'dama') {
+        const maybeDama = matchRow.state_json as DamaGameState;
+        if (Array.isArray(maybeDama.board)) {
+          setDamaState(maybeDama);
+        }
+      } else if (matchRow.game_mode === 'snakes') {
+        const maybeSnakes = matchRow.state_json as SnakesGameState;
+        if (typeof maybeSnakes.boardSeed === 'number') {
+          setSnakesState(maybeSnakes);
+        }
+      }
     }
   }, []);
 
@@ -171,13 +126,20 @@ export function App() {
           );
         } else if (event.type === 'mode_switch') {
           setRoomData((prev) => ({ ...prev, current_mode: event.mode }));
-        } else if (event.type === 'match_sync' && event.gameMode === 'dama') {
-          const incoming = event.stateJson as DamaGameState;
-          if (incoming && Array.isArray(incoming.board)) {
-            setDamaState(incoming);
-            if (incoming.winner) {
-              fetchOrCreateCoupleRoom(roomCode).then(setRoomData);
+        } else if (event.type === 'match_sync') {
+          if (event.gameMode === 'dama') {
+            const incoming = event.stateJson as DamaGameState;
+            if (incoming && Array.isArray(incoming.board)) {
+              setDamaState(incoming);
             }
+          } else if (event.gameMode === 'snakes') {
+            const incoming = event.stateJson as SnakesGameState;
+            if (incoming && typeof incoming.boardSeed === 'number') {
+              setSnakesState(incoming);
+            }
+          }
+          if (event.winner) {
+            fetchOrCreateCoupleRoom(roomCode).then(setRoomData);
           }
         }
       },
@@ -264,6 +226,64 @@ export function App() {
       game_mode: 'dama',
       turn: fresh.turn,
       board_seed: 0,
+      state_json: fresh,
+      winner: null,
+    });
+  };
+
+  const handleCommitSnakesState = async (nextState: SnakesGameState) => {
+    setSnakesState(nextState);
+
+    channelRef.current?.sendBroadcast({
+      type: 'match_sync',
+      gameMode: 'snakes',
+      turn: nextState.turn,
+      boardSeed: nextState.boardSeed,
+      stateJson: nextState,
+      winner: nextState.winner,
+      sender: mySlot,
+    });
+
+    await upsertActiveMatch({
+      room_code: roomCode,
+      game_mode: 'snakes',
+      turn: nextState.turn,
+      board_seed: nextState.boardSeed,
+      state_json: nextState,
+      winner: nextState.winner,
+    });
+
+    if (nextState.winner === 'p1' || nextState.winner === 'p2') {
+      const updatedRoom = await recordMatchWinInDb(
+        roomData,
+        'snakes',
+        nextState.winner,
+        `Snakes & Ladders (Seed #${nextState.boardSeed})`
+      );
+      if (updatedRoom) {
+        setRoomData(updatedRoom);
+      }
+    }
+  };
+
+  const handleNewSnakesSeedMatch = async (twistsEnabled: boolean) => {
+    const newSeed = Math.floor(100000 + Math.random() * 899999);
+    const fresh = createInitialSnakesState(newSeed, twistsEnabled);
+    setSnakesState(fresh);
+    channelRef.current?.sendBroadcast({
+      type: 'match_sync',
+      gameMode: 'snakes',
+      turn: fresh.turn,
+      boardSeed: fresh.boardSeed,
+      stateJson: fresh,
+      winner: null,
+      sender: mySlot,
+    });
+    await upsertActiveMatch({
+      room_code: roomCode,
+      game_mode: 'snakes',
+      turn: fresh.turn,
+      board_seed: fresh.boardSeed,
       state_json: fresh,
       winner: null,
     });
@@ -446,12 +466,16 @@ export function App() {
           onResetMatch={handleResetDamaMatch}
         />
       ) : (
-        <section className="board-stage">
-          <SnakesPreviewBoard />
-          <div className="shell-overlay-banner">
-            Phase 2: Seeded Snakes & Ladders Coming Up Next!
-          </div>
-        </section>
+        <SnakesBoardView
+          gameState={snakesState}
+          mySlot={mySlot}
+          p1Avatar={roomData.p1_avatar}
+          p2Avatar={roomData.p2_avatar}
+          passAndPlay={passAndPlay}
+          onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
+          onCommitState={handleCommitSnakesState}
+          onNewSeedMatch={handleNewSnakesSeedMatch}
+        />
       )}
 
       {/* Floating Compositor Emoji/Chat Layer */}

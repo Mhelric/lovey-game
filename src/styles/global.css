@@ -456,6 +456,81 @@ body,
   }
 }
 
+/* Snakes & Ladders Cat Paw Dice Button & Hop Animations */
+.paw-dice-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1.5px solid #e65a75;
+  background: var(--accent-coral);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.14s ease;
+}
+
+.paw-dice-btn:active {
+  transform: scale(0.94);
+}
+
+.paw-dice-btn.disabled-roll {
+  background: #ffffff;
+  border-color: var(--border-warm);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.dice-face-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.dice-btn-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 155px;
+}
+
+.dice-shaking {
+  animation: pawDiceShake 0.32s infinite ease-in-out;
+}
+
+.snakes-cat-positioner {
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.snakes-cat-hop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: catBoingHop 0.24s infinite ease-in-out;
+}
+
+@keyframes pawDiceShake {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-10deg) scale(1.06);
+  }
+  75% {
+    transform: rotate(10deg) scale(1.06);
+  }
+}
+
+@keyframes catBoingHop {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  50% {
+    transform: translate3d(0, -2.2px, 0) scale(0.9, 1.15);
+  }
+}
+
 /* Zone 3: Bottom Quick Emoji & Chat Bar (>= 42x42px Touch Targets) */
 .bottom-bar-wrapper {
   position: relative;
