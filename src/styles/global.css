@@ -1,0 +1,348 @@
+:root {
+  --bg-cream: #fff6ec;
+  --bg-card: #ffffff;
+  --bg-header: #ffeedd;
+  --border-warm: #f0d4b8;
+  --text-dark: #432818;
+  --text-muted: #8c6249;
+  --accent-coral: #ff758f;
+  --accent-amber: #ff9f1c;
+  --accent-mint: #2ec4b6;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --board-size: min(calc(100vw - 14px), calc(100dvh - var(--safe-top) - var(--safe-bottom) - 156px));
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background-color: var(--bg-cream);
+  color: var(--text-dark);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Main 3-Zone Single-Screen Shell (Zero Scrollbars on 360x640 J2 Pro & 393x873 Poco X7 Pro) */
+.arcade-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 100dvh;
+  padding-top: calc(var(--safe-top) + 4px);
+  padding-bottom: calc(var(--safe-bottom) + 4px);
+  padding-left: 7px;
+  padding-right: 7px;
+  overflow: hidden;
+}
+
+/* Zone 1: Compact Couple Header + Mode Switcher */
+.top-bar {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.couple-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-header);
+  border: 1.5px solid var(--border-warm);
+  border-radius: 14px;
+  padding: 4px 8px;
+  height: 46px;
+}
+
+.player-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.player-pill.right {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.cat-badge {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent-coral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.player-pill.right .cat-badge {
+  border-color: var(--accent-amber);
+}
+
+.online-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 1.5px solid #fff;
+}
+
+.player-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.player-name {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 82px;
+}
+
+.player-score {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.room-center-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  background: #fff;
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+}
+
+.room-code-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--accent-coral);
+}
+
+.viewport-tag {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Mode Switcher Row */
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  height: 36px;
+}
+
+.mode-tab {
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-warm);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.14s ease;
+}
+
+.mode-tab:active {
+  transform: scale(0.96);
+}
+
+.mode-tab.active {
+  background: var(--accent-coral);
+  border-color: #e65a75;
+  color: #fff;
+}
+
+/* Zone 2: Square Vector Board Container */
+.board-stage {
+  position: relative;
+  width: var(--board-size);
+  height: var(--board-size);
+  max-width: 460px;
+  max-height: 460px;
+  background: var(--bg-card);
+  border: 2.5px solid #d4a373;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.board-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.shell-overlay-banner {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  background: rgba(67, 40, 24, 0.88);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Zone 3: Bottom Quick Emoji & Chat Bar (>= 42x42px Touch Targets) */
+.bottom-bar {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  background: var(--bg-header);
+  border: 1.5px solid var(--border-warm);
+  border-radius: 14px;
+  padding: 4px 6px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.emoji-btn {
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border-warm);
+  background: #fff;
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.emoji-btn:active {
+  transform: scale(0.86);
+}
+
+/* Compositor-Only Floating Reaction Bubbles */
+.floating-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.floating-bubble {
+  position: absolute;
+  bottom: 62px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid var(--accent-coral);
+  font-size: 18px;
+  font-weight: 700;
+  will-change: transform, opacity;
+  animation: floatUpBubble 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.floating-bubble.from-p1 {
+  left: 18px;
+}
+
+.floating-bubble.from-p2 {
+  right: 18px;
+  border-color: var(--accent-amber);
+}
+
+/* Strictly Compositor-Only Keyframes (transform + opacity ONLY) */
+@keyframes floatUpBubble {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(0, -14px, 0) scale(1.08);
+  }
+  80% {
+    opacity: 1;
+    transform: translate3d(0, -96px, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -128px, 0) scale(0.88);
+  }
+}
+
+@keyframes catBlink {
+  0%, 92%, 100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes catEarTwitch {
+  0%, 88%, 100% {
+    transform: rotate(0deg);
+  }
+  92% {
+    transform: rotate(-8deg);
+  }
+  96% {
+    transform: rotate(5deg);
+  }
+}
+
+.cat-eyes-anim {
+  transform-origin: center 16px;
+  animation: catBlink 4.2s infinite ease-in-out;
+}
+
+.cat-ear-anim {
+  transform-origin: 10px 10px;
+  animation: catEarTwitch 5.5s infinite ease-in-out;
+}
