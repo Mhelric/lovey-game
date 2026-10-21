@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="28" fill="#fff6ec" />
+  <circle cx="60" cy="64" r="46" fill="#ffeedd" stroke="#ff758f" stroke-width="4" />
+  <!-- Cat Ears -->
+  <polygon points="24,52 30,18 52,36" fill="#ff8fab" stroke="#432818" stroke-width="3" stroke-linejoin="round" />
+  <polygon points="30,46 33,25 46,37" fill="#ffe5ec" />
+  <polygon points="96,52 90,18 68,36" fill="#ff8fab" stroke="#432818" stroke-width="3" stroke-linejoin="round" />
+  <polygon points="90,46 87,25 74,37" fill="#ffe5ec" />
+  <!-- Cat Head -->
+  <circle cx="60" cy="66" r="34" fill="#ff8fab" stroke="#432818" stroke-width="3" />
+  <!-- Golden Crown -->
+  <polygon points="42,36 47,18 60,28 73,18 78,36" fill="#ffbe0b" stroke="#9a6700" stroke-width="2.5" stroke-linejoin="round" />
+  <circle cx="60" cy="29" r="3.5" fill="#e63946" />
+  <!-- Eyes -->
+  <circle cx="46" cy="62" r="5.5" fill="#2b1810" />
+  <circle cx="74" cy="62" r="5.5" fill="#2b1810" />
+  <circle cx="44" cy="60" r="2" fill="#ffffff" />
+  <circle cx="72" cy="60" r="2" fill="#ffffff" />
+  <!-- Cheeks & Cute Mouth -->
+  <ellipse cx="36" cy="70" rx="6" ry="3.2" fill="#ff4d6d" opacity="0.55" />
+  <ellipse cx="84" cy="70" rx="6" ry="3.2" fill="#ff4d6d" opacity="0.55" />
+  <polygon points="60,66 55,72 65,72" fill="#d90429" />
+  <path d="M 52 75 Q 56 80 60 75 Q 64 80 68 75" fill="none" stroke="#432818" stroke-width="3" stroke-linecap="round" />
+</svg>

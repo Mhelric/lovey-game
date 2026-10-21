@@ -6,3 +6,9 @@ const root = document.getElementById('app');
 if (root) {
   render(<App />, root);
 }
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}

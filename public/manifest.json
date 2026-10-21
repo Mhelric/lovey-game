@@ -1,0 +1,19 @@
+{
+  "name": "Cartoon Cat Couple's Arcade",
+  "short_name": "Lovey Arcade",
+  "description": "Real-time Filipino Dama & Randomized Snakes and Ladders for Couples",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff6ec",
+  "theme_color": "#ff758f",
+  "icons": [
+    {
+      "src": "/cat-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
