@@ -37,7 +37,98 @@ export function setSoundMuted(muted: boolean): boolean {
   } catch {
     // Ignore storage errors
   }
+  if (mutedState) {
+    stopBgMusicLoop();
+  } else {
+    startBgMusicLoop();
+  }
   return mutedState;
+}
+
+/* ==========================================================================
+   CUTESY VIBRANT KAWAII BACKGROUND MUSIC LOOP (0 KB Web Audio Synth)
+   ========================================================================== */
+const BGM_MELODY: readonly [number, number][] = [
+  // Bar 1 (Fmaj7 / Cmaj7 sunny kawaii bounce)
+  [523.25, 261.63], // C5 + C4
+  [659.25, 0],      // E5
+  [783.99, 392.0],  // G5 + G4
+  [880.0, 0],       // A5
+  [783.99, 329.63], // G5 + E4
+  [659.25, 0],      // E5
+  [587.33, 293.66], // D5 + D4
+  [523.25, 0],      // C5
+  // Bar 2 (Playful upward skip)
+  [587.33, 349.23], // D5 + F4
+  [659.25, 0],      // E5
+  [783.99, 440.0],  // G5 + A4
+  [1046.5, 0],      // C6
+  [880.0, 392.0],   // A5 + G4
+  [783.99, 0],      // G5
+  [659.25, 329.63], // E5 + E4
+  [587.33, 0],      // D5
+  // Bar 3 (Cozy pastel bridge)
+  [659.25, 261.63], // E5 + C4
+  [783.99, 0],      // G5
+  [880.0, 349.23],  // A5 + F4
+  [783.99, 0],      // G5
+  [659.25, 329.63], // E5 + E4
+  [523.25, 0],      // C5
+  [587.33, 293.66], // D5 + D4
+  [659.25, 0],      // E5
+  // Bar 4 (Happy cadence turnaround)
+  [783.99, 392.0],  // G5 + G4
+  [880.0, 0],       // A5
+  [659.25, 329.63], // E5 + E4
+  [587.33, 0],      // D5
+  [523.25, 261.63], // C5 + C4
+  [659.25, 329.63], // E5 + E4
+  [783.99, 392.0],  // G5 + G4
+  [523.25, 0],      // C5
+];
+
+let bgmTimer: number | null = null;
+let bgmStep = 0;
+
+function playBgmStep(): void {
+  if (mutedState) return;
+  const ctx = getAudioContext();
+  if (!ctx || ctx.state !== 'running') return;
+
+  const [leadFreq, bassFreq] = BGM_MELODY[bgmStep % BGM_MELODY.length];
+  bgmStep = (bgmStep + 1) % BGM_MELODY.length;
+
+  // Plucky Marimba / Music-Box Lead Note
+  if (leadFreq > 0) {
+    playTone(leadFreq, leadFreq * 1.003, 0.19, 'triangle', 0.026, 0);
+  }
+  // Warm Soft Harmony / Bass Note
+  if (bassFreq > 0) {
+    playTone(bassFreq, bassFreq, 0.26, 'sine', 0.02, 0);
+  }
+}
+
+export function startBgMusicLoop(): void {
+  if (typeof window === 'undefined' || mutedState || bgmTimer !== null) return;
+  getAudioContext();
+  bgmTimer = window.setInterval(playBgmStep, 240);
+}
+
+function stopBgMusicLoop(): void {
+  if (bgmTimer !== null && typeof window !== 'undefined') {
+    window.clearInterval(bgmTimer);
+    bgmTimer = null;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  const unlockAndPlayBgm = () => {
+    if (!mutedState) {
+      startBgMusicLoop();
+    }
+  };
+  window.addEventListener('pointerdown', unlockAndPlayBgm, { passive: true });
+  window.addEventListener('keydown', unlockAndPlayBgm, { passive: true });
 }
 
 function playTone(

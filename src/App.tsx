@@ -7,10 +7,22 @@ import {
   FloatingReaction,
   GameMode,
   PlayerSlot,
+  QUICK_STICKERS,
+  ReactionStickerId,
 } from './types/arcade';
 import { CatAvatarSvg } from './components/CatAvatarSvg';
+import {
+  CrownIcon,
+  PawIcon,
+  ReactionStickerSvg,
+  SettingsGearIcon,
+  SnakeLadderIcon,
+  TrophyIcon,
+} from './components/ArcadeIcons';
 import { CatCustomizerModal } from './components/CatCustomizerModal';
 import { CoupleScoreboardModal } from './components/CoupleScoreboardModal';
+import { DamaTutorialModal } from './components/DamaTutorialModal';
+import { HomeMenuView } from './components/HomeMenuView';
 import { QuickChatBar } from './components/QuickChatBar';
 import { DamaBoardView } from './components/DamaBoardView';
 import { SnakesBoardView } from './components/SnakesBoardView';
@@ -23,6 +35,7 @@ import {
   SnakesGameState,
 } from './engines/snakesEngine';
 import {
+  checkCoupleRoomExists,
   CoupleRealtimeChannel,
   fetchActiveMatch,
   fetchOrCreateCoupleRoom,
@@ -43,11 +56,16 @@ import {
 
 const STORAGE_ROOM_KEY = 'lovey_arcade_room_code';
 const STORAGE_SLOT_KEY = 'lovey_arcade_player_slot';
+const STORAGE_TUTORIAL_PREFIX = 'lovey_seen_tutorial_';
+
+const VALID_STICKER_IDS = new Set<string>(QUICK_STICKERS.map((s) => s.id));
 
 export function App() {
   const [roomCode, setRoomCode] = useState<string>(() => {
     try {
-      return normalizeRoomCode(localStorage.getItem(STORAGE_ROOM_KEY) || 'LOVEY');
+      return normalizeRoomCode(
+        localStorage.getItem(STORAGE_ROOM_KEY) || 'LOVEY'
+      );
     } catch {
       return 'LOVEY';
     }
@@ -74,6 +92,7 @@ export function App() {
     updated_at: new Date().toISOString(),
   });
 
+  const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>('menu');
   const [damaState, setDamaState] = useState<DamaGameState>(() =>
     createInitialDamaState()
   );
@@ -86,12 +105,24 @@ export function App() {
     p1: Date.now(),
     p2: 0,
   });
-  const [wsConnected, setWsConnected] = useState(false);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   const channelRef = useRef<CoupleRealtimeChannel | null>(null);
+
+  const checkAutoOpenTutorial = useCallback((mode: GameMode) => {
+    try {
+      const key = `${STORAGE_TUTORIAL_PREFIX}${mode}`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, '1');
+        setTutorialOpen(true);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
 
   const spawnFloatingReaction = useCallback((reaction: FloatingReaction) => {
     playReactionChime();
@@ -135,8 +166,20 @@ export function App() {
               ? { ...prev, p1_avatar: event.avatar }
               : { ...prev, p2_avatar: event.avatar }
           );
-        } else if (event.type === 'mode_switch') {
+        } else if (event.type === 'partner_joined') {
+          setOnlineSeen((prev) => ({ ...prev, [event.slot]: Date.now() }));
+          setRoomData((prev) =>
+            event.slot === 'p1'
+              ? { ...prev, p1_avatar: event.avatar }
+              : { ...prev, p2_avatar: event.avatar }
+          );
+        } else if (
+          event.type === 'mode_switch' ||
+          event.type === 'start_match'
+        ) {
           setRoomData((prev) => ({ ...prev, current_mode: event.mode }));
+          setActiveScreen('play');
+          checkAutoOpenTutorial(event.mode);
         } else if (event.type === 'match_sync') {
           if (event.gameMode === 'dama') {
             const incoming = event.stateJson as DamaGameState;
@@ -160,9 +203,6 @@ export function App() {
       onResyncRequested: () => {
         syncFromDatabase(roomCode);
       },
-      onConnectionChange: (connected) => {
-        setWsConnected(connected);
-      },
     });
 
     channel.connect();
@@ -178,12 +218,86 @@ export function App() {
     window.addEventListener('online', handleVisibilityOrOnline);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityOrOnline);
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityOrOnline
+      );
       window.removeEventListener('online', handleVisibilityOrOnline);
       channel.destroy();
       channelRef.current = null;
     };
-  }, [roomCode, mySlot, spawnFloatingReaction, syncFromDatabase]);
+  }, [
+    roomCode,
+    mySlot,
+    spawnFloatingReaction,
+    syncFromDatabase,
+    checkAutoOpenTutorial,
+  ]);
+
+  const handleStartAsHost = async () => {
+    playTapPop();
+    setMySlot('p1');
+    try {
+      localStorage.setItem(STORAGE_SLOT_KEY, 'p1');
+    } catch {
+      // Ignore
+    }
+    channelRef.current?.updateSlot('p1');
+    const row = await fetchOrCreateCoupleRoom(roomCode);
+    setRoomData(row);
+  };
+
+  const handleAttemptJoinAsInvited = async (
+    targetCode: string
+  ): Promise<boolean> => {
+    playTapPop();
+    const cleaned = normalizeRoomCode(targetCode);
+    const { ok, room } = await checkCoupleRoomExists(cleaned);
+    if (!ok || !room) {
+      return false;
+    }
+
+    setMySlot('p2');
+    setRoomCode(cleaned);
+    setRoomData(room);
+    try {
+      localStorage.setItem(STORAGE_ROOM_KEY, cleaned);
+      localStorage.setItem(STORAGE_SLOT_KEY, 'p2');
+    } catch {
+      // Ignore
+    }
+
+    window.setTimeout(() => {
+      channelRef.current?.updateSlot('p2');
+      channelRef.current?.sendBroadcast({
+        type: 'partner_joined',
+        slot: 'p2',
+        avatar: room.p2_avatar,
+      });
+    }, 380);
+
+    return true;
+  };
+
+  const handleHostLaunchGame = (
+    selectedMode: GameMode,
+    soloPractice = false
+  ) => {
+    playTapPop();
+    if (soloPractice) {
+      setPassAndPlay(true);
+    }
+    setRoomData((prev) => ({ ...prev, current_mode: selectedMode }));
+    setActiveScreen('play');
+    checkAutoOpenTutorial(selectedMode);
+
+    channelRef.current?.sendBroadcast({
+      type: 'start_match',
+      mode: selectedMode,
+      sender: 'p1',
+    });
+    updateRoomModeInDb(roomCode, selectedMode);
+  };
 
   const handleCommitDamaState = async (nextState: DamaGameState) => {
     setDamaState(nextState);
@@ -212,7 +326,7 @@ export function App() {
         roomData,
         'dama',
         nextState.winner,
-        `Filipino Dama (${nextState.p1Remaining} - ${nextState.p2Remaining})`
+        `Cat Dama (${nextState.p1Remaining} - ${nextState.p2Remaining})`
       );
       if (updatedRoom) {
         setRoomData(updatedRoom);
@@ -312,15 +426,25 @@ export function App() {
     channelRef.current?.sendBroadcast({ type: 'reaction', reaction });
   };
 
-  const handleSwitchMode = (newMode: GameMode) => {
+  const handleHostSwitchMode = (newMode: GameMode) => {
+    if (mySlot !== 'p1') return;
     playTapPop();
     setRoomData((prev) => ({ ...prev, current_mode: newMode }));
+    checkAutoOpenTutorial(newMode);
     channelRef.current?.sendBroadcast({
       type: 'mode_switch',
       mode: newMode,
-      sender: mySlot,
+      sender: 'p1',
     });
     updateRoomModeInDb(roomCode, newMode);
+  };
+
+  const handleHostResetCurrentMatch = () => {
+    if (roomData.current_mode === 'dama') {
+      handleResetDamaMatch();
+    } else {
+      handleNewSnakesSeedMatch(snakesState.twistsEnabled);
+    }
   };
 
   const handleToggleMute = () => {
@@ -380,156 +504,259 @@ export function App() {
   const myCurrentAvatar =
     mySlot === 'p1' ? roomData.p1_avatar : roomData.p2_avatar;
 
+  const p1DisplayName = roomData.p1_avatar.name || 'Lovey 1';
+  const p2DisplayName =
+    roomData.p2_avatar.name && roomData.p2_avatar.name !== p1DisplayName
+      ? roomData.p2_avatar.name
+      : 'Lovey 2';
+
+  const activeTurnSlot: PlayerSlot =
+    roomData.current_mode === 'dama' ? damaState.turn : snakesState.turn;
+
+  const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
+
+  useEffect(() => {
+    if (
+      roomData.current_mode === 'snakes' &&
+      snakesState.lastAnimation?.eventMessage
+    ) {
+      setTurnBubbleText(snakesState.lastAnimation.eventMessage);
+      const t = window.setTimeout(() => {
+        setTurnBubbleText('Your turn!');
+      }, 1800);
+      return () => window.clearTimeout(t);
+    }
+    setTurnBubbleText('Your turn!');
+  }, [
+    roomData.current_mode,
+    snakesState.lastAnimation?.id,
+    snakesState.lastAnimation?.eventMessage,
+  ]);
+
+  const p1CapturedCount = Math.max(0, 12 - damaState.p2Remaining);
+  const p2CapturedCount = Math.max(0, 12 - damaState.p1Remaining);
+
   return (
     <main className="arcade-shell">
-      {/* Zone 1: Top Couple Status & Mode Switcher */}
-      <header className="top-bar">
-        <div className="couple-row">
-          <button
-            type="button"
-            className={`player-pill ${mySlot === 'p1' ? 'is-me' : ''}`}
-            onClick={() => setCustomizerOpen(true)}
-            title="Tap to customize Cat Avatar or switch seat"
-          >
-            <div className="cat-badge">
-              <CatAvatarSvg
-                breed={roomData.p1_avatar.breed}
-                accessory={roomData.p1_avatar.accessory}
-                size={30}
-                animateIdle
-              />
-              <span
-                className={`online-dot ${p1Online ? 'online' : ''}`}
-                title={p1Online ? 'Online' : 'Offline'}
-              />
-            </div>
-            <div className="player-meta">
-              <span className="player-name">{roomData.p1_avatar.name}</span>
-              <span className="player-score">
-                P1 {mySlot === 'p1' ? '(You)' : ''} • 🏆 {p1Wins}
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            className="room-center-pill"
-            onClick={() => setScoreboardOpen(true)}
-            title="Tap to open Couple Scoreboard & Match History"
-          >
-            <span className="room-code-label">🏆 {roomData.room_code}</span>
-            <span className="viewport-tag">
-              {wsConnected ? '● Scoreboard' : '○ Connecting'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className={`player-pill right ${mySlot === 'p2' ? 'is-me' : ''}`}
-            onClick={() => setCustomizerOpen(true)}
-            title="Tap to customize Cat Avatar or switch seat"
-          >
-            <div className="cat-badge">
-              <CatAvatarSvg
-                breed={roomData.p2_avatar.breed}
-                accessory={roomData.p2_avatar.accessory}
-                size={30}
-                animateIdle
-              />
-              <span
-                className={`online-dot ${p2Online ? 'online' : ''}`}
-                title={p2Online ? 'Online' : 'Offline'}
-              />
-            </div>
-            <div className="player-meta">
-              <span className="player-name">{roomData.p2_avatar.name}</span>
-              <span className="player-score">
-                🏆 {p2Wins} • P2 {mySlot === 'p2' ? '(You)' : ''}
-              </span>
-            </div>
-          </button>
-        </div>
-
-        <nav className="mode-tabs" aria-label="Game Switcher">
-          <button
-            type="button"
-            className={`mode-tab ${roomData.current_mode === 'dama' ? 'active' : ''}`}
-            onClick={() => handleSwitchMode('dama')}
-          >
-            <span>👑</span>
-            <span>Filipino Dama</span>
-          </button>
-          <button
-            type="button"
-            className={`mode-tab ${roomData.current_mode === 'snakes' ? 'active' : ''}`}
-            onClick={() => handleSwitchMode('snakes')}
-          >
-            <span>🐍</span>
-            <span>Snakes & Ladders</span>
-          </button>
-        </nav>
-      </header>
-
-      {/* Zone 2: Square Responsive Vector Board Stage */}
-      {roomData.current_mode === 'dama' ? (
-        <DamaBoardView
-          gameState={damaState}
-          mySlot={mySlot}
-          p1Avatar={roomData.p1_avatar}
-          p2Avatar={roomData.p2_avatar}
-          passAndPlay={passAndPlay}
-          muted={muted}
-          onToggleMute={handleToggleMute}
-          onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
-          onCommitState={handleCommitDamaState}
-          onResetMatch={handleResetDamaMatch}
+      {activeScreen === 'menu' ? (
+        <HomeMenuView
+          roomData={{
+            ...roomData,
+            p1_avatar: { ...roomData.p1_avatar, name: p1DisplayName },
+            p2_avatar: { ...roomData.p2_avatar, name: p2DisplayName },
+          }}
+          p2Online={p2Online}
+          onOpenSettings={() => setCustomizerOpen(true)}
+          onStartAsHost={handleStartAsHost}
+          onAttemptJoinAsInvited={handleAttemptJoinAsInvited}
+          onHostLaunchGame={handleHostLaunchGame}
         />
       ) : (
-        <SnakesBoardView
-          gameState={snakesState}
-          mySlot={mySlot}
-          p1Avatar={roomData.p1_avatar}
-          p2Avatar={roomData.p2_avatar}
-          passAndPlay={passAndPlay}
-          muted={muted}
-          onToggleMute={handleToggleMute}
-          onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
-          onCommitState={handleCommitSnakesState}
-          onNewSeedMatch={handleNewSnakesSeedMatch}
-        />
+        <div className="ingame-screen-layout">
+          {/* Minimal In-Game Top Bar: Top-Left Settings Button + Centered Game Sticker Pill */}
+          <header className="ingame-top-bar">
+            <button
+              type="button"
+              className="icon-circle-btn sticker-press"
+              onClick={() => setCustomizerOpen(true)}
+              aria-label="Open Settings"
+              title="Settings"
+            >
+              <SettingsGearIcon size={22} />
+            </button>
+
+            <div className="ingame-title-pill">
+              {roomData.current_mode === 'dama' ? (
+                <>
+                  <CrownIcon size={16} />
+                  <span>Cat Dama</span>
+                </>
+              ) : (
+                <>
+                  <SnakeLadderIcon size={16} />
+                  <span>Snakes &amp; Ladders</span>
+                </>
+              )}
+            </div>
+
+            <div className="menu-top-spacer" aria-hidden="true" />
+          </header>
+
+          {/* Center Stage: Game Board */}
+          <div className="ingame-board-center">
+            {roomData.current_mode === 'dama' ? (
+              <DamaBoardView
+                gameState={damaState}
+                mySlot={mySlot}
+                p1Avatar={{ ...roomData.p1_avatar, name: p1DisplayName }}
+                p2Avatar={{ ...roomData.p2_avatar, name: p2DisplayName }}
+                passAndPlay={passAndPlay}
+                onCommitState={handleCommitDamaState}
+                onResetMatch={handleResetDamaMatch}
+              />
+            ) : (
+              <SnakesBoardView
+                gameState={snakesState}
+                mySlot={mySlot}
+                p1Avatar={{ ...roomData.p1_avatar, name: p1DisplayName }}
+                p2Avatar={{ ...roomData.p2_avatar, name: p2DisplayName }}
+                passAndPlay={passAndPlay}
+                onCommitState={handleCommitSnakesState}
+                onNewSeedMatch={handleNewSnakesSeedMatch}
+              />
+            )}
+          </div>
+
+          {/* Bottom Dock: Centered Sticker Scoreboard Bar + Bottom-Right Chat Sheet Button */}
+          <footer className="ingame-bottom-dock">
+            <button
+              type="button"
+              className="bottom-scoreboard-bar sticker-press"
+              onClick={() => setScoreboardOpen(true)}
+              title="Tap to view Match Scoreboard"
+            >
+              {/* Player 1 Side */}
+              <div
+                className={`bottom-player-side ${
+                  activeTurnSlot === 'p1' ? 'active-turn' : 'dim-turn'
+                }`}
+              >
+                {activeTurnSlot === 'p1' && (
+                  <span className="turn-speech-bubble">{turnBubbleText}</span>
+                )}
+                <div
+                  className={`cat-badge mini ${
+                    activeTurnSlot === 'p1' ? 'avatar-turn-bounce' : ''
+                  }`}
+                >
+                  <CatAvatarSvg
+                    breed={roomData.p1_avatar.breed}
+                    accessory={roomData.p1_avatar.accessory}
+                    size={28}
+                    animateIdle={false}
+                  />
+                  <span
+                    className={`online-dot ${p1Online ? 'online' : ''}`}
+                  />
+                </div>
+                <div className="bottom-player-meta">
+                  <span className="bottom-player-name">{p1DisplayName}</span>
+                  <span className="bottom-turn-tag">
+                    {roomData.current_mode === 'dama' ? (
+                      <>
+                        <PawIcon size={10} /> {p1CapturedCount} captured
+                      </>
+                    ) : (
+                      `Tile ${snakesState.p1Tile}`
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Center Score Pill */}
+              <div className="bottom-score-center">
+                <TrophyIcon size={14} />
+                <span className="bottom-score-digits">
+                  {p1Wins} : {p2Wins}
+                </span>
+              </div>
+
+              {/* Player 2 Side */}
+              <div
+                className={`bottom-player-side right ${
+                  activeTurnSlot === 'p2' ? 'active-turn' : 'dim-turn'
+                }`}
+              >
+                {activeTurnSlot === 'p2' && (
+                  <span className="turn-speech-bubble">{turnBubbleText}</span>
+                )}
+                <div
+                  className={`cat-badge mini ${
+                    activeTurnSlot === 'p2' ? 'avatar-turn-bounce' : ''
+                  }`}
+                >
+                  <CatAvatarSvg
+                    breed={roomData.p2_avatar.breed}
+                    accessory={roomData.p2_avatar.accessory}
+                    size={28}
+                    animateIdle={false}
+                  />
+                  <span
+                    className={`online-dot ${p2Online ? 'online' : ''}`}
+                  />
+                </div>
+                <div className="bottom-player-meta">
+                  <span className="bottom-player-name">{p2DisplayName}</span>
+                  <span className="bottom-turn-tag">
+                    {roomData.current_mode === 'dama' ? (
+                      <>
+                        <PawIcon size={10} /> {p2CapturedCount} captured
+                      </>
+                    ) : (
+                      `Tile ${snakesState.p2Tile}`
+                    )}
+                  </span>
+                </div>
+              </div>
+            </button>
+
+            <QuickChatBar onSendReaction={handleSendReaction} />
+          </footer>
+        </div>
       )}
 
-      {/* Floating Compositor Emoji/Chat Layer */}
+      {/* Floating Compositor Sticker/Chat Layer */}
       <div className="floating-layer" aria-live="polite">
         {reactions.map((item) => (
           <div
             key={item.id}
             className={`floating-bubble from-${item.sender} kind-${item.kind}`}
           >
-            {item.content}
+            {item.kind === 'emoji' && VALID_STICKER_IDS.has(item.content) ? (
+              <ReactionStickerSvg
+                id={item.content as ReactionStickerId}
+                size={40}
+                animated
+              />
+            ) : (
+              item.content
+            )}
           </div>
         ))}
       </div>
 
-      {/* Zone 3: Persistent Couple Quick Reactions & Chat Bar */}
-      <QuickChatBar onSendReaction={handleSendReaction} />
-
-      {/* Cat Avatar & Couple Lobby Modal */}
+      {/* Unified 3-Tab Settings & Cat Customizer Modal */}
       <CatCustomizerModal
         isOpen={customizerOpen}
+        isInGame={activeScreen === 'play'}
         roomCode={roomCode}
         mySlot={mySlot}
+        currentMode={roomData.current_mode}
         currentAvatar={myCurrentAvatar}
+        muted={muted}
+        passAndPlay={passAndPlay}
+        onToggleMute={handleToggleMute}
+        onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
+        onHostSwitchGame={handleHostSwitchMode}
+        onHostResetMatch={handleHostResetCurrentMatch}
+        onOpenTutorial={() => setTutorialOpen(true)}
+        onExitToMenu={() => setActiveScreen('menu')}
         onSave={handleSaveLobby}
         onClose={() => setCustomizerOpen(false)}
       />
 
-      {/* Couple Lifetime Scoreboard & Match History Modal */}
+      {/* Minimalist Couple Scoreboard Modal */}
       <CoupleScoreboardModal
         isOpen={scoreboardOpen}
         roomData={roomData}
         onClose={() => setScoreboardOpen(false)}
-        onOpenCustomizer={() => setCustomizerOpen(true)}
+      />
+
+      {/* Auto First-Game & On-Demand Rules Tutorial Modal */}
+      <DamaTutorialModal
+        isOpen={tutorialOpen}
+        gameMode={roomData.current_mode}
+        onClose={() => setTutorialOpen(false)}
       />
     </main>
   );

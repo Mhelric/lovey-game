@@ -6,7 +6,7 @@ export interface BoardJumpLink {
   id: string;
   kind: 'ladder' | 'snake';
   from: number; // 2..99
-  to: number;   // 2..99
+  to: number; // 2..99
   color: string;
 }
 
@@ -56,14 +56,12 @@ export interface SnakesGameState {
 }
 
 const SNAKE_COLORS = [
-  '#2ec4b6',
-  '#ff595e',
-  '#8ac926',
-  '#9b5de5',
-  '#ff9f1c',
-  '#00bbf9',
-  '#f15bb5',
-  '#fb5607',
+  '#6BCB77',
+  '#4FC3C9',
+  '#A78BFA',
+  '#FF8A80',
+  '#FFD166',
+  '#74B9FF',
 ] as const;
 
 /**
@@ -85,7 +83,12 @@ export function createMulberry32(seed: number): () => number {
  * Converts a tile number (1..100) into SVG center coordinates (x: 0..100, y: 0..100)
  * on a 10x10 Boustrophedon (zig-zag) grid where tile 1 is bottom-left and 100 is top-left.
  */
-export function tileToSvgCenter(tile: number): { x: number; y: number; row: number; col: number } {
+export function tileToSvgCenter(tile: number): {
+  x: number;
+  y: number;
+  row: number;
+  col: number;
+} {
   const clamped = Math.max(1, Math.min(100, tile));
   const zeroBased = clamped - 1;
   const rowFromBottom = Math.floor(zeroBased / 10); // 0..9
@@ -102,7 +105,43 @@ export function tileToSvgCenter(tile: number): { x: number; y: number; row: numb
 }
 
 /**
- * Procedurally generates a balanced, fair Snakes & Ladders board from `seed`.
+ * Returns true if segment AB and segment CD intersect or pass within `minDist` of each other.
+ */
+function segmentsConflict(
+  fromA: number,
+  toA: number,
+  fromB: number,
+  toB: number
+): boolean {
+  const a1 = tileToSvgCenter(fromA);
+  const a2 = tileToSvgCenter(toA);
+  const b1 = tileToSvgCenter(fromB);
+  const b2 = tileToSvgCenter(toB);
+
+  const ccw = (
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    p3: { x: number; y: number }
+  ) => (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
+
+  const intersects =
+    ccw(a1, b1, b2) !== ccw(a2, b1, b2) &&
+    ccw(a1, a2, b1) !== ccw(a1, a2, b2);
+  if (intersects) return true;
+
+  // Also check midpoint proximity so wavy snakes and ladders don't visually crowd
+  const midAx = (a1.x + a2.x) * 0.5;
+  const midAy = (a1.y + a2.y) * 0.5;
+  const midBx = (b1.x + b2.x) * 0.5;
+  const midBy = (b1.y + b2.y) * 0.5;
+  if (Math.hypot(midAx - midBx, midAy - midBy) < 13) return true;
+
+  return false;
+}
+
+/**
+ * Procedurally generates a clean, non-crossing Snakes & Ladders board from `seed`.
+ * Uses 5 ladders and 5 snakes, each spanning <= 3 rows and <= 3 columns horizontally.
  */
 export function generateSnakesBoard(
   seed: number,
@@ -115,7 +154,6 @@ export function generateSnakesBoard(
   const randInt = (min: number, max: number): number =>
     Math.floor(rng() * (max - min + 1)) + min;
 
-  // Avoid placing 3 consecutive start obstacles in a row
   const createsThreeInARow = (tile: number): boolean => {
     return (
       (startTiles.has(tile - 1) && startTiles.has(tile - 2)) ||
@@ -127,63 +165,81 @@ export function generateSnakesBoard(
   const ladders: BoardJumpLink[] = [];
   const snakes: BoardJumpLink[] = [];
   const twists: TwistTile[] = [];
+  const allLinks: { from: number; to: number }[] = [];
 
-  // 1. Generate 8 Balanced Wooden Ladders (climbing up at least 1 row, delta 11..42)
-  const targetLadders = 8;
+  const hasConflictWithExisting = (from: number, to: number): boolean => {
+    for (const existing of allLinks) {
+      if (segmentsConflict(from, to, existing.from, existing.to)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // 1. Generate 5 Non-Crossing Honey-Wood Ladders (each spanning 1..3 rows and <= 3 cols)
+  const targetLadders = 5;
   let attempts = 0;
-  while (ladders.length < targetLadders && attempts < 400) {
+  while (ladders.length < targetLadders && attempts < 600) {
     attempts += 1;
-    const from = randInt(3, 84);
-    const fromRow = Math.floor((from - 1) / 10);
-    const minToRow = fromRow + 1;
-    const maxToRow = Math.min(9, fromRow + 4);
+    const from = randInt(3, 82);
+    const fromCenter = tileToSvgCenter(from);
+    const fromRowBottom = Math.floor((from - 1) / 10);
+    const minToRow = fromRowBottom + 1;
+    const maxToRow = Math.min(9, fromRowBottom + 3);
     if (minToRow > maxToRow) continue;
 
-    const toRow = randInt(minToRow, maxToRow);
-    const toColOffset = randInt(0, 9);
-    const to = toRow * 10 + toColOffset + 1;
+    const toRowBottom = randInt(minToRow, maxToRow);
+    const to = toRowBottom * 10 + randInt(0, 9) + 1;
+    const toCenter = tileToSvgCenter(to);
 
-    if (to >= 99 || to <= from + 8) continue;
+    if (to >= 99 || to <= from + 7) continue;
+    if (Math.abs(toCenter.col - fromCenter.col) > 3) continue;
     if (usedEndpoints.has(from) || usedEndpoints.has(to)) continue;
     if (createsThreeInARow(from)) continue;
+    if (hasConflictWithExisting(from, to)) continue;
 
     usedEndpoints.add(from);
     usedEndpoints.add(to);
     startTiles.add(from);
+    allLinks.push({ from, to });
 
     ladders.push({
       id: `ladder-${ladders.length + 1}`,
       kind: 'ladder',
       from,
       to,
-      color: '#9c6644',
+      color: '#F59E0B',
     });
   }
 
-  // 2. Generate 8 Classic Colorful Cartoon Snakes (sliding down at least 1 row, from 16..98)
-  const targetSnakes = 8;
+  // 2. Generate 5 Non-Crossing Chunky Cartoon Snakes (each spanning 1..3 rows and <= 3 cols)
+  const targetSnakes = 5;
   attempts = 0;
-  while (snakes.length < targetSnakes && attempts < 450) {
+  while (snakes.length < targetSnakes && attempts < 700) {
     attempts += 1;
-    // Allow at most 1 high-tension snake between 92..98
     const hasHighSnake = snakes.some((s) => s.from >= 92);
     const maxFrom = hasHighSnake ? 91 : 98;
-    const from = randInt(17, maxFrom);
-    const fromRow = Math.floor((from - 1) / 10);
-    if (fromRow < 1) continue;
+    const from = randInt(18, maxFrom);
+    const fromCenter = tileToSvgCenter(from);
+    const fromRowBottom = Math.floor((from - 1) / 10);
+    if (fromRowBottom < 1) continue;
 
-    const minToRow = Math.max(0, fromRow - 4);
-    const maxToRow = fromRow - 1;
-    const toRow = randInt(minToRow, maxToRow);
-    const to = toRow * 10 + randInt(0, 9) + 1;
+    const minToRow = Math.max(0, fromRowBottom - 3);
+    const maxToRow = fromRowBottom - 1;
+    const toRowBottom = randInt(minToRow, maxToRow);
+    const to = toRowBottom * 10 + randInt(0, 9) + 1;
+    const toCenter = tileToSvgCenter(to);
 
-    if (to <= 2 || from <= to + 8) continue;
+    if (to <= 2 || from <= to + 7) continue;
+    if (Math.abs(toCenter.col - fromCenter.col) > 3) continue;
     if (usedEndpoints.has(from) || usedEndpoints.has(to)) continue;
     if (createsThreeInARow(from)) continue;
+    if (hasConflictWithExisting(from, to)) continue;
 
     usedEndpoints.add(from);
     usedEndpoints.add(to);
     startTiles.add(from);
+    allLinks.push({ from, to });
 
     snakes.push({
       id: `snake-${snakes.length + 1}`,
@@ -196,11 +252,15 @@ export function generateSnakesBoard(
 
   // 3. Generate 4 Mystery Twist Tiles (if enabled)
   if (includeTwists) {
-    const twistSpecs: readonly { kind: TwistKind; label: string; icon: string }[] = [
-      { kind: 'boost', label: 'Catnip Boost +3!', icon: '⚡' },
-      { kind: 'shield', label: 'Snake Shield!', icon: '🛡️' },
-      { kind: 'extra_roll', label: 'Lucky Paw Extra Roll!', icon: '🎲' },
-      { kind: 'swap', label: 'Switcheroo Swap!', icon: '🔄' },
+    const twistSpecs: readonly {
+      kind: TwistKind;
+      label: string;
+      icon: string;
+    }[] = [
+      { kind: 'boost', label: 'Catnip Boost +3!', icon: '+3' },
+      { kind: 'shield', label: 'Snake Shield!', icon: 'SHIELD' },
+      { kind: 'extra_roll', label: 'Lucky Paw Extra Roll!', icon: 'ROLL' },
+      { kind: 'swap', label: 'Switcheroo Swap!', icon: 'SWAP' },
     ];
 
     for (const spec of twistSpecs) {
@@ -247,8 +307,6 @@ export function createInitialSnakesState(
 
 /**
  * Pure turn resolver for Snakes & Ladders.
- * Handles dice roll (1..6), bounce-back on 100, ladders, snakes (with shield protection),
- * and Mystery Twist tiles.
  */
 export function applySnakesDiceRoll(
   state: SnakesGameState,
@@ -262,7 +320,6 @@ export function applySnakesDiceRoll(
   const otherTile = roller === 'p1' ? state.p2Tile : state.p1Tile;
   let hasShield = roller === 'p1' ? state.p1Shield : state.p2Shield;
 
-  // Step 1: Walk forward by `dice` (bounce back if exceeding 100)
   let walkLandingTile = startTile + dice;
   if (walkLandingTile > 100) {
     walkLandingTile = 100 - (walkLandingTile - 100);
@@ -274,7 +331,6 @@ export function applySnakesDiceRoll(
   let eventMessage = `Rolled ${dice} → Tile ${walkLandingTile}`;
   let grantExtraRoll = dice === 6;
 
-  // Step 2: Check Ladder at `walkLandingTile`
   const ladder = board.ladders.find((l) => l.from === walkLandingTile);
   const snake = board.snakes.find((s) => s.from === walkLandingTile);
   const twist = board.twists.find((t) => t.tile === walkLandingTile);
@@ -282,41 +338,41 @@ export function applySnakesDiceRoll(
   if (ladder) {
     finalTile = ladder.to;
     eventKind = 'ladder';
-    eventMessage = `🪜 Climbed Ladder ${ladder.from} → ${ladder.to}!`;
+    eventMessage = `Climbed Ladder ${ladder.from} → ${ladder.to}!`;
   } else if (snake) {
     if (hasShield) {
       hasShield = false;
       finalTile = walkLandingTile;
       eventKind = 'shield_saved';
-      eventMessage = `🛡️ Shield blocked Snake at ${snake.from}!`;
+      eventMessage = `Shield blocked Snake at ${snake.from}!`;
     } else {
       finalTile = snake.to;
       eventKind = 'snake';
-      eventMessage = `🐍 Oh no! Slid down Snake ${snake.from} → ${snake.to} (@_@)`;
+      eventMessage = `Oh no! Slid down Snake ${snake.from} → ${snake.to}!`;
     }
   } else if (twist) {
     if (twist.kind === 'boost') {
       finalTile = Math.min(100, walkLandingTile + 3);
       eventKind = 'boost';
-      eventMessage = `⚡ Catnip Boost! Jumped +3 to Tile ${finalTile}!`;
+      eventMessage = `Catnip Boost! Jumped +3 → Tile ${finalTile}!`;
     } else if (twist.kind === 'shield') {
       hasShield = true;
       eventKind = 'shield_gain';
-      eventMessage = `🛡️ Picked up a Snake Shield!`;
+      eventMessage = `Picked up a Snake Shield!`;
     } else if (twist.kind === 'extra_roll') {
       grantExtraRoll = true;
       eventKind = 'extra_roll';
-      eventMessage = `🎲 Lucky Paw! Earned an Extra Roll!`;
+      eventMessage = `Lucky Paw! Earned an Extra Roll!`;
     } else if (twist.kind === 'swap') {
       if (otherTile !== walkLandingTile && otherTile > 1 && otherTile < 100) {
         finalTile = otherTile;
         nextOtherTile = walkLandingTile;
         eventKind = 'swap';
-        eventMessage = `🔄 Switcheroo! Swapped tiles (${walkLandingTile} ↔ ${otherTile})!`;
+        eventMessage = `Switcheroo! Swapped tiles ${walkLandingTile} ↔ ${otherTile}!`;
       } else {
         finalTile = Math.min(100, walkLandingTile + 2);
         eventKind = 'boost';
-        eventMessage = `🔄 Mystery Hop +2 to Tile ${finalTile}!`;
+        eventMessage = `Mystery Hop +2 → Tile ${finalTile}!`;
       }
     }
   }
@@ -333,7 +389,7 @@ export function applySnakesDiceRoll(
     winner || !grantExtraRoll ? (roller === 'p1' ? 'p2' : 'p1') : roller;
 
   if (!winner && dice === 6 && eventKind === 'normal') {
-    eventMessage = `🎲 Rolled a 6! Tile ${finalTile} + Bonus Roll!`;
+    eventMessage = `Rolled a 6! Tile ${finalTile} + Bonus Roll!`;
   }
 
   return {

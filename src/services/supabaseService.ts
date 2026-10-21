@@ -36,6 +36,35 @@ export function normalizeRoomCode(raw: string): string {
   return cleaned.slice(0, 12) || 'LOVEY';
 }
 
+export async function checkCoupleRoomExists(
+  roomCode: string
+): Promise<{ ok: boolean; room: CoupleRoomRow | null }> {
+  const code = normalizeRoomCode(roomCode);
+  if (!rawCodeIsValid(roomCode)) {
+    return { ok: false, room: null };
+  }
+  try {
+    const getRes = await fetch(
+      `${REST_BASE}/couple_rooms?room_code=eq.${encodeURIComponent(code)}&select=*&limit=1`,
+      { headers: getHeaders() }
+    );
+    if (getRes.ok) {
+      const rows = (await getRes.json()) as CoupleRoomRow[];
+      if (rows.length > 0) {
+        return { ok: true, room: rows[0] };
+      }
+      return { ok: false, room: null };
+    }
+  } catch {
+    // Offline fallback
+  }
+  return { ok: false, room: null };
+}
+
+function rawCodeIsValid(raw: string): boolean {
+  return raw.trim().replace(/[^A-Za-z0-9_-]/g, '').length >= 2;
+}
+
 export async function fetchOrCreateCoupleRoom(roomCode: string): Promise<CoupleRoomRow> {
   const code = normalizeRoomCode(roomCode);
   try {
@@ -245,6 +274,8 @@ export type RealtimeBroadcastEvent =
   | { type: 'reaction'; reaction: FloatingReaction }
   | { type: 'avatar_update'; slot: PlayerSlot; avatar: CatAvatarConfig }
   | { type: 'mode_switch'; mode: GameMode; sender: PlayerSlot }
+  | { type: 'start_match'; mode: GameMode; sender: PlayerSlot }
+  | { type: 'partner_joined'; slot: PlayerSlot; avatar: CatAvatarConfig }
   | { type: 'presence_ping'; slot: PlayerSlot; timestamp: number }
   | {
       type: 'match_sync';

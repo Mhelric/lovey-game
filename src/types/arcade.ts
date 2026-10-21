@@ -14,6 +14,8 @@ export type CatBreedId =
 
 export type CatAccessoryId = 'none' | 'crown' | 'ribbon' | 'sakura' | 'sunglasses';
 
+export type ReactionStickerId = 'love' | 'joy' | 'cry' | 'paws' | 'fish' | 'heart';
+
 export interface CatAvatarConfig {
   name: string;
   breed: CatBreedId;
@@ -61,15 +63,25 @@ export interface FloatingReaction {
   createdAt: number;
 }
 
-export const QUICK_EMOJIS = ['😻', '😹', '😿', '🐾', '🐟', '❤️'] as const;
+export const QUICK_STICKERS: readonly {
+  id: ReactionStickerId;
+  label: string;
+}[] = [
+  { id: 'love', label: 'Heart Eyes Cat' },
+  { id: 'joy', label: 'Laughing Cat' },
+  { id: 'cry', label: 'Crying Cat' },
+  { id: 'paws', label: 'Cat Paws' },
+  { id: 'fish', label: 'Fish Treat' },
+  { id: 'heart', label: 'Love Heart' },
+] as const;
 
 export const QUICK_CHAT_PRESETS = [
-  'Good luck lovey! 💕',
-  'Your turn! 🐾',
-  'Nooo my cat! 😿',
-  'Hehe gotcha! 😹',
-  'One more game! 🔥',
-  'I love you! ❤️',
+  'Good luck lovey!',
+  'Your turn!',
+  'Nooo my cat!',
+  'Hehe gotcha!',
+  'One more game!',
+  'I love you so much!',
 ] as const;
 
 export const DEFAULT_P1_AVATAR: CatAvatarConfig = {

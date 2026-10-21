@@ -1,17 +1,36 @@
 import { useState } from 'preact/hooks';
-import { QUICK_CHAT_PRESETS, QUICK_EMOJIS } from '../types/arcade';
+import {
+  QUICK_CHAT_PRESETS,
+  QUICK_STICKERS,
+  ReactionStickerId,
+} from '../types/arcade';
+import {
+  ChatBubbleIcon,
+  CloseIcon,
+  HeartIcon,
+  ReactionStickerSvg,
+} from './ArcadeIcons';
 
 interface QuickChatBarProps {
   onSendReaction: (content: string, kind: 'emoji' | 'chat') => void;
 }
 
+/**
+ * Bottom-Right Sticker Trigger Button + Clean Bottom Sheet with Dimmed Backdrop
+ * Prevents covering the board during play and gives sticker chips room to breathe.
+ */
 export function QuickChatBar({ onSendReaction }: QuickChatBarProps) {
-  const [chatOpen, setChatOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [customText, setCustomText] = useState('');
+
+  const handleSendSticker = (id: ReactionStickerId) => {
+    onSendReaction(id, 'emoji');
+    setSheetOpen(false);
+  };
 
   const handleSendPreset = (msg: string) => {
     onSendReaction(msg, 'chat');
-    setChatOpen(false);
+    setSheetOpen(false);
   };
 
   const handleCustomSubmit = (e: Event) => {
@@ -20,64 +39,97 @@ export function QuickChatBar({ onSendReaction }: QuickChatBarProps) {
     if (!trimmed) return;
     onSendReaction(trimmed, 'chat');
     setCustomText('');
-    setChatOpen(false);
+    setSheetOpen(false);
   };
 
   return (
-    <footer className="bottom-bar-wrapper">
-      {chatOpen && (
-        <div className="quick-chat-drawer" role="region" aria-label="Quick Couple Chat">
-          <div className="preset-chips">
-            {QUICK_CHAT_PRESETS.map((msg) => (
+    <>
+      {/* Bottom-Right Sticker Trigger Button (>= 44x44px) */}
+      <button
+        type="button"
+        className="fab-trigger-btn sticker-press"
+        onClick={() => setSheetOpen(true)}
+        aria-label="Open reactions and quick chat"
+        title="Reactions & Quick Chat"
+      >
+        <ChatBubbleIcon size={23} />
+      </button>
+
+      {/* Bottom Sheet Modal with Dimmed Backdrop */}
+      {sheetOpen && (
+        <div
+          className="chat-sheet-backdrop"
+          onClick={() => setSheetOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Send Reaction or Note"
+        >
+          <div
+            className="chat-bottom-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="chat-sheet-header">
+              <span className="chat-sheet-title">Send a Reaction or Note</span>
               <button
-                key={msg}
                 type="button"
-                className="preset-chip"
-                onClick={() => handleSendPreset(msg)}
+                className="cozy-close-btn"
+                onClick={() => setSheetOpen(false)}
+                aria-label="Close chat sheet"
               >
-                {msg}
+                <CloseIcon size={15} />
               </button>
-            ))}
+            </div>
+
+            {/* Big Animated Cat Reaction Stickers */}
+            <div className="chat-sheet-stickers">
+              {QUICK_STICKERS.map((sticker) => (
+                <button
+                  key={sticker.id}
+                  type="button"
+                  className="sheet-sticker-btn sticker-press"
+                  onClick={() => handleSendSticker(sticker.id)}
+                  aria-label={sticker.label}
+                  title={sticker.label}
+                >
+                  <ReactionStickerSvg id={sticker.id} size={34} animated />
+                </button>
+              ))}
+            </div>
+
+            {/* Plum-Outlined Sticker Phrase Chips */}
+            <div className="preset-chips">
+              {QUICK_CHAT_PRESETS.map((msg) => (
+                <button
+                  key={msg}
+                  type="button"
+                  className="preset-chip sticker-press"
+                  onClick={() => handleSendPreset(msg)}
+                >
+                  {msg}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Note Input Row */}
+            <form className="chat-input-row" onSubmit={handleCustomSubmit}>
+              <input
+                type="text"
+                className="chat-text-input"
+                value={customText}
+                maxLength={36}
+                placeholder="Write a sweet note..."
+                onInput={(e) =>
+                  setCustomText((e.currentTarget as HTMLInputElement).value)
+                }
+              />
+              <button type="submit" className="chat-send-btn sticker-press">
+                <span>Send</span>
+                <HeartIcon size={13} />
+              </button>
+            </form>
           </div>
-          <form className="chat-input-row" onSubmit={handleCustomSubmit}>
-            <input
-              type="text"
-              className="chat-text-input"
-              value={customText}
-              maxLength={36}
-              placeholder="Send a cute note..."
-              onInput={(e) =>
-                setCustomText((e.currentTarget as HTMLInputElement).value)
-              }
-            />
-            <button type="submit" className="chat-send-btn">
-              Send 💌
-            </button>
-          </form>
         </div>
       )}
-
-      <div className="bottom-bar" aria-label="Quick Couple Reactions">
-        {QUICK_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            className="emoji-btn"
-            onClick={() => onSendReaction(emoji, 'emoji')}
-            aria-label={`Send ${emoji} reaction`}
-          >
-            {emoji}
-          </button>
-        ))}
-        <button
-          type="button"
-          className={`emoji-btn chat-toggle-btn ${chatOpen ? 'active' : ''}`}
-          onClick={() => setChatOpen((prev) => !prev)}
-          aria-label="Toggle quick chat bubble drawer"
-        >
-          💬
-        </button>
-      </div>
-    </footer>
+    </>
   );
 }
