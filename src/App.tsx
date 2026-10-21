@@ -10,6 +10,7 @@ import {
 } from './types/arcade';
 import { CatAvatarSvg } from './components/CatAvatarSvg';
 import { CatCustomizerModal } from './components/CatCustomizerModal';
+import { CoupleScoreboardModal } from './components/CoupleScoreboardModal';
 import { QuickChatBar } from './components/QuickChatBar';
 import { DamaBoardView } from './components/DamaBoardView';
 import { SnakesBoardView } from './components/SnakesBoardView';
@@ -80,6 +81,7 @@ export function App() {
   });
   const [wsConnected, setWsConnected] = useState(false);
   const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [scoreboardOpen, setScoreboardOpen] = useState(false);
 
   const channelRef = useRef<CoupleRealtimeChannel | null>(null);
 
@@ -397,12 +399,12 @@ export function App() {
           <button
             type="button"
             className="room-center-pill"
-            onClick={() => setCustomizerOpen(true)}
-            title="Tap to open Couple Room & Cat Customizer"
+            onClick={() => setScoreboardOpen(true)}
+            title="Tap to open Couple Scoreboard & Match History"
           >
-            <span className="room-code-label">🐾 {roomData.room_code}</span>
+            <span className="room-code-label">🏆 {roomData.room_code}</span>
             <span className="viewport-tag">
-              {wsConnected ? '● Live Sync' : '○ Connecting'}
+              {wsConnected ? '● Scoreboard' : '○ Connecting'}
             </span>
           </button>
 
@@ -501,6 +503,14 @@ export function App() {
         currentAvatar={myCurrentAvatar}
         onSave={handleSaveLobby}
         onClose={() => setCustomizerOpen(false)}
+      />
+
+      {/* Couple Lifetime Scoreboard & Match History Modal */}
+      <CoupleScoreboardModal
+        isOpen={scoreboardOpen}
+        roomData={roomData}
+        onClose={() => setScoreboardOpen(false)}
+        onOpenCustomizer={() => setCustomizerOpen(true)}
       />
     </main>
   );

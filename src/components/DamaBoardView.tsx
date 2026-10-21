@@ -12,7 +12,7 @@ import {
   samePos,
 } from '../engines/damaEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
-import { getCatBreedMeta } from './CatAvatarSvg';
+import { CatAvatarSvg, getCatBreedMeta } from './CatAvatarSvg';
 
 interface DamaBoardViewProps {
   gameState: DamaGameState;
@@ -456,6 +456,15 @@ export function DamaBoardView({
       {/* Victory Celebration Overlay Banner */}
       {gameState.winner && (
         <div className="victory-overlay-card">
+          <div className="victory-cat-dance">
+            <CatAvatarSvg
+              breed={
+                gameState.winner === 'p1' ? p1Avatar.breed : p2Avatar.breed
+              }
+              accessory="crown"
+              size={54}
+            />
+          </div>
           <div className="victory-title">
             👑{' '}
             {gameState.winner === 'p1' ? p1Avatar.name : p2Avatar.name} Wins

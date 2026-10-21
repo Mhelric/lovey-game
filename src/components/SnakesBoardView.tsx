@@ -7,7 +7,7 @@ import {
   tileToSvgCenter,
 } from '../engines/snakesEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
-import { getCatBreedMeta } from './CatAvatarSvg';
+import { CatAvatarSvg, getCatBreedMeta } from './CatAvatarSvg';
 
 interface SnakesBoardViewProps {
   gameState: SnakesGameState;
@@ -488,6 +488,15 @@ export function SnakesBoardView({
         {/* Victory Celebration Overlay */}
         {gameState.winner && (
           <div className="victory-overlay-card">
+            <div className="victory-cat-dance">
+              <CatAvatarSvg
+                breed={
+                  gameState.winner === 'p1' ? p1Avatar.breed : p2Avatar.breed
+                }
+                accessory="crown"
+                size={54}
+              />
+            </div>
             <div className="victory-title">
               👑{' '}
               {gameState.winner === 'p1' ? p1Avatar.name : p2Avatar.name}{' '}

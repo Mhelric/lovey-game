@@ -6,6 +6,7 @@ import {
   DEFAULT_P2_AVATAR,
   FloatingReaction,
   GameMode,
+  MatchHistoryRow,
   PlayerSlot,
 } from '../types/arcade';
 
@@ -217,6 +218,27 @@ export async function recordMatchWinInDb(
     // Ignored when offline
   }
   return null;
+}
+
+export async function fetchMatchHistory(
+  roomCode: string,
+  limit = 12
+): Promise<MatchHistoryRow[]> {
+  const code = normalizeRoomCode(roomCode);
+  try {
+    const res = await fetch(
+      `${REST_BASE}/match_history?room_code=eq.${encodeURIComponent(
+        code
+      )}&select=*&order=played_at.desc&limit=${limit}`,
+      { headers: getHeaders() }
+    );
+    if (res.ok) {
+      return (await res.json()) as MatchHistoryRow[];
+    }
+  } catch {
+    // Ignored when offline
+  }
+  return [];
 }
 
 export type RealtimeBroadcastEvent =

@@ -42,6 +42,17 @@ export interface ActiveMatchRow<TState = Record<string, unknown>> {
   updated_at: string;
 }
 
+export interface MatchHistoryRow {
+  id: string;
+  room_code: string;
+  game_mode: GameMode;
+  winner: PlayerSlot | 'draw';
+  p1_name: string;
+  p2_name: string;
+  summary: string;
+  played_at: string;
+}
+
 export interface FloatingReaction {
   id: string;
   sender: PlayerSlot;
