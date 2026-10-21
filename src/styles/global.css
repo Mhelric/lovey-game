@@ -10,7 +10,7 @@
   --accent-mint: #2ec4b6;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --board-size: min(calc(100vw - 14px), calc(100dvh - var(--safe-top) - var(--safe-bottom) - 156px));
+  --board-size: min(calc(100vw - 14px), calc(100dvh - var(--safe-top) - var(--safe-bottom) - 188px));
 }
 
 *,
@@ -220,7 +220,90 @@ body,
   color: #fff;
 }
 
-/* Zone 2: Square Vector Board Container */
+/* Zone 2: Square Vector Board Container & HUD */
+.dama-stage-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.board-hud-bar {
+  width: var(--board-size);
+  max-width: 460px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.hud-turn-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid var(--border-warm);
+  border-radius: 999px;
+  padding: 3px 10px;
+  min-width: 0;
+}
+
+.turn-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.turn-dot.dot-p1 {
+  background: #ff4d6d;
+}
+
+.turn-dot.dot-p2 {
+  background: #f59e0b;
+}
+
+.hud-turn-text {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-mini-btn {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-warm);
+  background: #fff;
+  color: var(--text-dark);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.hud-mini-btn:active {
+  transform: scale(0.94);
+}
+
+.hud-mini-btn.active-solo {
+  background: #ffe5ec;
+  border-color: var(--accent-coral);
+}
+
 .board-stage {
   position: relative;
   width: var(--board-size);
@@ -228,8 +311,8 @@ body,
   max-width: 460px;
   max-height: 460px;
   background: var(--bg-card);
-  border: 2.5px solid #d4a373;
-  border-radius: 16px;
+  border: 2.5px solid #b07d4f;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,6 +339,121 @@ body,
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.victory-overlay-card {
+  position: absolute;
+  inset: 38px 14px auto 14px;
+  top: 50%;
+  transform: translate3d(0, -50%, 0);
+  background: rgba(255, 255, 255, 0.96);
+  border: 2.5px solid var(--accent-coral);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 15;
+}
+
+.victory-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.victory-rematch-btn {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-coral);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Filipino Dama Compositor-Only Piece & Pounce Animations */
+.dama-cat-token {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.16s ease;
+}
+
+.token-selected {
+  transform: scale(1.12);
+}
+
+.token-pounce-land {
+  animation: catPounceSquash 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.token-eaten-spin {
+  opacity: 0.25;
+  transform: scale(0.45) rotate(140deg);
+}
+
+.mayor-pulse-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mayorPulse 1.1s infinite ease-in-out;
+}
+
+.target-dot-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mayorPulse 1s infinite ease-in-out;
+}
+
+.paw-poof-group {
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+  animation: pawCloudPoof 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes catPounceSquash {
+  0% {
+    transform: scale(0.75, 1.25);
+  }
+  45% {
+    transform: scale(1.22, 0.82);
+  }
+  75% {
+    transform: scale(0.95, 1.06);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes pawCloudPoof {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-18deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.22) rotate(8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.65) rotate(22deg);
+  }
+}
+
+@keyframes mayorPulse {
+  0%, 100% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.12);
+  }
 }
 
 /* Zone 3: Bottom Quick Emoji & Chat Bar (>= 42x42px Touch Targets) */

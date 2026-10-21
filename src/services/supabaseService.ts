@@ -169,6 +169,56 @@ export async function upsertActiveMatch<T = Record<string, unknown>>(
   }
 }
 
+export async function recordMatchWinInDb(
+  room: CoupleRoomRow,
+  gameMode: GameMode,
+  winner: PlayerSlot,
+  summary: string
+): Promise<CoupleRoomRow | null> {
+  const code = normalizeRoomCode(room.room_code);
+  const patchBody: Partial<CoupleRoomRow> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (gameMode === 'dama') {
+    if (winner === 'p1') patchBody.p1_dama_wins = (room.p1_dama_wins || 0) + 1;
+    else patchBody.p2_dama_wins = (room.p2_dama_wins || 0) + 1;
+  } else {
+    if (winner === 'p1') patchBody.p1_snakes_wins = (room.p1_snakes_wins || 0) + 1;
+    else patchBody.p2_snakes_wins = (room.p2_snakes_wins || 0) + 1;
+  }
+
+  try {
+    const [roomRes] = await Promise.all([
+      fetch(`${REST_BASE}/couple_rooms?room_code=eq.${encodeURIComponent(code)}`, {
+        method: 'PATCH',
+        headers: getHeaders('return=representation'),
+        body: JSON.stringify(patchBody),
+      }),
+      fetch(`${REST_BASE}/match_history`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          room_code: code,
+          game_mode: gameMode,
+          winner,
+          p1_name: room.p1_avatar.name,
+          p2_name: room.p2_avatar.name,
+          summary,
+        }),
+      }),
+    ]);
+
+    if (roomRes.ok) {
+      const rows = (await roomRes.json()) as CoupleRoomRow[];
+      return rows[0] ?? null;
+    }
+  } catch {
+    // Ignored when offline
+  }
+  return null;
+}
+
 export type RealtimeBroadcastEvent =
   | { type: 'reaction'; reaction: FloatingReaction }
   | { type: 'avatar_update'; slot: PlayerSlot; avatar: CatAvatarConfig }

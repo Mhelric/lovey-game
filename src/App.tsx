@@ -11,95 +11,25 @@ import {
 import { CatAvatarSvg } from './components/CatAvatarSvg';
 import { CatCustomizerModal } from './components/CatCustomizerModal';
 import { QuickChatBar } from './components/QuickChatBar';
+import { DamaBoardView } from './components/DamaBoardView';
+import {
+  createInitialDamaState,
+  DamaGameState,
+} from './engines/damaEngine';
 import {
   CoupleRealtimeChannel,
+  fetchActiveMatch,
   fetchOrCreateCoupleRoom,
   normalizeRoomCode,
   RealtimeBroadcastEvent,
+  recordMatchWinInDb,
   updatePlayerAvatarInDb,
   updateRoomModeInDb,
+  upsertActiveMatch,
 } from './services/supabaseService';
 
 const STORAGE_ROOM_KEY = 'lovey_arcade_room_code';
 const STORAGE_SLOT_KEY = 'lovey_arcade_player_slot';
-
-function DamaPreviewBoard() {
-  const squares = [];
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const isPlayable = (r + c) % 2 === 1;
-      squares.push(
-        <rect
-          key={`${r}-${c}`}
-          x={c * 12.5}
-          y={r * 12.5}
-          width="12.5"
-          height="12.5"
-          fill={isPlayable ? '#e6ccb2' : '#ddb892'}
-        />
-      );
-    }
-  }
-
-  return (
-    <svg viewBox="0 0 100 100" className="board-svg" role="img" aria-label="Filipino Dama 8x8 Board">
-      {squares}
-      <g stroke="#9c6644" strokeWidth="0.55" opacity="0.55">
-        <line x1="18.75" y1="6.25" x2="6.25" y2="18.75" />
-        <line x1="43.75" y1="6.25" x2="6.25" y2="43.75" />
-        <line x1="68.75" y1="6.25" x2="6.25" y2="68.75" />
-        <line x1="93.75" y1="6.25" x2="6.25" y2="93.75" />
-        <line x1="93.75" y1="31.25" x2="31.25" y2="93.75" />
-        <line x1="93.75" y1="56.25" x2="56.25" y2="93.75" />
-        <line x1="93.75" y1="81.25" x2="81.25" y2="93.75" />
-
-        <line x1="81.25" y1="6.25" x2="93.75" y2="18.75" />
-        <line x1="56.25" y1="6.25" x2="93.75" y2="43.75" />
-        <line x1="31.25" y1="6.25" x2="93.75" y2="68.75" />
-        <line x1="6.25" y1="6.25" x2="93.75" y2="93.75" />
-        <line x1="6.25" y1="31.25" x2="68.75" y2="93.75" />
-        <line x1="6.25" y1="56.25" x2="43.75" y2="93.75" />
-        <line x1="6.25" y1="81.25" x2="18.75" y2="93.75" />
-      </g>
-
-      {[0, 1, 2].map((r) =>
-        [0, 1, 2, 3, 4, 5, 6, 7]
-          .filter((c) => (r + c) % 2 === 1)
-          .map((c) => {
-            const cx = c * 12.5 + 6.25;
-            const cy = r * 12.5 + 6.25;
-            return (
-              <g key={`p2-${r}-${c}`} transform={`translate(${cx}, ${cy})`}>
-                <circle r="4.6" fill="#ff9f1c" stroke="#7f4f24" strokeWidth="0.6" />
-                <polygon points="-3.4,-2.5 -2.2,-5.4 -0.6,-3.2" fill="#ff9f1c" />
-                <polygon points="3.4,-2.5 2.2,-5.4 0.6,-3.2" fill="#ff9f1c" />
-                <circle cx="-1.4" cy="-0.4" r="0.6" fill="#2b1810" />
-                <circle cx="1.4" cy="-0.4" r="0.6" fill="#2b1810" />
-              </g>
-            );
-          })
-      )}
-
-      {[5, 6, 7].map((r) =>
-        [0, 1, 2, 3, 4, 5, 6, 7]
-          .filter((c) => (r + c) % 2 === 1)
-          .map((c) => {
-            const cx = c * 12.5 + 6.25;
-            const cy = r * 12.5 + 6.25;
-            return (
-              <g key={`p1-${r}-${c}`} transform={`translate(${cx}, ${cy})`}>
-                <circle r="4.6" fill="#ff758f" stroke="#800f2f" strokeWidth="0.6" />
-                <polygon points="-3.4,-2.5 -2.2,-5.4 -0.6,-3.2" fill="#ff758f" />
-                <polygon points="3.4,-2.5 2.2,-5.4 0.6,-3.2" fill="#ff758f" />
-                <circle cx="-1.4" cy="-0.4" r="0.6" fill="#2b1810" />
-                <circle cx="1.4" cy="-0.4" r="0.6" fill="#2b1810" />
-              </g>
-            );
-          })
-      )}
-    </svg>
-  );
-}
 
 function SnakesPreviewBoard() {
   const cells = [];
@@ -189,6 +119,10 @@ export function App() {
     updated_at: new Date().toISOString(),
   });
 
+  const [damaState, setDamaState] = useState<DamaGameState>(() =>
+    createInitialDamaState()
+  );
+  const [passAndPlay, setPassAndPlay] = useState<boolean>(false);
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
   const [onlineSeen, setOnlineSeen] = useState<Record<PlayerSlot, number>>({
     p1: Date.now(),
@@ -207,8 +141,19 @@ export function App() {
   }, []);
 
   const syncFromDatabase = useCallback(async (targetRoom: string) => {
-    const row = await fetchOrCreateCoupleRoom(targetRoom);
+    const [row, matchRow] = await Promise.all([
+      fetchOrCreateCoupleRoom(targetRoom),
+      fetchActiveMatch<DamaGameState>(targetRoom),
+    ]);
     setRoomData(row);
+    if (
+      matchRow &&
+      matchRow.game_mode === 'dama' &&
+      matchRow.state_json &&
+      Array.isArray(matchRow.state_json.board)
+    ) {
+      setDamaState(matchRow.state_json);
+    }
   }, []);
 
   useEffect(() => {
@@ -226,6 +171,14 @@ export function App() {
           );
         } else if (event.type === 'mode_switch') {
           setRoomData((prev) => ({ ...prev, current_mode: event.mode }));
+        } else if (event.type === 'match_sync' && event.gameMode === 'dama') {
+          const incoming = event.stateJson as DamaGameState;
+          if (incoming && Array.isArray(incoming.board)) {
+            setDamaState(incoming);
+            if (incoming.winner) {
+              fetchOrCreateCoupleRoom(roomCode).then(setRoomData);
+            }
+          }
         }
       },
       onPartnerOnlineChange: (seenMap) => {
@@ -258,6 +211,63 @@ export function App() {
       channelRef.current = null;
     };
   }, [roomCode, mySlot, spawnFloatingReaction, syncFromDatabase]);
+
+  const handleCommitDamaState = async (nextState: DamaGameState) => {
+    setDamaState(nextState);
+
+    channelRef.current?.sendBroadcast({
+      type: 'match_sync',
+      gameMode: 'dama',
+      turn: nextState.turn,
+      boardSeed: 0,
+      stateJson: nextState,
+      winner: nextState.winner,
+      sender: mySlot,
+    });
+
+    await upsertActiveMatch({
+      room_code: roomCode,
+      game_mode: 'dama',
+      turn: nextState.turn,
+      board_seed: 0,
+      state_json: nextState,
+      winner: nextState.winner,
+    });
+
+    if (nextState.winner === 'p1' || nextState.winner === 'p2') {
+      const updatedRoom = await recordMatchWinInDb(
+        roomData,
+        'dama',
+        nextState.winner,
+        `Filipino Dama (${nextState.p1Remaining} - ${nextState.p2Remaining})`
+      );
+      if (updatedRoom) {
+        setRoomData(updatedRoom);
+      }
+    }
+  };
+
+  const handleResetDamaMatch = async () => {
+    const fresh = createInitialDamaState();
+    setDamaState(fresh);
+    channelRef.current?.sendBroadcast({
+      type: 'match_sync',
+      gameMode: 'dama',
+      turn: fresh.turn,
+      boardSeed: 0,
+      stateJson: fresh,
+      winner: null,
+      sender: mySlot,
+    });
+    await upsertActiveMatch({
+      room_code: roomCode,
+      game_mode: 'dama',
+      turn: fresh.turn,
+      board_seed: 0,
+      state_json: fresh,
+      winner: null,
+    });
+  };
 
   const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
     const reaction: FloatingReaction = {
@@ -424,16 +434,25 @@ export function App() {
       </header>
 
       {/* Zone 2: Square Responsive Vector Board Stage */}
-      <section className="board-stage">
-        {roomData.current_mode === 'dama' ? (
-          <DamaPreviewBoard />
-        ) : (
+      {roomData.current_mode === 'dama' ? (
+        <DamaBoardView
+          gameState={damaState}
+          mySlot={mySlot}
+          p1Avatar={roomData.p1_avatar}
+          p2Avatar={roomData.p2_avatar}
+          passAndPlay={passAndPlay}
+          onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
+          onCommitState={handleCommitDamaState}
+          onResetMatch={handleResetDamaMatch}
+        />
+      ) : (
+        <section className="board-stage">
           <SnakesPreviewBoard />
-        )}
-        <div className="shell-overlay-banner">
-          Tap your Cat Badge above to customize breed & room!
-        </div>
-      </section>
+          <div className="shell-overlay-banner">
+            Phase 2: Seeded Snakes & Ladders Coming Up Next!
+          </div>
+        </section>
+      )}
 
       {/* Floating Compositor Emoji/Chat Layer */}
       <div className="floating-layer" aria-live="polite">
