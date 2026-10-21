@@ -34,6 +34,13 @@ import {
   upsertActiveMatch,
 } from './services/supabaseService';
 
+import {
+  isSoundMuted,
+  playReactionChime,
+  playTapPop,
+  setSoundMuted,
+} from './services/soundEffects';
+
 const STORAGE_ROOM_KEY = 'lovey_arcade_room_code';
 const STORAGE_SLOT_KEY = 'lovey_arcade_player_slot';
 
@@ -82,10 +89,12 @@ export function App() {
   const [wsConnected, setWsConnected] = useState(false);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
+  const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   const channelRef = useRef<CoupleRealtimeChannel | null>(null);
 
   const spawnFloatingReaction = useCallback((reaction: FloatingReaction) => {
+    playReactionChime();
     setReactions((prev) => [...prev.slice(-6), reaction]);
     window.setTimeout(() => {
       setReactions((prev) => prev.filter((item) => item.id !== reaction.id));
@@ -304,6 +313,7 @@ export function App() {
   };
 
   const handleSwitchMode = (newMode: GameMode) => {
+    playTapPop();
     setRoomData((prev) => ({ ...prev, current_mode: newMode }));
     channelRef.current?.sendBroadcast({
       type: 'mode_switch',
@@ -311,6 +321,11 @@ export function App() {
       sender: mySlot,
     });
     updateRoomModeInDb(roomCode, newMode);
+  };
+
+  const handleToggleMute = () => {
+    const nextMuted = setSoundMuted(!muted);
+    setMuted(nextMuted);
   };
 
   const handleSaveLobby = async (
@@ -463,6 +478,8 @@ export function App() {
           p1Avatar={roomData.p1_avatar}
           p2Avatar={roomData.p2_avatar}
           passAndPlay={passAndPlay}
+          muted={muted}
+          onToggleMute={handleToggleMute}
           onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
           onCommitState={handleCommitDamaState}
           onResetMatch={handleResetDamaMatch}
@@ -474,6 +491,8 @@ export function App() {
           p1Avatar={roomData.p1_avatar}
           p2Avatar={roomData.p2_avatar}
           passAndPlay={passAndPlay}
+          muted={muted}
+          onToggleMute={handleToggleMute}
           onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
           onCommitState={handleCommitSnakesState}
           onNewSeedMatch={handleNewSnakesSeedMatch}

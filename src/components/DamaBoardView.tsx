@@ -13,6 +13,12 @@ import {
 } from '../engines/damaEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import { CatAvatarSvg, getCatBreedMeta } from './CatAvatarSvg';
+import {
+  playCatPounceCapture,
+  playCatStep,
+  playTapPop,
+  playVictoryFanfare,
+} from '../services/soundEffects';
 
 interface DamaBoardViewProps {
   gameState: DamaGameState;
@@ -20,6 +26,8 @@ interface DamaBoardViewProps {
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
+  muted: boolean;
+  onToggleMute: () => void;
   onTogglePassAndPlay: () => void;
   onCommitState: (nextState: DamaGameState) => void;
   onResetMatch: () => void;
@@ -188,6 +196,8 @@ export function DamaBoardView({
   p1Avatar,
   p2Avatar,
   passAndPlay,
+  muted,
+  onToggleMute,
   onTogglePassAndPlay,
   onCommitState,
   onResetMatch,
@@ -218,8 +228,16 @@ export function DamaBoardView({
 
   // Trigger Cat Pounce + Paw Smack Cloud Poof when a capture occurs
   useEffect(() => {
-    const cap: CapturedPieceInfo | null = gameState.lastAction?.captured ?? null;
-    if (!cap || !gameState.lastAction) return;
+    if (!gameState.lastAction) return;
+    const cap: CapturedPieceInfo | null = gameState.lastAction.captured ?? null;
+    if (gameState.winner) {
+      playVictoryFanfare();
+    } else if (cap) {
+      playCatPounceCapture();
+    } else {
+      playCatStep();
+    }
+    if (!cap) return;
     const effectId = gameState.lastAction.id;
     setPoofEffect({
       id: effectId,
@@ -231,7 +249,7 @@ export function DamaBoardView({
       setPoofEffect((prev) => (prev?.id === effectId ? null : prev));
     }, 650);
     return () => clearTimeout(timer);
-  }, [gameState.lastAction?.id]);
+  }, [gameState.lastAction?.id, gameState.winner]);
 
   // Legal destination steps for the currently selected piece
   const stepsForSelected = useMemo(() => {
@@ -263,11 +281,13 @@ export function DamaBoardView({
     if (cellPiece && cellPiece.owner === gameState.turn) {
       const hasMoves = legalSteps.some((s) => samePos(s.from, tappedPos));
       if (hasMoves) {
+        playTapPop();
         setSelectedPos(tappedPos);
       } else if (mandatoryOrigins.size > 0) {
         // Highlight the first mandatory piece so the player sees Mayor rule
         const firstKey = Array.from(mandatoryOrigins)[0];
         if (firstKey) {
+          playTapPop();
           const [mr, mc] = firstKey.split(',').map(Number);
           setSelectedPos({ r: mr, c: mc });
         }
@@ -302,11 +322,19 @@ export function DamaBoardView({
         <div className="hud-actions">
           <button
             type="button"
+            className="hud-mini-btn"
+            onClick={onToggleMute}
+            title={muted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+          <button
+            type="button"
             className={`hud-mini-btn ${passAndPlay ? 'active-solo' : ''}`}
             onClick={onTogglePassAndPlay}
             title="Toggle 1-Phone Practice / Pass & Play mode"
           >
-            {passAndPlay ? '📱 2P Same Phone' : '🌐 Online Turn'}
+            {passAndPlay ? '📱 2P' : '🌐 Live'}
           </button>
           <button
             type="button"

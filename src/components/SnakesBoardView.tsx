@@ -8,6 +8,13 @@ import {
 } from '../engines/snakesEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import { CatAvatarSvg, getCatBreedMeta } from './CatAvatarSvg';
+import {
+  playCatPounceCapture,
+  playCatStep,
+  playDiceRattle,
+  playDizzySlide,
+  playVictoryFanfare,
+} from '../services/soundEffects';
 
 interface SnakesBoardViewProps {
   gameState: SnakesGameState;
@@ -15,6 +22,8 @@ interface SnakesBoardViewProps {
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
+  muted: boolean;
+  onToggleMute: () => void;
   onTogglePassAndPlay: () => void;
   onCommitState: (nextState: SnakesGameState) => void;
   onNewSeedMatch: (twistsEnabled: boolean) => void;
@@ -246,6 +255,8 @@ export function SnakesBoardView({
   p1Avatar,
   p2Avatar,
   passAndPlay,
+  muted,
+  onToggleMute,
   onTogglePassAndPlay,
   onCommitState,
   onNewSeedMatch,
@@ -285,6 +296,7 @@ export function SnakesBoardView({
           anim.walkLandingTile >= anim.startTile
             ? anim.startTile + step
             : anim.startTile - step;
+        playCatStep();
         setRollerTile(nextTile);
       }, step * 125);
       timers.push(t);
@@ -297,10 +309,15 @@ export function SnakesBoardView({
       setDisplayP2Tile(gameState.p2Tile);
       setHoppingSlot(null);
 
-      if (anim.eventKind === 'snake') {
+      if (gameState.winner) {
+        playVictoryFanfare();
+      } else if (anim.eventKind === 'snake') {
+        playDizzySlide();
         setDizzySlot(anim.roller);
         const clearDizzy = window.setTimeout(() => setDizzySlot(null), 1700);
         timers.push(clearDizzy);
+      } else if (anim.eventKind === 'ladder' || anim.eventKind === 'boost') {
+        playCatPounceCapture();
       }
     }, finishWalkDelay);
     timers.push(slideOrClimbTimer);
@@ -323,6 +340,7 @@ export function SnakesBoardView({
 
   const handleRollDice = () => {
     if (!canRoll) return;
+    playDiceRattle();
     setRolling(true);
 
     window.setTimeout(() => {
@@ -362,6 +380,14 @@ export function SnakesBoardView({
         </button>
 
         <div className="hud-actions">
+          <button
+            type="button"
+            className="hud-mini-btn"
+            onClick={onToggleMute}
+            title={muted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button
             type="button"
             className={`hud-mini-btn ${gameState.twistsEnabled ? 'active-solo' : ''}`}
