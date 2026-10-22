@@ -385,12 +385,41 @@ export function CatCustomizerModal({
                 <h3 className="cozy-rules-heading">Snakes &amp; Ladders</h3>
                 <ul className="cozy-rules-list">
                   <li>
-                    <strong>100-Tile Race:</strong> Roll the top dice button to
-                    hop along the board; ladders climb up and snakes slide down.
+                    <strong>100-Tile Race:</strong> Tap the dice button below
+                    the board to hop along; ladders climb up and snakes slide
+                    down.
+                  </li>
+                  <li>
+                    <strong>Lucky 6:</strong> Rolling a 6 gives you a bonus
+                    roll.
                   </li>
                   <li>
                     <strong>Exact 100:</strong> Overshooting tile 100 bounces
                     your cat backward.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="cozy-rules-card">
+                <h3 className="cozy-rules-heading">Mystery Twist Tiles</h3>
+                <ul className="cozy-rules-list">
+                  <li>
+                    Every board hides <strong>4 purple sparkle tiles</strong>.
+                    Land on one to trigger a surprise:
+                  </li>
+                  <li>
+                    <strong>Catnip Boost:</strong> Jump forward +3 tiles.
+                  </li>
+                  <li>
+                    <strong>Snake Shield:</strong> Blocks the next snake you
+                    land on.
+                  </li>
+                  <li>
+                    <strong>Lucky Paw:</strong> Earn an extra roll.
+                  </li>
+                  <li>
+                    <strong>Switcheroo:</strong> Swap places with your partner
+                    (or hop +2 if a swap isn't possible).
                   </li>
                 </ul>
               </div>

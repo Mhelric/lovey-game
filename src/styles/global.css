@@ -2081,3 +2081,130 @@ body,
   transform-origin: center bottom;
   animation: catEarTwitch 4.5s infinite ease-in-out;
 }
+
+/* ==========================================================================
+   SNAKES & LADDERS: CENTER DICE ROLL + TWIST POP-UP (compositor-only)
+   ========================================================================== */
+.center-dice-overlay,
+.twist-popup-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.center-dice-tumble,
+.center-dice-land {
+  will-change: transform, opacity;
+}
+
+.center-dice-tumble {
+  animation: centerDiceTumble 0.3s infinite linear;
+}
+
+.center-dice-land {
+  animation: centerDiceLand 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes centerDiceTumble {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate3d(-6px, -10px, 0) rotate(90deg) scale(1.08);
+  }
+  50% {
+    transform: translate3d(0, 0, 0) rotate(180deg) scale(0.94);
+  }
+  75% {
+    transform: translate3d(6px, -10px, 0) rotate(270deg) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(360deg) scale(1);
+  }
+}
+
+@keyframes centerDiceLand {
+  0% {
+    opacity: 1;
+    transform: scale(1.35) rotate(-12deg);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(0.9) rotate(4deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+.twist-popup-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 82%;
+  padding: 14px 20px 12px;
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 5px 0 var(--ink);
+  text-align: center;
+  will-change: transform, opacity;
+  animation: twistPopInOut 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.twist-popup-star {
+  display: inline-flex;
+  animation: stickerBob 1s infinite ease-in-out;
+}
+
+.twist-popup-title {
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #A855F7;
+  line-height: 1.1;
+}
+
+.twist-popup-desc {
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+@keyframes twistPopInOut {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  25% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0) scale(0.9);
+  }
+}

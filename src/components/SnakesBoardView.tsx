@@ -12,6 +12,7 @@ import {
   CrownIcon,
   DiceFaceSvg,
   DoubleHeartIcon,
+  SparkleIcon,
 } from './ArcadeIcons';
 import {
   playCatPounceCapture,
@@ -376,6 +377,12 @@ export function SnakesBoardView({
   const [displayP2Tile, setDisplayP2Tile] = useState(gameState.p2Tile);
   const [hoppingSlot, setHoppingSlot] = useState<PlayerSlot | null>(null);
   const [dizzySlot, setDizzySlot] = useState<PlayerSlot | null>(null);
+  const [diceLanded, setDiceLanded] = useState<number | null>(null);
+  const [twistPopup, setTwistPopup] = useState<{
+    id: string;
+    title: string;
+    desc: string;
+  } | null>(null);
 
   const generatedBoard = useMemo(
     () => generateSnakesBoard(gameState.boardSeed, gameState.twistsEnabled),
@@ -418,6 +425,10 @@ export function SnakesBoardView({
     const stepMs = 180;
     setHoppingSlot(anim.roller);
 
+    // Center dice "landed" pop (visible on both phones)
+    setDiceLanded(anim.dice);
+    timers.push(window.setTimeout(() => setDiceLanded(null), 750));
+
     for (let step = 1; step <= totalWalkSteps; step++) {
       const t = window.setTimeout(() => {
         const nextTile =
@@ -445,6 +456,27 @@ export function SnakesBoardView({
         timers.push(clearDizzy);
       } else if (anim.eventKind === 'ladder' || anim.eventKind === 'boost') {
         playCatPounceCapture();
+      }
+
+      const twistTitles: Partial<
+        Record<typeof anim.eventKind, string>
+      > = {
+        boost: 'Catnip Boost!',
+        shield_gain: 'Snake Shield!',
+        shield_saved: 'Shield Saved You!',
+        extra_roll: 'Lucky Paw!',
+        swap: 'Switcheroo!',
+      };
+      const title = twistTitles[anim.eventKind];
+      if (title && !gameState.winner) {
+        setTwistPopup({ id: anim.id, title, desc: anim.eventMessage });
+        timers.push(
+          window.setTimeout(
+            () =>
+              setTwistPopup((prev) => (prev?.id === anim.id ? null : prev)),
+            2000
+          )
+        );
       }
     }, finishWalkDelay);
     timers.push(slideOrClimbTimer);
@@ -629,6 +661,34 @@ export function SnakesBoardView({
             offsetY={sameTile ? 1.1 : 0}
           />
         </svg>
+
+        {/* Center Rolling / Landed Dice Animation */}
+        {(rolling || diceLanded !== null) && (
+          <div className="center-dice-overlay" aria-hidden="true">
+            <div
+              key={rolling ? 'rolling' : `landed-${diceLanded}`}
+              className={rolling ? 'center-dice-tumble' : 'center-dice-land'}
+            >
+              <DiceFaceSvg
+                value={rolling ? previewDice : diceLanded ?? previewDice}
+                size={88}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Center Twist Event Pop-Up */}
+        {twistPopup && (
+          <div className="twist-popup-overlay" aria-live="polite">
+            <div key={twistPopup.id} className="twist-popup-card">
+              <span className="twist-popup-star">
+                <SparkleIcon size={26} />
+              </span>
+              <span className="twist-popup-title">{twistPopup.title}</span>
+              <span className="twist-popup-desc">{twistPopup.desc}</span>
+            </div>
+          </div>
+        )}
 
         {/* Victory Celebration Sticker Card */}
         {gameState.winner && (
