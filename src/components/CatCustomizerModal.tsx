@@ -14,29 +14,33 @@ import {
 import {
   AccessoryBadgeIcon,
   CloseIcon,
+  CrownIcon,
+  DiceFaceSvg,
+  DoubleDiceIcon,
+  PawIcon,
+  PowerupIllustrationSvg,
+  SnakeLadderIcon,
+  SoundIcon,
+  SparkleIcon,
 } from './ArcadeIcons';
-import { normalizeRoomCode } from '../services/supabaseService';
+import { SnakesMaxTile } from '../engines/snakesEngine';
 
 interface CatCustomizerModalProps {
   isOpen: boolean;
   isInGame: boolean;
-  roomCode: string;
   mySlot: PlayerSlot;
   currentMode: GameMode;
+  snakesMaxTile: SnakesMaxTile;
   currentAvatar: CatAvatarConfig;
   muted: boolean;
   passAndPlay: boolean;
   onToggleMute: () => void;
   onTogglePassAndPlay: () => void;
-  onHostSwitchGame: (mode: GameMode) => void;
+  onHostSwitchGame: (mode: GameMode, snakesMaxTile?: SnakesMaxTile) => void;
   onHostResetMatch: () => void;
   onOpenTutorial: () => void;
   onExitToMenu: () => void;
-  onSave: (
-    newRoomCode: string,
-    newSlot: PlayerSlot,
-    newAvatar: CatAvatarConfig
-  ) => void;
+  onSave: (newAvatar: CatAvatarConfig) => void;
   onClose: () => void;
 }
 
@@ -45,9 +49,9 @@ type SettingsTabId = 'profile' | 'match' | 'rules';
 export function CatCustomizerModal({
   isOpen,
   isInGame,
-  roomCode,
   mySlot,
   currentMode,
+  snakesMaxTile,
   currentAvatar,
   muted,
   passAndPlay,
@@ -60,8 +64,6 @@ export function CatCustomizerModal({
   onClose,
 }: CatCustomizerModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('profile');
-  const [draftRoom, setDraftRoom] = useState(roomCode);
-  const [draftSlot, setDraftSlot] = useState<PlayerSlot>(mySlot);
   const [draftName, setDraftName] = useState(currentAvatar.name);
   const [draftBreed, setDraftBreed] = useState<CatBreedId>(currentAvatar.breed);
   const [draftAccessory, setDraftAccessory] = useState<CatAccessoryId>(
@@ -71,14 +73,12 @@ export function CatCustomizerModal({
 
   useEffect(() => {
     if (isOpen) {
-      setDraftRoom(roomCode);
-      setDraftSlot(mySlot);
       setDraftName(currentAvatar.name);
       setDraftBreed(currentAvatar.breed);
       setDraftAccessory(currentAvatar.accessory);
       setShowAbout(false);
     }
-  }, [isOpen, roomCode, mySlot, currentAvatar]);
+  }, [isOpen, currentAvatar]);
 
   if (!isOpen) return null;
 
@@ -88,11 +88,10 @@ export function CatCustomizerModal({
 
   const handleSave = (e: Event) => {
     e.preventDefault();
-    const cleanRoom = normalizeRoomCode(draftRoom);
     const cleanName =
       draftName.trim().slice(0, 14) ||
-      (draftSlot === 'p1' ? 'Lovey 1' : 'Lovey 2');
-    onSave(cleanRoom, draftSlot, {
+      (mySlot === 'p1' ? 'Lovey 1' : 'Lovey 2');
+    onSave({
       name: cleanName,
       breed: draftBreed,
       accessory: draftAccessory,
@@ -117,7 +116,7 @@ export function CatCustomizerModal({
               className={`cozy-tab ${activeTab === 'profile' ? 'active' : ''}`}
               onClick={() => setActiveTab('profile')}
             >
-              Profile
+              My Cat
             </button>
             <button
               type="button"
@@ -172,17 +171,16 @@ export function CatCustomizerModal({
                     onInput={(e) =>
                       setDraftName((e.currentTarget as HTMLInputElement).value)
                     }
-                    placeholder="Cat nickname..."
+                    placeholder="Your default cat name..."
                     aria-label="Cat Nickname"
                   />
                   <span className="cat-hero-sub">
-                    {currentBreedLabel} •{' '}
-                    {isHost ? 'Host (P1)' : 'Invited (P2)'}
+                    {currentBreedLabel} • Saved on this device
                   </span>
                 </div>
               </div>
 
-              {/* Cat Breed Picker (Soft Shadow Tiles + Corner Checkmark Badge) */}
+              {/* Cat Breed Picker */}
               <div className="cozy-section">
                 <span className="cozy-label">Cat Breed</span>
                 <div className="cozy-breed-grid">
@@ -215,9 +213,9 @@ export function CatCustomizerModal({
                 </div>
               </div>
 
-              {/* Icon-Only Accessory Picker (Consistent Monoline Icons) */}
+              {/* Outfit / Accessory Picker */}
               <div className="cozy-section">
-                <span className="cozy-label">Accessory</span>
+                <span className="cozy-label">Outfit &amp; Accessory</span>
                 <div className="cozy-acc-row">
                   {CAT_ACCESSORIES.map((acc) => {
                     const isSelected = draftAccessory === acc.id;
@@ -232,7 +230,8 @@ export function CatCustomizerModal({
                         title={acc.label}
                         aria-label={acc.label}
                       >
-                        <AccessoryBadgeIcon accessory={acc.id} size={20} />
+                        <AccessoryBadgeIcon accessory={acc.id} size={22} />
+                        <span className="cozy-acc-label">{acc.label}</span>
                       </button>
                     );
                   })}
@@ -243,7 +242,30 @@ export function CatCustomizerModal({
 
           {activeTab === 'match' && (
             <div className="cozy-tab-pane">
-              {/* Calm Single-Tint Top Chips with Status Dots */}
+              {/* Role & Device Status */}
+              <div className="cozy-section">
+                <span className="cozy-label">Current Role</span>
+                <div className="match-role-status-card">
+                  <CatAvatarSvg
+                    breed={draftBreed}
+                    accessory={draftAccessory}
+                    size={38}
+                    animateIdle={false}
+                  />
+                  <div className="match-role-meta">
+                    <span className="match-role-badge">
+                      {isHost ? 'Host' : 'Invited'}
+                    </span>
+                    <span className="match-role-desc">
+                      {isHost
+                        ? 'You control game selection & board resets'
+                        : 'Joined partner room • Host controls game mode'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preferences (No Room Code here — Room Code is on Homescreen!) */}
               <div className="cozy-section">
                 <span className="cozy-label">Preferences</span>
                 <div className="cozy-chip-row">
@@ -252,10 +274,7 @@ export function CatCustomizerModal({
                     className="cozy-chip"
                     onClick={onToggleMute}
                   >
-                    <span
-                      className={`chip-dot ${!muted ? 'on' : 'off'}`}
-                      aria-hidden="true"
-                    />
+                    <SoundIcon muted={muted} size={16} />
                     <span>Sound {muted ? 'Off' : 'On'}</span>
                   </button>
 
@@ -273,61 +292,54 @@ export function CatCustomizerModal({
                 </div>
               </div>
 
-              {/* Room Code Field (Full Width, Zero Cutoff) */}
-              <div className="cozy-section">
-                <label className="cozy-label" htmlFor="settings-room-code">
-                  Room Code
-                </label>
-                <input
-                  id="settings-room-code"
-                  type="text"
-                  className="cozy-input"
-                  value={draftRoom}
-                  maxLength={12}
-                  disabled={isInGame && !isHost}
-                  onInput={(e) =>
-                    setDraftRoom(
-                      (
-                        e.currentTarget as HTMLInputElement
-                      ).value.toUpperCase()
-                    )
-                  }
-                  placeholder="LOVEY"
-                />
-              </div>
-
-              {/* Game Mode Segmented Toggle (Host Only) */}
+              {/* Game Mode & Snakes Board Size Selector (Host Only) */}
               {isHost ? (
                 <div className="cozy-section">
-                  <span className="cozy-label">Game Mode</span>
-                  <div className="segmented-toggle" role="group">
+                  <span className="cozy-label">Switch Game Mode</span>
+                  <div className="match-mode-grid">
                     <button
                       type="button"
-                      className={`seg-option ${
+                      className={`match-mode-card ${
                         currentMode === 'dama' ? 'active' : ''
                       }`}
-                      onClick={() => onHostSwitchGame('dama')}
+                      onClick={() => onHostSwitchGame('dama', snakesMaxTile)}
                     >
-                      Cat Dama
+                      <CrownIcon size={20} />
+                      <span>Cat Dama</span>
                     </button>
                     <button
                       type="button"
-                      className={`seg-option ${
-                        currentMode === 'snakes' ? 'active' : ''
+                      className={`match-mode-card ${
+                        currentMode === 'snakes' && snakesMaxTile === 100
+                          ? 'active'
+                          : ''
                       }`}
-                      onClick={() => onHostSwitchGame('snakes')}
+                      onClick={() => onHostSwitchGame('snakes', 100)}
                     >
-                      Snakes &amp; Ladders
+                      <SnakeLadderIcon size={20} />
+                      <span>Snakes (100)</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`match-mode-card ${
+                        currentMode === 'snakes' && snakesMaxTile === 150
+                          ? 'active'
+                          : ''
+                      }`}
+                      onClick={() => onHostSwitchGame('snakes', 150)}
+                    >
+                      <SnakeLadderIcon size={20} />
+                      <span>Snakes (150)</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <p className="cozy-subtle-note">
-                  Connected as Invited Partner. Only the Host can switch games.
+                  Connected as P-2 (Invited). Only P-1 (Host) can switch games.
                 </p>
               )}
 
-              {/* Subtle Separated Tertiary / Danger Actions at Bottom of Match Tab */}
+              {/* In-Game Actions */}
               {isInGame && (
                 <div className="cozy-danger-footer">
                   {isHost && (
@@ -350,7 +362,7 @@ export function CatCustomizerModal({
                       onExitToMenu();
                     }}
                   >
-                    Exit Game
+                    Exit to Homescreen
                   </button>
                 </div>
               )}
@@ -358,70 +370,159 @@ export function CatCustomizerModal({
           )}
 
           {activeTab === 'rules' && (
-            <div className="cozy-tab-pane">
-              <div className="cozy-rules-card">
-                <h3 className="cozy-rules-heading">Cat Dama (Filipino Rules)</h3>
-                <ul className="cozy-rules-list">
-                  <li>
-                    <strong>Step Forward:</strong> Normal cats move 1 square
-                    diagonally forward onto empty pink tiles.
-                  </li>
-                  <li>
-                    <strong>Forward &amp; Backward Jumps:</strong> Normal cats
-                    capture rival cats both forward and backward.
-                  </li>
-                  <li>
-                    <strong>Mayor Rule:</strong> Captures are mandatory—always
-                    take the path that captures the most cats!
-                  </li>
-                  <li>
-                    <strong>Flying Dama King:</strong> Reach the back row to
-                    slide and jump any distance diagonally.
-                  </li>
-                </ul>
+            <div className="cozy-tab-pane rules-tab-pane">
+              {/* SECTION 1: CAT DAMA */}
+              <div className="rules-section-box dama-theme">
+                <div className="rules-section-banner">
+                  <CrownIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">
+                      Cat Dama (3D Filipino Rules)
+                    </h3>
+                    <span className="rules-section-sub">
+                      Mirrored POV • Mandatory Mayor Combos
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge pink">
+                      <PawIcon size={16} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>Diagonal Step &amp; Mirrored POV</strong>
+                      <p>
+                        Your cat pieces always start at the bottom of your
+                        screen. Normal cats (<em>Tao</em>) step 1 tile
+                        diagonally forward.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge coral">
+                      <SparkleIcon size={16} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>Forward &amp; Backward Pounce</strong>
+                      <p>
+                        Normal cats can jump over rival cats both forward AND
+                        backward diagonally to eat them!
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge amber">
+                      <CrownIcon size={16} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>Mayor Mandatory Max Combo</strong>
+                      <p>
+                        Captures are mandatory! If multiple capture paths exist,
+                        you must pick the path that eats the most pieces.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge gold">
+                      <CrownIcon size={16} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>Ascended Winged Dama King</strong>
+                      <p>
+                        Reach the top back row to evolve into a Royal Winged
+                        Dama that slides and jumps any distance diagonally!
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="cozy-rules-card">
-                <h3 className="cozy-rules-heading">Snakes &amp; Ladders</h3>
-                <ul className="cozy-rules-list">
-                  <li>
-                    <strong>100-Tile Race:</strong> Tap the dice button below
-                    the board to hop along; ladders climb up and snakes slide
-                    down.
-                  </li>
-                  <li>
-                    <strong>Lucky 6:</strong> Rolling a 6 gives you a bonus
-                    roll.
-                  </li>
-                  <li>
-                    <strong>Exact 100:</strong> Overshooting tile 100 bounces
-                    your cat backward.
-                  </li>
-                </ul>
-              </div>
+              {/* SECTION 2: SNAKES & LADDERS */}
+              <div className="rules-section-box snakes-theme">
+                <div className="rules-section-banner">
+                  <SnakeLadderIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">
+                      Snakes &amp; Ladders Race
+                    </h3>
+                    <span className="rules-section-sub">
+                      100 or 150 Tiles • Random Mystery Powerups
+                    </span>
+                  </div>
+                </div>
 
-              <div className="cozy-rules-card">
-                <h3 className="cozy-rules-heading">Mystery Twist Tiles</h3>
-                <ul className="cozy-rules-list">
-                  <li>
-                    Every board hides <strong>4 purple sparkle tiles</strong>.
-                    Land on one to trigger a surprise:
-                  </li>
-                  <li>
-                    <strong>Catnip Boost:</strong> Jump forward +3 tiles.
-                  </li>
-                  <li>
-                    <strong>Snake Shield:</strong> Blocks the next snake you
-                    land on.
-                  </li>
-                  <li>
-                    <strong>Lucky Paw:</strong> Earn an extra roll.
-                  </li>
-                  <li>
-                    <strong>Switcheroo:</strong> Swap places with your partner
-                    (or hop +2 if a swap isn't possible).
-                  </li>
-                </ul>
+                <div className="rules-items-list">
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge sky">
+                      <SnakeLadderIcon size={16} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>100-Tile Classic &amp; 150-Tile Marathon</strong>
+                      <p>
+                        Host can pick 100 tiles or 150 tiles (with extra snakes,
+                        ladders, and mystery boxes for longer matches).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge mint">
+                      <DiceFaceSvg value={6} size={18} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>No Bonus Roll on 6 &amp; Exact Finish</strong>
+                      <p>
+                        Rolling a 6 moves 6 tiles with no free bonus turn.
+                        Overshooting the final crown tile bounces your cat back!
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rule-item-row">
+                    <span className="rule-icon-badge purple">
+                      <DoubleDiceIcon size={18} />
+                    </span>
+                    <div className="rule-item-text">
+                      <strong>New! Twin Paw 2x Dice (2 Turns)</strong>
+                      <p>
+                        Hold 2 dice in your paw and roll both at once on a
+                        single turn for your next 2 turns!
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mini Powerup Showcase Grid */}
+                  <div className="rules-powerup-grid">
+                    <div className="rules-powerup-chip">
+                      <PowerupIllustrationSvg kind="boost" size={26} />
+                      <span>
+                        <strong>Catnip Zoomies</strong> (+4 Tiles)
+                      </span>
+                    </div>
+                    <div className="rules-powerup-chip">
+                      <PowerupIllustrationSvg kind="shield_gain" size={26} />
+                      <span>
+                        <strong>Bubble Shield</strong> (Blocks Snake)
+                      </span>
+                    </div>
+                    <div className="rules-powerup-chip">
+                      <PowerupIllustrationSvg kind="extra_roll" size={26} />
+                      <span>
+                        <strong>Lucky Paw</strong> (Extra Roll)
+                      </span>
+                    </div>
+                    <div className="rules-powerup-chip">
+                      <PowerupIllustrationSvg kind="swap" size={26} />
+                      <span>
+                        <strong>Switcheroo</strong> (Swap Places)
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Minimal 1-Line Collapsible About Link */}
@@ -431,14 +532,12 @@ export function CatCustomizerModal({
                   className="about-link-btn"
                   onClick={() => setShowAbout((s) => !s)}
                 >
-                  {showAbout
-                    ? 'Hide About'
-                    : 'About • Crafted by Mhelric'}
+                  {showAbout ? 'Hide About' : 'About • Crafted by Mhelric'}
                 </button>
                 {showAbout && (
                   <p className="cozy-about-text">
-                    Cozy couple&apos;s board game arcade. Ephemeral match states
-                    sync privately via your room code.
+                    Cozy couple&apos;s board game arcade. Character profiles stay
+                    saved on your device.
                   </p>
                 )}
               </div>
@@ -449,7 +548,7 @@ export function CatCustomizerModal({
         {/* Pinned Primary Action Button */}
         <div className="cozy-modal-footer">
           <button type="submit" className="cozy-btn-primary">
-            Save Profile
+            Save My Cat Profile
           </button>
         </div>
       </form>

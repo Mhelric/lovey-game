@@ -273,8 +273,18 @@ export async function fetchMatchHistory(
 export type RealtimeBroadcastEvent =
   | { type: 'reaction'; reaction: FloatingReaction }
   | { type: 'avatar_update'; slot: PlayerSlot; avatar: CatAvatarConfig }
-  | { type: 'mode_switch'; mode: GameMode; sender: PlayerSlot }
-  | { type: 'start_match'; mode: GameMode; sender: PlayerSlot }
+  | {
+      type: 'mode_switch';
+      mode: GameMode;
+      snakesMaxTile?: 100 | 150;
+      sender: PlayerSlot;
+    }
+  | {
+      type: 'start_match';
+      mode: GameMode;
+      snakesMaxTile?: 100 | 150;
+      sender: PlayerSlot;
+    }
   | { type: 'partner_joined'; slot: PlayerSlot; avatar: CatAvatarConfig }
   | { type: 'presence_ping'; slot: PlayerSlot; timestamp: number }
   | {

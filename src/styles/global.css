@@ -11,6 +11,8 @@
   --accent-coral: #FF6B9A;
   --accent-coral-lip: #D9386A;
   --accent-amber: #FB923C;
+  --font-display: 'Baloo 2', system-ui, -apple-system, sans-serif;
+  --font-body: 'Quicksand', system-ui, -apple-system, sans-serif;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --board-size: min(
@@ -38,7 +40,7 @@ body,
   overflow: hidden;
   background-color: var(--cream);
   color: var(--ink);
-  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   touch-action: manipulation;
   -webkit-font-smoothing: antialiased;
 }
@@ -100,30 +102,21 @@ body,
   flex-shrink: 0;
 }
 
-/* Chunky "LOVEY GAME" Logo with Perched Crown */
+/* Chunky "LOVEY GAME" Logo (Inner Cat-Ear Badge Only) */
 .chunky-logo-badge {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border: 3px solid var(--ink);
-  border-radius: 999px;
-  padding: 7px 22px 6px;
-  box-shadow: 0 4px 0 var(--ink);
-  margin-top: 8px;
-}
-
-.logo-perched-crown {
-  position: absolute;
-  top: -15px;
-  right: 18px;
-  transform: rotate(12deg);
-  pointer-events: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-top: 2px;
 }
 
 .chunky-logo-text {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -197,7 +190,7 @@ body,
 }
 
 .room-code-caption {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -208,7 +201,7 @@ body,
 }
 
 .room-code-big {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -219,7 +212,7 @@ body,
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
   color: var(--pink);
@@ -245,7 +238,7 @@ body,
   background: linear-gradient(180deg, #FF7AA5 0%, #FF5C8F 100%);
   box-shadow: 0 5px 0 var(--ink);
   color: #ffffff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -308,7 +301,7 @@ body,
 }
 
 .flow-panel-title {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
@@ -352,7 +345,7 @@ body,
 }
 
 .role-main-label {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   color: var(--ink);
@@ -425,7 +418,7 @@ body,
   background: #ffffff;
   box-shadow: 0 2px 0 var(--ink);
   color: var(--ink);
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
@@ -452,7 +445,7 @@ body,
   background: #ffffff;
   padding: 0 12px;
   text-align: center;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -483,7 +476,7 @@ body,
 }
 
 .menu-bottom-caption {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;
   color: var(--ink);
@@ -521,7 +514,7 @@ body,
   background: #ffffff;
   border: 3px solid var(--ink);
   box-shadow: 0 4px 0 var(--ink);
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 14.5px;
   font-weight: 700;
   color: var(--ink);
@@ -556,7 +549,7 @@ body,
   color: var(--ink);
   padding: 4px 12px;
   border-radius: 999px;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 11.5px;
   font-weight: 700;
 }
@@ -581,7 +574,7 @@ body,
   box-shadow: 0 4px 0 var(--ink);
   background: linear-gradient(180deg, #FF7AA5 0%, #FF5C8F 100%);
   color: #ffffff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -656,7 +649,7 @@ body,
   color: var(--ink);
   padding: 5px 14px;
   border-radius: 999px;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -749,7 +742,7 @@ body,
   border: 3px solid var(--ink);
   box-shadow: 0 3px 0 var(--ink);
   color: var(--ink);
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.1;
@@ -851,7 +844,7 @@ body,
 }
 
 .bottom-player-name {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
   color: var(--ink);
@@ -882,7 +875,7 @@ body,
 }
 
 .bottom-score-digits {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13.5px;
   font-weight: 700;
   color: var(--ink);
@@ -949,7 +942,7 @@ body,
 }
 
 .chat-sheet-title {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
@@ -1023,7 +1016,7 @@ body,
   box-shadow: 0 3px 0 var(--ink);
   background: var(--pink);
   color: #ffffff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1082,7 +1075,7 @@ body,
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   color: var(--ink);
@@ -1100,7 +1093,7 @@ body,
   box-shadow: 0 4px 0 var(--ink);
   background: var(--pink);
   color: #ffffff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -1341,7 +1334,7 @@ body,
   border-radius: 999px;
   background: transparent;
   color: #9a7b7b;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1423,7 +1416,7 @@ body,
   border: 2px solid transparent;
   background: #FFF8F4;
   padding: 0 10px;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   color: #5a3a3a;
@@ -1669,7 +1662,7 @@ body,
 }
 
 .cozy-rules-heading {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13.5px;
   font-weight: 600;
   color: #c2456b;
@@ -1721,7 +1714,7 @@ body,
   border-radius: 999px;
   background: linear-gradient(180deg, #ff7aa5 0%, #ff5c8f 100%);
   color: #ffffff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1746,7 +1739,7 @@ body,
 }
 
 .modal-title {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
   color: var(--ink);
@@ -1791,14 +1784,14 @@ body,
 }
 
 .score-cat-name {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 12.5px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .score-big-num {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
   color: var(--pink);
@@ -1822,7 +1815,7 @@ body,
 }
 
 .vs-label {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
   color: var(--text-muted);
@@ -1868,7 +1861,7 @@ body,
 }
 
 .history-winner {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
   color: var(--ink);
@@ -1902,7 +1895,7 @@ body,
 }
 
 .tutorial-step-title {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 14.5px;
   font-weight: 700;
   color: var(--ink);
@@ -1961,7 +1954,7 @@ body,
   border-radius: 999px;
   border: 2.5px solid var(--ink);
   background: #ffffff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 12.5px;
   font-weight: 700;
   color: var(--ink);
@@ -1976,7 +1969,7 @@ body,
   box-shadow: 0 3px 0 var(--ink);
   background: var(--pink);
   color: #fff;
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
   display: inline-flex;
@@ -2003,7 +1996,7 @@ body,
   background: #ffffff;
   border: 3px solid var(--ink);
   box-shadow: 0 4px 0 var(--ink);
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13.5px;
   font-weight: 700;
   color: var(--ink);
@@ -2172,7 +2165,7 @@ body,
 }
 
 .twist-popup-title {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   color: #A855F7;
@@ -2180,7 +2173,7 @@ body,
 }
 
 .twist-popup-desc {
-  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
@@ -2208,3 +2201,1674 @@ body,
     transform: translate3d(0, -12px, 0) scale(0.9);
   }
 }
+
+/* ==========================================================================
+   KAWAII CAT LOGO & SETTINGS CHARM BUTTON
+   ========================================================================== */
+.chunky-logo-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 244px;
+  height: 54px;
+  padding-top: 10px;
+}
+
+.logo-unified-cat-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.chunky-logo-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.logo-center-cat-emblem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate3d(0, 1px, 0);
+}
+
+.settings-charm-btn {
+  border-radius: 16px;
+  background: linear-gradient(180deg, #FFFDF9 0%, #FFE4EE 100%);
+}
+
+/* ==========================================================================
+   ROSSARK-MOTION CHARACTER CHOREOGRAPHY & CLICKABLE PET ANIMATIONS
+   ========================================================================== */
+.cat-breath-wave {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: rossarkBreath 3.8s infinite cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.cat-tail-wave {
+  transform-box: fill-box;
+  transform-origin: 15% 85%;
+  animation: rossarkTail 3.2s infinite cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.cat-pupil-glide {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rossarkPupilGlide 5.6s infinite cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.cat-cheek-squint {
+  transform: translate3d(0, -0.8px, 0) scale(1.08);
+}
+
+@keyframes rossarkBreath {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  50% {
+    transform: translate3d(0, -0.7px, 0) scale(1.018, 0.985);
+  }
+}
+
+@keyframes rossarkTail {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(9deg);
+  }
+}
+
+@keyframes rossarkPupilGlide {
+  0%,
+  22%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  34%,
+  52% {
+    transform: translate3d(0.75px, -0.25px, 0);
+  }
+  66%,
+  84% {
+    transform: translate3d(-0.75px, -0.2px, 0);
+  }
+}
+
+/* Action States on Board Avatars (Powerup, Climb Ladder, Eaten by Snake, Ascend) */
+.cat-action-powerup {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: catPowerupPulse 0.55s infinite ease-in-out;
+}
+
+.cat-action-climb {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: catClimbHop 0.35s infinite ease-in-out;
+}
+
+.cat-action-eaten {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: catEatenWobble 0.45s infinite ease-in-out;
+}
+
+.cat-action-ascend,
+.token-ascend-burst {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: catAscendFloat 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes catPowerupPulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -2.5px, 0) scale(1.22) rotate(8deg);
+  }
+}
+
+@keyframes catClimbHop {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  50% {
+    transform: translate3d(0, -3.2px, 0) scale(0.92, 1.15);
+  }
+}
+
+@keyframes catEatenWobble {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-16deg) scale(0.86);
+  }
+  75% {
+    transform: rotate(16deg) scale(0.86);
+  }
+}
+
+@keyframes catAscendFloat {
+  0% {
+    transform: translate3d(0, 4px, 0) scale(0.65);
+  }
+  55% {
+    transform: translate3d(0, -4px, 0) scale(1.28);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* Improved Grounded Mochi-Bounce & Happy Paw Wave on Homescreen Cat Click */
+.cat-pet-mochi-bounce {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: catMochiPetBounce 0.82s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cat-pet-angry-stomp {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: catAngryPuffShake 0.78s ease-in-out;
+}
+
+.cat-tail-happy-wag {
+  transform-box: fill-box;
+  transform-origin: 15% 85%;
+  animation: catHappyTailWag 0.24s infinite ease-in-out;
+}
+
+.cat-paw-left-wave {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: catPawWaveLeft 0.36s infinite ease-in-out;
+}
+
+.cat-paw-right-wave {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: catPawWaveRight 0.36s infinite ease-in-out;
+}
+
+.pet-pop-bubble {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: popInCard 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pet-heart-burst.h1 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: petHeartFloat1 0.8s ease-out forwards;
+}
+
+.pet-heart-burst.h2 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: petHeartFloat2 0.8s ease-out forwards;
+}
+
+@keyframes catMochiPetBounce {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+  }
+  18% {
+    transform: translate3d(0, 1.5px, 0) scale(1.14, 0.86);
+  }
+  45% {
+    transform: translate3d(0, -5px, 0) scale(0.94, 1.08) rotate(-3deg);
+  }
+  68% {
+    transform: translate3d(0, 0.5px, 0) scale(1.06, 0.95) rotate(2.5deg);
+  }
+  85% {
+    transform: translate3d(0, -1.5px, 0) scale(0.98, 1.02) rotate(-1deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
+  }
+}
+
+@keyframes catAngryPuffShake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1) rotate(0deg);
+  }
+  15% {
+    transform: translate3d(-2.2px, -2px, 0) scale(1.08, 1.04) rotate(-5deg);
+  }
+  30% {
+    transform: translate3d(2.2px, -2.5px, 0) scale(1.1, 1.05) rotate(5deg);
+  }
+  48% {
+    transform: translate3d(-2px, -1.5px, 0) scale(1.08, 1.03) rotate(-4deg);
+  }
+  66% {
+    transform: translate3d(2px, -1px, 0) scale(1.06, 1.02) rotate(4deg);
+  }
+  82% {
+    transform: translate3d(-1px, 0.5px, 0) scale(1.03, 0.98) rotate(-2deg);
+  }
+}
+
+@keyframes catHappyTailWag {
+  0%,
+  100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+}
+
+@keyframes catPawWaveLeft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-1px, -3.5px, 0) rotate(-18deg);
+  }
+}
+
+@keyframes catPawWaveRight {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(1px, -3.5px, 0) rotate(18deg);
+  }
+}
+
+@keyframes petHeartFloat1 {
+  0% {
+    opacity: 0;
+    transform: translate3d(2px, 4px, 0) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-4px, -9px, 0) scale(0.85);
+  }
+}
+
+@keyframes petHeartFloat2 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-2px, 4px, 0) scale(0.4);
+  }
+  35% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(4px, -10px, 0) scale(0.85);
+  }
+}
+
+/* Captured Dama Piece Victim Pop Animation */
+.captured-victim-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: capturedVictimFly 0.82s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes capturedVictimFly {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translate3d(0, -5px, 0) scale(1.22) rotate(-18deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(3px, -12px, 0) scale(0.35) rotate(28deg);
+  }
+}
+
+/* ==========================================================================
+   HOMESCREEN SHOWCASE, ANIMATED ROOM CODE & MORPHING JOIN A ROOM BOX
+   ========================================================================== */
+.menu-cats-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.showcase-sub-pill {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px 11px;
+}
+
+.home-room-controls-card {
+  width: 100%;
+  max-width: 320px;
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 4px 0 var(--ink);
+  padding: 9px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.room-label-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-code-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.room-code-edit-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 124px;
+  height: 36px;
+  background: var(--cream);
+  border: 2px dashed rgba(91, 42, 78, 0.38);
+  border-radius: 12px;
+  padding: 0 14px;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.room-code-edit-trigger.saved-flash {
+  background: var(--mint);
+  border-style: solid;
+  border-color: var(--ink);
+  animation: keystrokePopA 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.room-saving-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.inline-room-edit-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.inline-room-code-input {
+  width: 132px;
+  height: 36px;
+  border-radius: 11px;
+  border: 2.5px solid var(--pink);
+  background: #FFFDF9;
+  padding: 0 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-align: center;
+  user-select: text;
+  outline: none;
+}
+
+.inline-room-save-btn {
+  height: 36px;
+  padding: 0 11px;
+  border-radius: 11px;
+  border: 2px solid var(--ink);
+  background: var(--mint);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.room-copy-icon-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 12px;
+  border: 2.2px solid var(--ink);
+  background: var(--pink-soft);
+  box-shadow: 0 2px 0 var(--ink);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.14s ease, background-color 0.14s ease;
+}
+
+.room-copy-icon-btn.copied {
+  background: var(--mint);
+}
+
+/* [or] Divider Line */
+.room-or-divider {
+  width: 86%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 1px 0;
+}
+
+.room-or-line {
+  flex: 1;
+  height: 1.5px;
+  background: rgba(91, 42, 78, 0.14);
+  border-radius: 99px;
+}
+
+.room-or-text {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: lowercase;
+  line-height: 1;
+}
+
+/* Smoothly Morphing [Join a Room] -> [Code Textbox] [Join] */
+.join-morph-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  transition: gap 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.join-morph-row.is-expanded {
+  gap: 6px;
+}
+
+.join-morph-box {
+  position: relative;
+  height: 38px;
+  border-radius: 13px;
+  border: 2.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition:
+    flex 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+/* Collapsed State: Cute Centered "Join a Room" Button */
+.join-morph-row.is-collapsed .join-morph-box {
+  flex: 0 1 178px;
+  max-width: 178px;
+  width: 100%;
+  background: var(--sky);
+  box-shadow: 0 2.5px 0 var(--ink);
+  cursor: pointer;
+}
+
+/* Expanded State: Stretches Smoothly into Code Textbox Without Overflowing */
+.join-morph-row.is-expanded .join-morph-box {
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: 100%;
+  width: auto;
+  background: var(--cream);
+  box-shadow: none;
+  cursor: text;
+}
+
+.join-morph-btn-label {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.join-morph-row.is-collapsed .join-morph-btn-label {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.join-morph-row.is-expanded .join-morph-btn-label {
+  opacity: 0;
+  transform: translate3d(-10px, 0, 0) scale(0.88);
+}
+
+.join-morph-input-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.join-morph-row.is-collapsed .join-morph-input-layer {
+  opacity: 0;
+  transform: translate3d(8px, 0, 0) scale(0.95);
+  pointer-events: none;
+}
+
+.join-morph-row.is-expanded .join-morph-input-layer {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  pointer-events: auto;
+}
+
+.join-field-icon {
+  position: absolute;
+  left: 9px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.15s ease;
+}
+
+.home-join-input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 38px 0 28px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  user-select: text;
+  outline: none;
+}
+
+.home-join-input::placeholder {
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.join-char-pill {
+  position: absolute;
+  right: 7px;
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #FFE4EE;
+  color: #BE185D;
+  border: 1.5px solid var(--ink);
+  pointer-events: none;
+}
+
+/* Right-side [Join] Button Wrapper that Slides & Expands In Without Clipping */
+.join-morph-submit-wrap {
+  flex: 0 0 auto;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  transition:
+    max-width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.24s ease,
+    transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.join-morph-row.is-collapsed .join-morph-submit-wrap {
+  max-width: 0;
+  opacity: 0;
+  transform: translate3d(10px, 0, 0) scale(0.8);
+  pointer-events: none;
+}
+
+.join-morph-row.is-expanded .join-morph-submit-wrap {
+  max-width: 112px;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  pointer-events: auto;
+  padding: 1px 2px 3px 0;
+}
+
+/* Fun First-Turn Shuffle Ceremony Modal (Both Games) */
+.first-turn-shuffle-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  background: rgba(91, 42, 78, 0.32);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  pointer-events: none;
+}
+
+.first-turn-shuffle-card {
+  width: min(92%, 296px);
+  background: linear-gradient(180deg, #FFFDF9 0%, #FFF0F6 100%);
+  border: 3.5px solid var(--ink);
+  border-radius: 24px;
+  box-shadow: 0 6px 0 var(--ink);
+  padding: 12px 14px 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  animation: popInCard 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.shuffle-kicker-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #FEF08A;
+  border: 2px solid var(--ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+}
+
+.shuffle-main-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+.shuffle-candidates-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0;
+}
+
+.shuffle-cat-slot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: #ffffff;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  padding: 10px 6px 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition:
+    transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.14s ease,
+    background-color 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.shuffle-cat-slot.is-dim {
+  opacity: 0.48;
+  transform: scale(0.92);
+}
+
+.shuffle-cat-slot.is-lit {
+  opacity: 1;
+  transform: translate3d(0, -3px, 0) scale(1.05);
+  background: #FFFBEB;
+  border-color: #F59E0B;
+}
+
+.shuffle-cat-slot.is-winner {
+  opacity: 1;
+  transform: translate3d(0, -4px, 0) scale(1.1);
+  background: linear-gradient(180deg, #FEF9C3 0%, #FFE4EE 100%);
+  border-color: var(--pink);
+}
+
+.shuffle-pointer-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #FFBE0B;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shuffle-cat-name {
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ink);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shuffle-vs-coin {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--pink);
+  border: 2.2px solid var(--ink);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shuffle-vs-coin.spinning {
+  animation: pawSpin 0.55s infinite linear;
+}
+
+.shuffle-sub-hint {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* Visual States on Expanded Join Textfield */
+.join-morph-row.is-expanded.state-focused .join-morph-box {
+  border-color: var(--pink);
+  background: #ffffff;
+}
+
+.join-morph-row.is-expanded.state-typing .join-morph-box {
+  border-color: #EC4899;
+  background: #FFF5F8;
+}
+
+.join-morph-row.is-expanded.state-typing .join-field-icon {
+  transform: scale(1.18) rotate(-8deg);
+}
+
+.join-morph-row.is-expanded.state-loading .join-morph-box {
+  border-color: #0284C7;
+  background: #F0F9FF;
+  opacity: 0.85;
+}
+
+.join-morph-row.is-expanded.state-error .join-morph-box {
+  border-color: #E11D48;
+  background: #FFE4E6;
+  animation: errorShakeX 0.35s ease-in-out;
+}
+
+.join-morph-row.is-expanded.state-success .join-morph-box {
+  border-color: #059669;
+  background: #D1FAE5;
+}
+
+/* Keystroke Bounce Feedback */
+.typing-pop-a,
+.key-bounce-a {
+  animation: keystrokePopA 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.typing-pop-b,
+.key-bounce-b {
+  animation: keystrokePopB 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes keystrokePopA {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025, 0.975);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes keystrokePopB {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025, 0.975);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes errorShakeX {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  75% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+.home-join-submit-btn {
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 12px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+  background: #E2E8F0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: transform 0.14s ease, background-color 0.14s ease;
+}
+
+.home-join-submit-btn.ready {
+  background: var(--sky);
+}
+
+.home-join-submit-btn.loading {
+  background: #BAE6FD;
+  cursor: wait;
+}
+
+.join-btn-loading-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mini-paw-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2.2px solid rgba(91, 42, 78, 0.25);
+  border-top-color: var(--ink);
+  display: inline-block;
+  animation: pawSpin 0.65s infinite linear;
+}
+
+@keyframes pawSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.joined-partner-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #F0F9FF;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 4px 8px;
+}
+
+.joined-partner-bar.host-joined {
+  background: #FFF0F6;
+}
+
+.role-pill {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--pink);
+  flex-shrink: 0;
+}
+
+.role-pill.invited {
+  background: #0284C7;
+}
+
+.host-partner-indicator {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: #D1FAE5;
+  color: #065F46;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.host-partner-dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 1px solid #065F46;
+}
+
+.joined-bar-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leave-room-mini-btn {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: #FFE4E6;
+  color: #9F1239;
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.status-pill-banner.compact {
+  padding: 4px 8px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.status-pill-banner.loading {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.snakes-pick-card {
+  padding: 8px 6px;
+  gap: 6px;
+}
+
+.snakes-launch-hit {
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.snakes-mode-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.snakes-size-pill {
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.snakes-size-pill.active {
+  background: var(--pink);
+  color: #ffffff;
+}
+
+.menu-bottom-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   REAL COUPLE CHAT INBOX (THREAD + BUBBLES + UNREAD BADGE)
+   ========================================================================== */
+.fab-trigger-btn {
+  position: relative;
+}
+
+.chat-unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #E11D48;
+  color: #ffffff;
+  border: 2px solid var(--ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-inbox-sheet {
+  max-height: 76dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inbox-header {
+  padding-bottom: 8px;
+  border-bottom: 2px dashed rgba(91, 42, 78, 0.18);
+}
+
+.inbox-partner-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inbox-avatar-wrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--pink-soft);
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inbox-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.inbox-sub-status {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.chat-inbox-thread {
+  flex: 1;
+  min-height: 170px;
+  max-height: 250px;
+  overflow-y: auto;
+  background: #FFF9FC;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-inbox-empty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+  padding: 16px 10px;
+}
+
+.chat-empty-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.chat-empty-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.chat-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 88%;
+}
+
+.chat-msg-row.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.chat-msg-row.partner {
+  align-self: flex-start;
+}
+
+.chat-msg-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.8px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chat-msg-bubble {
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 2px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-msg-bubble.mine {
+  background: #FFD6E4;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg-bubble.partner {
+  background: #ffffff;
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-msg-sender {
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #9D174D;
+}
+
+.chat-msg-time {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.chat-msg-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.inbox-compose-form {
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   3D DAMA BOARD, TURN POPUP, POWERUP MODAL, COMBO & ASCENSION POPUPS
+   ========================================================================== */
+.board-stage.sticker-board-frame.dama-3d-board {
+  border: 4.5px solid var(--ink);
+  box-shadow: 0 8px 0 #3D1633, 0 11px 0 var(--ink);
+}
+
+.turn-popup-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 11;
+}
+
+.turn-popup-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 10px;
+  background: rgba(255, 248, 242, 0.96);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 5px 0 var(--ink);
+  will-change: transform, opacity;
+  animation: turnBannerPopFade 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.turn-popup-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--pink-soft);
+  border: 2.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.turn-popup-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.turn-popup-role {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--pink);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.turn-popup-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+@keyframes turnBannerPopFade {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  30%,
+  76% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0) scale(0.92);
+  }
+}
+
+.center-dice-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sticker-dice-hero-btn.double-dice-active {
+  background: linear-gradient(180deg, #F59E0B 0%, #EC4899 100%);
+}
+
+.dice-cube-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.powerup-kicker-pill,
+.combo-badge-pill,
+.ascend-kicker-pill {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--butter);
+  color: var(--ink);
+}
+
+.combo-badge-pill {
+  background: #FECDD3;
+  color: #9F1239;
+}
+
+.ascend-kicker-pill {
+  background: linear-gradient(90deg, #FDE68A, #FBCFE8);
+}
+
+.twist-popup-art,
+.ascend-avatar-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
+  animation: stickerBob 0.9s infinite ease-in-out;
+}
+
+/* Celebratory Confetti Overlay */
+.victory-confetti-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 22px;
+  z-index: 0;
+}
+
+.confetti-ribbon {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 15px;
+  border-radius: 3px;
+  border: 1.5px solid var(--ink);
+  will-change: transform, opacity;
+  animation: confettiFall 1.8s infinite linear;
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, -10px, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translate3d(6px, 210px, 0) rotate(260deg);
+  }
+}
+
+/* ==========================================================================
+   SETTINGS MODAL: UPDATED MATCH & SECTIONED RULES WITH ICONS
+   ========================================================================== */
+.cozy-acc-tile {
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 2px;
+}
+
+.cozy-acc-label {
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.match-role-status-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(255, 120, 160, 0.12);
+}
+
+.match-role-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.match-role-badge {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: #c2456b;
+}
+
+.match-role-desc {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8E5B7B;
+}
+
+.match-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.match-mode-card {
+  min-height: 62px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 120, 160, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.match-mode-card.active {
+  border-color: var(--pink);
+  background: #FFF0F5;
+  color: #c2456b;
+}
+
+.rules-section-box {
+  background: #ffffff;
+  border: 2.5px solid var(--ink);
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rules-section-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.rules-section-box.dama-theme .rules-section-banner {
+  background: #FFE4EE;
+}
+
+.rules-section-box.snakes-theme .rules-section-banner {
+  background: #E0F2FE;
+}
+
+.rules-section-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.rules-section-sub {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.rules-items-list {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.rule-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.rule-icon-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 2px solid var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+.rule-icon-badge.pink {
+  background: #FFD6E4;
+}
+.rule-icon-badge.coral {
+  background: #FECDD3;
+}
+.rule-icon-badge.amber {
+  background: #FDE68A;
+}
+.rule-icon-badge.gold {
+  background: #FEF08A;
+}
+.rule-icon-badge.sky {
+  background: #BAE6FD;
+}
+.rule-icon-badge.mint {
+  background: #A7F3D0;
+}
+.rule-icon-badge.purple {
+  background: #E9D5FF;
+}
+
+.rule-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 11px;
+  color: #5a3a3a;
+  line-height: 1.3;
+}
+
+.rule-item-text strong {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.rules-powerup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.rules-powerup-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border-radius: 12px;
+  background: var(--cream);
+  border: 1.5px solid rgba(91, 42, 78, 0.25);
+  font-size: 10px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+

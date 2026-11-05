@@ -33,12 +33,14 @@ export interface DamaLastAction {
   from: BoardPos;
   to: BoardPos;
   captured: CapturedPieceInfo | null;
+  comboCount?: number;
   promoted: boolean;
 }
 
 export interface DamaGameState {
   board: (DamaPiece | null)[][];
   turn: PlayerSlot;
+  matchSeed?: number;
   chainPos: BoardPos | null;
   capturedInChain: string[]; // "r,c" keys already jumped in current multi-jump
   winner: PlayerSlot | 'draw' | null;
@@ -76,7 +78,10 @@ export function cloneBoard(
   return board.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
 }
 
-export function createInitialDamaState(): DamaGameState {
+export function createInitialDamaState(
+  startingTurn?: PlayerSlot,
+  matchSeed = Math.floor(100000 + Math.random() * 899999)
+): DamaGameState {
   const board: (DamaPiece | null)[][] = Array.from({ length: 8 }, () =>
     Array<DamaPiece | null>(8).fill(null)
   );
@@ -109,9 +114,13 @@ export function createInitialDamaState(): DamaGameState {
     }
   }
 
+  const resolvedTurn: PlayerSlot =
+    startingTurn ?? (matchSeed % 2 === 0 ? 'p1' : 'p2');
+
   return {
     board,
-    turn: 'p1',
+    turn: resolvedTurn,
+    matchSeed,
     chainPos: null,
     capturedInChain: [],
     winner: null,
@@ -436,6 +445,7 @@ export function applyDamaStep(
         from,
         to,
         captured: chosen.captured,
+        comboCount: nextCapturedInChain.length,
         promoted: false,
       },
     };
@@ -487,6 +497,7 @@ export function applyDamaStep(
       from,
       to,
       captured: chosen.captured,
+      comboCount: nextCapturedInChain.length,
       promoted,
     },
   };

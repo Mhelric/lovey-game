@@ -1,4 +1,6 @@
-import { CatAccessoryId, CatBreedId } from '../types/arcade';
+import { useState } from 'preact/hooks';
+import { CatAccessoryId, CatAvatarConfig, CatBreedId } from '../types/arcade';
+import { playCatAngryMeow, playCatMeow } from '../services/soundEffects';
 
 export interface CatBreedMeta {
   id: CatBreedId;
@@ -122,6 +124,13 @@ export function getCatBreedMeta(breed: CatBreedId): CatBreedMeta {
   return CAT_BREEDS.find((b) => b.id === breed) ?? CAT_BREEDS[0];
 }
 
+export type CatActionAnim =
+  | 'none'
+  | 'powerup'
+  | 'climb'
+  | 'eaten'
+  | 'ascend';
+
 interface CatAvatarSvgProps {
   breed: CatBreedId;
   accessory?: CatAccessoryId;
@@ -132,12 +141,18 @@ interface CatAvatarSvgProps {
   dizzy?: boolean;
   crownOverride?: boolean;
   happySquint?: boolean;
+  isPetting?: boolean;
+  isAngryPet?: boolean;
+  actionAnim?: CatActionAnim;
 }
 
 /**
  * Finch-inspired Chubby Pastel Illustrated Cat Avatar
- * Uses smooth organic cubic-Bezier curves, soft lineless/warm-contoured patches,
- * chubby cheeks, cozy belly patch, and cute tucked front paws.
+ * Enhanced with grounded rossark-motion choreography:
+ * - Feet stay planted while body breathes / squishes from base pivot (24, 43)
+ * - Tail root pivot wave with phase delay (wags faster when petted)
+ * - Live gliding pupils & natural blinks
+ * - Happy paw wave & rosy cheek glow when petted, or feisty Angry puff when poked!
  */
 export function CatAvatarSvg({
   breed,
@@ -149,9 +164,16 @@ export function CatAvatarSvg({
   dizzy = false,
   crownOverride = false,
   happySquint = false,
+  isPetting = false,
+  isAngryPet = false,
+  actionAnim = 'none',
 }: CatAvatarSvgProps) {
   const meta = getCatBreedMeta(breed);
   const effectiveAccessory: CatAccessoryId = crownOverride ? 'crown' : accessory;
+  const squintActive = (happySquint || isPetting) && !isAngryPet;
+
+  const actionClass =
+    actionAnim !== 'none' ? `cat-action-${actionAnim}` : '';
 
   return (
     <svg
@@ -163,301 +185,681 @@ export function CatAvatarSvg({
       aria-hidden="true"
       style={{ display: 'block', overflow: 'visible' }}
     >
-      <g className={animateIdle ? 'cat-ear-anim' : undefined}>
-        {/* Curled Tail peeking on the right */}
-        <path
-          d="M 36 37 C 43 36, 45 29, 41 26 C 38.5 24.5, 37 28, 38.5 30.5"
-          fill="none"
+      <g className={actionClass || undefined}>
+        {/* Grounded Little Bottom Feet (Stay planted on cushion) */}
+        <ellipse
+          cx="16.5"
+          cy="43"
+          rx="3.4"
+          ry="1.9"
+          fill={meta.secondaryFur}
           stroke="#5B2A4E"
-          stroke-width="5.8"
-          stroke-linecap="round"
-        />
-        <path
-          d="M 36 37 C 43 36, 45 29, 41 26 C 38.5 24.5, 37 28, 38.5 30.5"
-          fill="none"
-          stroke={meta.secondaryFur}
-          stroke-width="3.8"
-          stroke-linecap="round"
-        />
-
-        {/* Chubby Mochi Cat Body + Head Silhouette (One Seamless Organic Shape) */}
-        {meta.foldedEars ? (
-          <path
-            d="M 10 22 C 8 15, 13 11, 18 13 C 22 11.5, 26 11.5, 30 13 C 35 11, 40 15, 38 22 C 42 28, 41 41, 32 43 C 27 44, 21 44, 16 43 C 7 41, 6 28, 10 22 Z"
-            fill={meta.fur}
-            stroke="#5B2A4E"
-            stroke-width="1.7"
-            stroke-linejoin="round"
-          />
-        ) : (
-          <path
-            d="M 9.5 19 C 7.5 10, 10 5.5, 16.5 11 C 21 9.5, 27 9.5, 31.5 11 C 38 5.5, 40.5 10, 38.5 19 C 42.5 25.5, 41.5 40.5, 32.5 43 C 27 44.2, 21 44.2, 15.5 43 C 6.5 40.5, 5.5 25.5, 9.5 19 Z"
-            fill={meta.fur}
-            stroke="#5B2A4E"
-            stroke-width="1.7"
-            stroke-linejoin="round"
-          />
-        )}
-
-        {/* Inner Ears (Soft Rounded Teardrop Shapes) */}
-        {meta.foldedEars ? (
-          <>
-            <path
-              d="M 9 18 C 9 13, 14 11.5, 17.5 14.5 C 14.5 16.5, 11 18, 9 18 Z"
-              fill={meta.secondaryFur}
-            />
-            <path
-              d="M 39 18 C 39 13, 34 11.5, 30.5 14.5 C 33.5 16.5, 37 18, 39 18 Z"
-              fill={meta.secondaryFur}
-            />
-          </>
-        ) : (
-          <>
-            <path
-              d="M 11.2 17 C 10.2 11.8, 11.5 9.2, 15.4 12.6 C 14 14.2, 12.5 15.8, 11.2 17 Z"
-              fill={meta.innerEar}
-            />
-            <path
-              d="M 36.8 17 C 37.8 11.8, 36.5 9.2, 32.6 12.6 C 34 14.2, 35.5 15.8, 36.8 17 Z"
-              fill={meta.innerEar}
-            />
-          </>
-        )}
-
-        {/* Finch-style Forehead & Cheek Color Patches per Breed */}
-        {(breed === 'calico' ||
-          breed === 'orange-tabby' ||
-          breed === 'strawberry-cat') && (
-          <>
-            <path
-              d="M 27 10.5 C 33 11, 38.5 16, 38.5 23 C 34 24, 29 20, 27 10.5 Z"
-              fill={meta.secondaryFur}
-              opacity="0.88"
-            />
-            <path
-              d="M 10 21 C 10 15, 14 11, 19 10.6 C 17.5 16.5, 14 20.5, 10 21 Z"
-              fill={breed === 'calico' ? '#5e4033' : meta.secondaryFur}
-              opacity="0.78"
-            />
-          </>
-        )}
-
-        {breed === 'siamese' && (
-          <ellipse cx="24" cy="24.5" rx="9.5" ry="7.2" fill={meta.secondaryFur} opacity="0.85" />
-        )}
-
-        {/* Soft Cozy Muzzle & Belly Patch (Finch signature soft tummy/face area) */}
-        <ellipse cx="24" cy="34.5" rx="11.2" ry="8.2" fill={meta.bellyPatch} />
-        <ellipse cx="24" cy="25.5" rx="10.5" ry="7.6" fill={meta.bellyPatch} opacity={breed === 'siamese' ? 0.18 : 0.72} />
-
-        {/* Fluffy Tuft on Top */}
-        {meta.fluffy && (
-          <path
-            d="M 20 10.5 Q 22 6.8 24 9.5 Q 26.5 6.8 28 10.5"
-            fill={meta.fur}
-          />
-        )}
-
-        {/* Rosy Pastel Oval Cheeks */}
-        <ellipse
-          cx="13.8"
-          cy="26.2"
-          rx="3.1"
-          ry="1.8"
-          fill={meta.cheekColor}
-          opacity="0.72"
+          strokeWidth="1.2"
         />
         <ellipse
-          cx="34.2"
-          cy="26.2"
-          rx="3.1"
-          ry="1.8"
-          fill={meta.cheekColor}
-          opacity="0.72"
+          cx="31.5"
+          cy="43"
+          rx="3.4"
+          ry="1.9"
+          fill={meta.secondaryFur}
+          stroke="#5B2A4E"
+          strokeWidth="1.2"
         />
 
-        {/* Expressive Cat Eyes */}
-        {dizzy ? (
-          <g stroke="#432818" strokeWidth="1.8" strokeLinecap="round">
-            <line x1="15.5" y1="20.5" x2="19.5" y2="24.5" />
-            <line x1="19.5" y1="20.5" x2="15.5" y2="24.5" />
-            <line x1="28.5" y1="20.5" x2="32.5" y2="24.5" />
-            <line x1="32.5" y1="20.5" x2="28.5" y2="24.5" />
-          </g>
-        ) : happySquint ? (
+        {/* Mochi Body & Head Group (Pivots cleanly from base 24, 42) */}
+        <g
+          className={
+            isAngryPet
+              ? 'cat-pet-angry-stomp'
+              : isPetting
+              ? 'cat-pet-mochi-bounce'
+              : animateIdle
+              ? 'cat-breath-wave'
+              : undefined
+          }
+        >
+          {/* Curled Tail with Root-Pivot Wave Follow-Through */}
           <g
-            fill="none"
-            stroke="#432818"
-            strokeWidth="2.1"
-            strokeLinecap="round"
+            className={
+              isPetting || isAngryPet
+                ? 'cat-tail-happy-wag'
+                : animateIdle
+                ? 'cat-tail-wave'
+                : undefined
+            }
           >
-            <path d="M 14.8 23.2 Q 17.5 19.6 20.2 23.2" />
-            <path d="M 27.8 23.2 Q 30.5 19.6 33.2 23.2" />
-          </g>
-        ) : (
-          <g className={animateIdle ? 'cat-eye-blink' : undefined}>
-            <circle cx="17.5" cy="22.4" r="2.7" fill={meta.eyeColor} />
-            <circle cx="30.5" cy="22.4" r="2.7" fill={meta.eyeColor} />
-            <circle cx="16.6" cy="21.4" r="1" fill="#ffffff" />
-            <circle cx="29.6" cy="21.4" r="1" fill="#ffffff" />
-          </g>
-        )}
-
-        {/* Cute Button Nose & W Cat Smile */}
-        <ellipse cx="24" cy="24.8" rx="1.7" ry="1.2" fill={meta.noseColor} />
-        <path
-          d="M 20.8 26.5 Q 22.4 28.4 24 26.2 Q 25.6 28.4 27.2 26.5"
-          fill="none"
-          stroke="#432818"
-          strokeWidth="1.45"
-          strokeLinecap="round"
-        />
-
-        {/* Soft Side Whiskers */}
-        <g stroke="#8c6249" strokeWidth="1" strokeLinecap="round" opacity="0.55">
-          <line x1="6.5" y1="24" x2="10.5" y2="24.8" />
-          <line x1="6.8" y1="27" x2="10.8" y2="26.8" />
-          <line x1="41.5" y1="24" x2="37.5" y2="24.8" />
-          <line x1="41.2" y1="27" x2="37.2" y2="26.8" />
-        </g>
-
-        {/* Cute Chubby Front Paws Resting on Chest */}
-        <ellipse
-          cx="18.2"
-          cy="35.5"
-          rx="3.6"
-          ry="2.5"
-          transform="rotate(14 18.2 35.5)"
-          fill={meta.fur}
-          stroke={meta.secondaryFur}
-          strokeWidth="0.9"
-        />
-        <ellipse
-          cx="29.8"
-          cy="35.5"
-          rx="3.6"
-          ry="2.5"
-          transform="rotate(-14 29.8 35.5)"
-          fill={meta.fur}
-          stroke={meta.secondaryFur}
-          strokeWidth="0.9"
-        />
-
-        {/* Little Bottom Feet Peeking Out */}
-        <ellipse cx="16.5" cy="43" rx="3.2" ry="1.8" fill={meta.secondaryFur} />
-        <ellipse cx="31.5" cy="43" rx="3.2" ry="1.8" fill={meta.secondaryFur} />
-
-        {/* Accessories */}
-        {effectiveAccessory === 'crown' && (
-          <g transform="translate(24, 7.5)">
             <path
-              d="M -6.5 3.5 L -8 -3.5 L -3 0.2 L 0 -4.5 L 3 0.2 L 8 -3.5 L 6.5 3.5 Z"
-              fill="#ffbe0b"
-              stroke="#d97706"
-              strokeWidth="1"
+              d="M 35.5 37 C 43 36, 45.2 28.8, 41 25.8 C 38.4 24.3, 36.8 27.8, 38.5 30.5"
+              fill="none"
+              stroke="#5B2A4E"
+              strokeWidth="5.8"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 35.5 37 C 43 36, 45.2 28.8, 41 25.8 C 38.4 24.3, 36.8 27.8, 38.5 30.5"
+              fill="none"
+              stroke={meta.secondaryFur}
+              strokeWidth="3.8"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* Chubby Mochi Cat Body + Head Silhouette */}
+          {meta.foldedEars ? (
+            <path
+              d="M 10 22 C 8 15, 13 11, 18 13 C 22 11.5, 26 11.5, 30 13 C 35 11, 40 15, 38 22 C 42 28, 41 41, 32 43 C 27 44, 21 44, 16 43 C 7 41, 6 28, 10 22 Z"
+              fill={meta.fur}
+              stroke="#5B2A4E"
+              strokeWidth="1.75"
               strokeLinejoin="round"
             />
-            <circle cx="0" cy="0.8" r="1.2" fill="#ff4d6d" />
-          </g>
-        )}
-
-        {effectiveAccessory === 'ribbon' && (
-          <g transform="translate(33, 11.5) rotate(16)">
+          ) : (
             <path
-              d="M -5.5 -3 C -2 -3, -1 0, 0 0 C 1 0, 2 -3, 5.5 -3 L 5.5 3 C 2 3, 1 0, 0 0 C -1 0, -2 3, -5.5 3 Z"
-              fill="#ff4d6d"
+              d="M 9.5 19 C 7.5 10, 10 5.5, 16.5 11 C 21 9.5, 27 9.5, 31.5 11 C 38 5.5, 40.5 10, 38.5 19 C 42.5 25.5, 41.5 40.5, 32.5 43 C 27 44.2, 21 44.2, 15.5 43 C 6.5 40.5, 5.5 25.5, 9.5 19 Z"
+              fill={meta.fur}
+              stroke="#5B2A4E"
+              strokeWidth="1.75"
+              strokeLinejoin="round"
             />
-            <circle cx="0" cy="0" r="1.8" fill="#ffb3c1" />
-          </g>
-        )}
+          )}
 
-        {effectiveAccessory === 'sakura' && (
-          <g transform="translate(14, 11)">
-            <circle cx="0" cy="-2.6" r="2" fill="#ffb3c1" />
-            <circle cx="2.5" cy="-0.8" r="2" fill="#ffb3c1" />
-            <circle cx="1.6" cy="2.1" r="2" fill="#ffb3c1" />
-            <circle cx="-1.6" cy="2.1" r="2" fill="#ffb3c1" />
-            <circle cx="-2.5" cy="-0.8" r="2" fill="#ffb3c1" />
-            <circle cx="0" cy="0" r="1.3" fill="#ffbe0b" />
-          </g>
-        )}
+          {/* Inner Ears */}
+          {meta.foldedEars ? (
+            <>
+              <path
+                d="M 9 18 C 9 13, 14 11.5, 17.5 14.5 C 14.5 16.5, 11 18, 9 18 Z"
+                fill={meta.secondaryFur}
+              />
+              <path
+                d="M 39 18 C 39 13, 34 11.5, 30.5 14.5 C 33.5 16.5, 37 18, 39 18 Z"
+                fill={meta.secondaryFur}
+              />
+            </>
+          ) : (
+            <>
+              <path
+                d="M 11.2 17 C 10.2 11.8, 11.5 9.2, 15.4 12.6 C 14 14.2, 12.5 15.8, 11.2 17 Z"
+                fill={meta.innerEar}
+              />
+              <path
+                d="M 36.8 17 C 37.8 11.8, 36.5 9.2, 32.6 12.6 C 34 14.2, 35.5 15.8, 36.8 17 Z"
+                fill={meta.innerEar}
+              />
+            </>
+          )}
 
-        {effectiveAccessory === 'sunglasses' && (
-          <g>
-            <rect
-              x="12.5"
-              y="19.2"
-              width="10"
-              height="6.2"
-              rx="2"
-              fill="#1e293b"
+          {/* Forehead & Cheek Color Patches per Breed */}
+          {(breed === 'calico' ||
+            breed === 'orange-tabby' ||
+            breed === 'strawberry-cat') && (
+            <>
+              <path
+                d="M 27 10.5 C 33 11, 38.5 16, 38.5 23 C 34 24, 29 20, 27 10.5 Z"
+                fill={meta.secondaryFur}
+                opacity="0.88"
+              />
+              <path
+                d="M 10 21 C 10 15, 14 11, 19 10.6 C 17.5 16.5, 14 20.5, 10 21 Z"
+                fill={breed === 'calico' ? '#5e4033' : meta.secondaryFur}
+                opacity="0.78"
+              />
+            </>
+          )}
+
+          {breed === 'siamese' && (
+            <ellipse
+              cx="24"
+              cy="24.5"
+              rx="9.5"
+              ry="7.2"
+              fill={meta.secondaryFur}
+              opacity="0.85"
             />
-            <rect
-              x="25.5"
-              y="19.2"
-              width="10"
-              height="6.2"
-              rx="2"
-              fill="#1e293b"
+          )}
+
+          {/* Soft Cozy Muzzle & Belly Patch */}
+          <ellipse cx="24" cy="34.5" rx="11.2" ry="8.2" fill={meta.bellyPatch} />
+          <ellipse
+            cx="24"
+            cy="25.5"
+            rx="10.5"
+            ry="7.6"
+            fill={meta.bellyPatch}
+            opacity={breed === 'siamese' ? 0.18 : 0.72}
+          />
+
+          {/* Fluffy Tuft on Top */}
+          {meta.fluffy && (
+            <path
+              d="M 20 10.5 Q 22 6.8 24 9.5 Q 26.5 6.8 28 10.5"
+              fill={meta.fur}
             />
-            <line
-              x1="22.5"
-              y1="21.5"
-              x2="25.5"
-              y2="21.5"
-              stroke="#ffbe0b"
-              strokeWidth="1.6"
-            />
-            <line
-              x1="14.2"
-              y1="20.8"
-              x2="17"
-              y2="23.8"
-              stroke="#ffffff"
-              strokeWidth="1.1"
-              opacity="0.7"
-            />
-            <line
-              x1="27.2"
-              y1="20.8"
-              x2="30"
-              y2="23.8"
-              stroke="#ffffff"
-              strokeWidth="1.1"
-              opacity="0.7"
+          )}
+
+          {/* Rosy Pastel Oval Cheeks */}
+          <ellipse
+            cx="13.8"
+            cy={squintActive ? '25.2' : '26.2'}
+            rx={squintActive ? '3.5' : '3.2'}
+            ry={squintActive ? '2.1' : '1.9'}
+            fill={meta.cheekColor}
+            opacity={squintActive ? '0.92' : '0.78'}
+          />
+          <ellipse
+            cx="34.2"
+            cy={squintActive ? '25.2' : '26.2'}
+            rx={squintActive ? '3.5' : '3.2'}
+            ry={squintActive ? '2.1' : '1.9'}
+            fill={meta.cheekColor}
+            opacity={squintActive ? '0.92' : '0.78'}
+          />
+
+          {/* Expressive Live Cat Eyes */}
+          {dizzy ? (
+            <g stroke="#432818" strokeWidth="1.8" strokeLinecap="round">
+              <line x1="15.5" y1="20.5" x2="19.5" y2="24.5" />
+              <line x1="19.5" y1="20.5" x2="15.5" y2="24.5" />
+              <line x1="28.5" y1="20.5" x2="32.5" y2="24.5" />
+              <line x1="32.5" y1="20.5" x2="28.5" y2="24.5" />
+            </g>
+          ) : isAngryPet ? (
+            <g>
+              {/* Fierce Narrowed Angry Eyes */}
+              <path
+                d="M 14.2 21.2 L 20.6 22.8 A 3.1 2.9 0 0 1 14.2 21.2 Z"
+                fill="#FFFDF9"
+                stroke="#432818"
+                strokeWidth="0.9"
+              />
+              <path
+                d="M 33.8 21.2 L 27.4 22.8 A 3.1 2.9 0 0 0 33.8 21.2 Z"
+                fill="#FFFDF9"
+                stroke="#432818"
+                strokeWidth="0.9"
+              />
+              <circle cx="17.8" cy="22.8" r="1.9" fill="#E11D48" />
+              <circle cx="30.2" cy="22.8" r="1.9" fill="#E11D48" />
+              <circle cx="17.3" cy="22.3" r="0.7" fill="#ffffff" />
+              <circle cx="29.7" cy="22.3" r="0.7" fill="#ffffff" />
+              {/* Furrowed V-Shaped Angry Eyebrows */}
+              <line
+                x1="13.8"
+                y1="19.4"
+                x2="21.2"
+                y2="22.1"
+                stroke="#432818"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+              />
+              <line
+                x1="34.2"
+                y1="19.4"
+                x2="26.8"
+                y2="22.1"
+                stroke="#432818"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+              />
+              {/* Cute Anime Anger Vein Symbol (💢) on Forehead/Temple */}
+              <g
+                transform="translate(34.5, 13.5)"
+                stroke="#E11D48"
+                strokeWidth="1.35"
+                strokeLinecap="round"
+                fill="none"
+              >
+                <path d="M -2.6 -1.1 Q -0.9 -0.9 -1.1 -2.6" />
+                <path d="M 2.6 -1.1 Q 0.9 -0.9 1.1 -2.6" />
+                <path d="M -2.6 1.1 Q -0.9 0.9 -1.1 2.6" />
+                <path d="M 2.6 1.1 Q 0.9 0.9 1.1 2.6" />
+              </g>
+            </g>
+          ) : squintActive ? (
+            <g
+              fill="none"
+              stroke="#432818"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            >
+              <path d="M 14.5 23.2 Q 17.5 19.2 20.5 23.2" />
+              <path d="M 27.5 23.2 Q 30.5 19.2 33.5 23.2" />
+            </g>
+          ) : (
+            <g className={animateIdle ? 'cat-eye-blink' : undefined}>
+              <ellipse
+                cx="17.5"
+                cy="22.4"
+                rx="3.05"
+                ry="2.95"
+                fill="#FFFDF9"
+                stroke="#432818"
+                strokeWidth="0.6"
+              />
+              <ellipse
+                cx="30.5"
+                cy="22.4"
+                rx="3.05"
+                ry="2.95"
+                fill="#FFFDF9"
+                stroke="#432818"
+                strokeWidth="0.6"
+              />
+              <g className={animateIdle ? 'cat-pupil-glide' : undefined}>
+                <circle cx="17.5" cy="22.4" r="2.55" fill={meta.eyeColor} />
+                <circle cx="30.5" cy="22.4" r="2.55" fill={meta.eyeColor} />
+                <circle cx="16.6" cy="21.3" r="1.05" fill="#ffffff" />
+                <circle cx="29.6" cy="21.3" r="1.05" fill="#ffffff" />
+                <circle
+                  cx="18.3"
+                  cy="23.3"
+                  r="0.48"
+                  fill="#ffffff"
+                  opacity="0.85"
+                />
+                <circle
+                  cx="31.3"
+                  cy="23.3"
+                  r="0.48"
+                  fill="#ffffff"
+                  opacity="0.85"
+                />
+              </g>
+            </g>
+          )}
+
+          {/* Cute Button Nose & Cat Mouth (Smile or Feisty Angry Fangs!) */}
+          <ellipse cx="24" cy="24.8" rx="1.7" ry="1.2" fill={meta.noseColor} />
+          {isAngryPet ? (
+            <g>
+              {/* Feisty Open Hiss Mouth with Tiny White Kitty Fangs */}
+              <path
+                d="M 20.8 28.4 Q 24 25.4 27.2 28.4 Q 24 29.8 20.8 28.4 Z"
+                fill="#E11D48"
+                stroke="#432818"
+                strokeWidth="1.1"
+                strokeLinejoin="round"
+              />
+              <polygon points="21.8,27.1 22.5,28.5 23.1,27.0" fill="#ffffff" />
+              <polygon points="26.2,27.1 25.5,28.5 24.9,27.0" fill="#ffffff" />
+            </g>
+          ) : (
+            <>
+              {squintActive && (
+                <path
+                  d="M 22.4 26.6 Q 24 29.8 25.6 26.6 Z"
+                  fill="#FF6B9A"
+                  stroke="#432818"
+                  strokeWidth="0.8"
+                />
+              )}
+              <path
+                d="M 20.8 26.5 Q 22.4 28.4 24 26.2 Q 25.6 28.4 27.2 26.5"
+                fill="none"
+                stroke="#432818"
+                strokeWidth="1.45"
+                strokeLinecap="round"
+              />
+            </>
+          )}
+
+          {/* Soft Side Whiskers */}
+          <g
+            stroke="#8c6249"
+            strokeWidth="1.05"
+            strokeLinecap="round"
+            opacity="0.6"
+          >
+            <line x1="6.3" y1="23.8" x2="10.5" y2="24.8" />
+            <line x1="6.6" y1="27" x2="10.8" y2="26.8" />
+            <line x1="41.7" y1="23.8" x2="37.5" y2="24.8" />
+            <line x1="41.4" y1="27" x2="37.2" y2="26.8" />
+          </g>
+
+          {/* Cute Chubby Front Paws Resting on Chest (Wave happily or swat when angry!) */}
+          <g
+            className={
+              isPetting || isAngryPet ? 'cat-paw-left-wave' : undefined
+            }
+          >
+            <ellipse
+              cx="18.2"
+              cy="35.5"
+              rx="3.6"
+              ry="2.5"
+              transform="rotate(14 18.2 35.5)"
+              fill={meta.fur}
+              stroke={meta.secondaryFur}
+              strokeWidth="0.95"
             />
           </g>
-        )}
+          <g
+            className={
+              isPetting || isAngryPet ? 'cat-paw-right-wave' : undefined
+            }
+          >
+            <ellipse
+              cx="29.8"
+              cy="35.5"
+              rx="3.6"
+              ry="2.5"
+              transform="rotate(-14 29.8 35.5)"
+              fill={meta.fur}
+              stroke={meta.secondaryFur}
+              strokeWidth="0.95"
+            />
+          </g>
+
+          {/* Accessories / Outfits */}
+          {effectiveAccessory === 'crown' && (
+            <g transform="translate(24, 7.2)">
+              <path
+                d="M -7 3.6 L -8.5 -3.8 L -3.2 0.2 L 0 -5 L 3.2 0.2 L 8.5 -3.8 L 7 3.6 Z"
+                fill="#ffbe0b"
+                stroke="#5B2A4E"
+                strokeWidth="1.2"
+                strokeLinejoin="round"
+              />
+              <circle cx="0" cy="0.8" r="1.35" fill="#ff4d6d" />
+              <circle cx="-4" cy="1.2" r="0.9" fill="#38bdf8" />
+              <circle cx="4" cy="1.2" r="0.9" fill="#38bdf8" />
+            </g>
+          )}
+
+          {effectiveAccessory === 'ribbon' && (
+            <g transform="translate(33, 11.2) rotate(16)">
+              <path
+                d="M -6 -3.3 C -2 -3.3, -1 0, 0 0 C 1 0, 2 -3.3, 6 -3.3 L 6 3.3 C 2 3.3, 1 0, 0 0 C -1 0, -2 3.3, -6 3.3 Z"
+                fill="#ff4d6d"
+                stroke="#5B2A4E"
+                strokeWidth="1.1"
+                strokeLinejoin="round"
+              />
+              <circle
+                cx="0"
+                cy="0"
+                r="2"
+                fill="#ffb3c1"
+                stroke="#5B2A4E"
+                strokeWidth="0.9"
+              />
+            </g>
+          )}
+
+          {effectiveAccessory === 'sakura' && (
+            <g transform="translate(14, 10.8)" stroke="#5B2A4E" strokeWidth="0.7">
+              <circle cx="0" cy="-2.6" r="2.1" fill="#ffb3c1" />
+              <circle cx="2.5" cy="-0.8" r="2.1" fill="#ffb3c1" />
+              <circle cx="1.6" cy="2.1" r="2.1" fill="#ffb3c1" />
+              <circle cx="-1.6" cy="2.1" r="2.1" fill="#ffb3c1" />
+              <circle cx="-2.5" cy="-0.8" r="2.1" fill="#ffb3c1" />
+              <circle cx="0" cy="0" r="1.4" fill="#ffbe0b" />
+            </g>
+          )}
+
+          {effectiveAccessory === 'sunglasses' && (
+            <g>
+              <rect
+                x="12.2"
+                y="19"
+                width="10.4"
+                height="6.4"
+                rx="2.1"
+                fill="#1e293b"
+                stroke="#5B2A4E"
+                strokeWidth="1"
+              />
+              <rect
+                x="25.4"
+                y="19"
+                width="10.4"
+                height="6.4"
+                rx="2.1"
+                fill="#1e293b"
+                stroke="#5B2A4E"
+                strokeWidth="1"
+              />
+              <line
+                x1="22.6"
+                y1="21.5"
+                x2="25.4"
+                y2="21.5"
+                stroke="#ffbe0b"
+                strokeWidth="1.8"
+              />
+              <line
+                x1="14"
+                y1="20.6"
+                x2="16.8"
+                y2="23.8"
+                stroke="#ffffff"
+                strokeWidth="1.2"
+                opacity="0.78"
+                strokeLinecap="round"
+              />
+              <line
+                x1="27.2"
+                y1="20.6"
+                x2="30"
+                y2="23.8"
+                stroke="#ffffff"
+                strokeWidth="1.2"
+                opacity="0.78"
+                strokeLinecap="round"
+              />
+            </g>
+          )}
+        </g>
       </g>
     </svg>
   );
 }
 
+const PET_REACTIONS: readonly {
+  phrase: string;
+  emotion: 'happy' | 'angry';
+}[] = [
+  { phrase: 'Purrr~ ♥', emotion: 'happy' },
+  { phrase: 'Hiss~! 💢', emotion: 'angry' },
+  { phrase: 'Nyaa~ ♪', emotion: 'happy' },
+  { phrase: 'No touchy!', emotion: 'angry' },
+  { phrase: 'Love u! ♥', emotion: 'happy' },
+  { phrase: 'Mrrrow! 💢', emotion: 'angry' },
+] as const;
+
+function PetReactionOverlaySvg({
+  cx,
+  cy,
+  phrase,
+  emotion,
+}: {
+  cx: number;
+  cy: number;
+  phrase: string;
+  emotion: 'happy' | 'angry';
+}) {
+  const isAngry = emotion === 'angry';
+  return (
+    <g transform={`translate(${cx}, ${cy})`} pointerEvents="none">
+      {isAngry ? (
+        /* Floating Feisty Anger Sparks Around the Cat */
+        <>
+          <g
+            className="pet-heart-burst h1"
+            transform="translate(-28, 13)"
+            stroke="#E11D48"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            fill="none"
+          >
+            <path d="M -3.2 -1.3 Q -1.1 -1.1 -1.3 -3.2" />
+            <path d="M 3.2 -1.3 Q 1.1 -1.1 1.3 -3.2" />
+            <path d="M -3.2 1.3 Q -1.1 1.1 -1.3 3.2" />
+            <path d="M 3.2 1.3 Q 1.1 1.1 1.3 3.2" />
+          </g>
+          <g
+            className="pet-heart-burst h2"
+            transform="translate(28, 11)"
+            stroke="#E11D48"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            fill="none"
+          >
+            <path d="M -3.2 -1.3 Q -1.1 -1.1 -1.3 -3.2" />
+            <path d="M 3.2 -1.3 Q 1.1 -1.1 1.3 -3.2" />
+            <path d="M -3.2 1.3 Q -1.1 1.1 -1.3 3.2" />
+            <path d="M 3.2 1.3 Q 1.1 1.1 1.3 3.2" />
+          </g>
+        </>
+      ) : (
+        /* Floating Mini Love Hearts Rising Around the Cat */
+        <>
+          <g className="pet-heart-burst h1">
+            <path
+              d="M -28 18 C -29.5 16.5, -33 13.5, -33 10.5 A 2.6 2.6 0 0 1 -28 9 A 2.6 2.6 0 0 1 -23 10.5 C -23 13.5, -26.5 16.5, -28 18 Z"
+              fill="#FF4D6D"
+              stroke="#5B2A4E"
+              strokeWidth="1.1"
+            />
+          </g>
+          <g className="pet-heart-burst h2">
+            <path
+              d="M 28 16 C 26.5 14.5, 23 11.5, 23 8.5 A 2.6 2.6 0 0 1 28 7 A 2.6 2.6 0 0 1 33 8.5 C 33 11.5, 29.5 14.5, 28 16 Z"
+              fill="#FF6B9A"
+              stroke="#5B2A4E"
+              strokeWidth="1.1"
+            />
+          </g>
+        </>
+      )}
+
+      {/* Properly Centered Speech Bubble Pill Above Cat */}
+      <g className="pet-pop-bubble">
+        <rect
+          x="-34"
+          y="-19"
+          width="68"
+          height="20"
+          rx="10"
+          fill={isAngry ? '#FFE4E6' : '#FFFDF9'}
+          stroke={isAngry ? '#E11D48' : '#5B2A4E'}
+          strokeWidth="2"
+        />
+        <path
+          d="M -4 1 L 0 6 L 4 1 Z"
+          fill={isAngry ? '#FFE4E6' : '#FFFDF9'}
+          stroke={isAngry ? '#E11D48' : '#5B2A4E'}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <line
+          x1="-3.2"
+          y1="1"
+          x2="3.2"
+          y2="1"
+          stroke={isAngry ? '#FFE4E6' : '#FFFDF9'}
+          strokeWidth="2.4"
+        />
+        <text
+          x="0"
+          y="-5.5"
+          textAnchor="middle"
+          fill={isAngry ? '#BE123C' : '#FF4D6D'}
+          style={{
+            fontSize: '8.5px',
+            fontFamily: "var(--font-display, 'Baloo 2', sans-serif)",
+            fontWeight: 800,
+          }}
+        >
+          {phrase}
+        </text>
+      </g>
+    </g>
+  );
+}
+
 /**
- * Sticker-Cartoony Main Menu & Victory Hero Illustration:
- * Two detailed chubby couple cats snuggled together on a cozy pastel cushion
- * with a floating glossy heart badge, sparkling stars, and speech bubbles.
+ * Interactive Main Menu & Victory Hero Illustration:
+ * - Supports Solo Mode (`isJoined = false`, single cat centered on cushion)
+ * - Supports Side-by-Side Couple Mode (`isJoined = true`, P-1 Host & P-2 Invited side-by-side)
+ * - Matches exact player outfits (`p1Accessory` & `p2Accessory`)
+ * - Clickable cats trigger grounded mochi bounce (happy) or feisty stomp (angry)!
  */
 export function CoupleCatsSceneSvg({
   p1Breed,
   p2Breed,
+  p1Accessory = 'crown',
+  p2Accessory = 'ribbon',
+  p1Name = 'Lovey 1',
+  p2Name = 'Lovey 2',
+  soloAvatar,
+  isJoined = true,
+  showRoleLabels = false,
+  interactive = false,
   showTrophy = false,
   size = 218,
 }: {
   p1Breed: CatBreedId;
   p2Breed: CatBreedId;
+  p1Accessory?: CatAccessoryId;
+  p2Accessory?: CatAccessoryId;
+  p1Name?: string;
+  p2Name?: string;
+  soloAvatar?: CatAvatarConfig;
+  isJoined?: boolean;
+  showRoleLabels?: boolean;
+  interactive?: boolean;
   showTrophy?: boolean;
   size?: number;
 }) {
-  const m1 = getCatBreedMeta(p1Breed);
+  const [p1PetCount, setP1PetCount] = useState(0);
+  const [p2PetCount, setP2PetCount] = useState(0);
+  const [p1PetActive, setP1PetActive] = useState(false);
+  const [p2PetActive, setP2PetActive] = useState(false);
+
+  const m1 = getCatBreedMeta(isJoined ? p1Breed : soloAvatar?.breed ?? p1Breed);
   const m2 = getCatBreedMeta(p2Breed);
+
+  const p1Reaction = PET_REACTIONS[p1PetCount % PET_REACTIONS.length];
+  const p2Reaction = PET_REACTIONS[p2PetCount % PET_REACTIONS.length];
+
+  const handlePetCat = (which: 'p1' | 'p2') => {
+    if (!interactive) return;
+    if (which === 'p1') {
+      const nextIdx = p1PetCount + 1;
+      const nextEmotion = PET_REACTIONS[nextIdx % PET_REACTIONS.length].emotion;
+      if (nextEmotion === 'angry') {
+        playCatAngryMeow();
+      } else {
+        playCatMeow();
+      }
+      setP1PetCount(nextIdx);
+      setP1PetActive(false);
+      window.requestAnimationFrame(() => setP1PetActive(true));
+      window.setTimeout(() => setP1PetActive(false), 1000);
+    } else {
+      const nextIdx = p2PetCount + 1;
+      const nextEmotion = PET_REACTIONS[nextIdx % PET_REACTIONS.length].emotion;
+      if (nextEmotion === 'angry') {
+        playCatAngryMeow();
+      } else {
+        playCatMeow();
+      }
+      setP2PetCount(nextIdx);
+      setP2PetActive(false);
+      window.requestAnimationFrame(() => setP2PetActive(true));
+      window.setTimeout(() => setP2PetActive(false), 1000);
+    }
+  };
+
+  const soloBreed = soloAvatar?.breed ?? p1Breed;
+  const soloAcc = soloAvatar?.accessory ?? p1Accessory;
 
   return (
     <svg
-      viewBox="0 0 180 128"
+      viewBox="0 0 180 132"
       width={size}
-      height={Math.round(size * 0.71)}
-      aria-hidden="true"
+      height={Math.round(size * 0.73)}
+      aria-hidden={!interactive}
       style={{ display: 'block', overflow: 'visible' }}
       className="couple-hero-svg"
     >
@@ -465,176 +867,262 @@ export function CoupleCatsSceneSvg({
       <ellipse
         cx="90"
         cy="70"
-        rx="66"
+        rx="68"
         ry="46"
-        fill="rgba(255, 255, 255, 0.65)"
+        fill="rgba(255, 255, 255, 0.68)"
       />
+      <ellipse cx="90" cy="113" rx="64" ry="11.5" fill="#5B2A4E" />
       <ellipse
         cx="90"
-        cy="112"
-        rx="62"
-        ry="11"
-        fill="#5B2A4E"
-      />
-      <ellipse
-        cx="90"
-        cy="108"
-        rx="62"
-        ry="11"
+        cy="108.5"
+        rx="64"
+        ry="11.5"
         fill="#FFD6E4"
         stroke="#5B2A4E"
-        stroke-width="2.8"
+        strokeWidth="2.8"
       />
-      <ellipse
-        cx="90"
-        cy="106.5"
-        rx="52"
-        ry="7"
-        fill="#FFF8F2"
-      />
+      <ellipse cx="90" cy="107" rx="53" ry="7.2" fill="#FFF8F2" />
 
       {/* Twinkling Sticker Sparkle Stars */}
       <path
-        d="M 22 52 L 24 57 L 29 59 L 24 61 L 22 66 L 20 61 L 15 59 L 20 57 Z"
+        d="M 20 50 L 22 55 L 27 57 L 22 59 L 20 64 L 18 59 L 13 57 L 18 55 Z"
         fill="#FFBE0B"
         stroke="#5B2A4E"
-        stroke-width="1.2"
-        stroke-linejoin="round"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
       />
       <path
-        d="M 158 50 L 159.8 54.5 L 164.5 56.2 L 159.8 58 L 158 62.5 L 156.2 58 L 151.5 56.2 L 156.2 54.5 Z"
+        d="M 160 48 L 161.8 52.5 L 166.5 54.2 L 161.8 56 L 160 60.5 L 158.2 56 L 153.5 54.2 L 158.2 52.5 Z"
         fill="#FF6B9A"
         stroke="#5B2A4E"
-        stroke-width="1.2"
-        stroke-linejoin="round"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
       />
-      <circle cx="28" cy="78" r="2.8" fill="#4FC3C9" stroke="#5B2A4E" stroke-width="1.1" />
-      <circle cx="154" cy="76" r="2.8" fill="#A78BFA" stroke="#5B2A4E" stroke-width="1.1" />
-
-      {/* Left Cat (P1) — Full Detailed CatAvatarSvg Snuggled Inward */}
-      <g transform="translate(26, 28) rotate(-5 36 38)">
-        <CatAvatarSvg
-          breed={p1Breed}
-          accessory="crown"
-          size={72}
-          animateIdle={true}
-        />
-      </g>
-
-      {/* Right Cat (P2) — Full Detailed CatAvatarSvg Snuggled Inward */}
-      <g transform="translate(82, 28) rotate(5 36 38)">
-        <CatAvatarSvg
-          breed={p2Breed}
-          accessory="ribbon"
-          size={72}
-          animateIdle={true}
-        />
-      </g>
-
-      {/* Cozy Hugging Paws Meeting in the Middle */}
-      <ellipse
-        cx="84"
-        cy="85"
-        rx="6.2"
-        ry="4.2"
-        transform="rotate(14 84 85)"
-        fill={m1.fur}
+      <circle
+        cx="26"
+        cy="78"
+        r="2.8"
+        fill="#4FC3C9"
         stroke="#5B2A4E"
-        stroke-width="2"
+        strokeWidth="1.1"
       />
-      <ellipse
-        cx="96"
-        cy="85"
-        rx="6.2"
-        ry="4.2"
-        transform="rotate(-14 96 85)"
-        fill={m2.fur}
+      <circle
+        cx="154"
+        cy="76"
+        r="2.8"
+        fill="#A78BFA"
         stroke="#5B2A4E"
-        stroke-width="2"
+        strokeWidth="1.1"
       />
 
-      {/* Center Floating Glossy Love Heart / Trophy Badge Between the Cats */}
-      <g transform="translate(90, 22)">
-        <g className="sticker-anim-bob">
-          <circle
-            cx="0"
-            cy="2"
-            r="15.5"
-            fill="#5B2A4E"
+      {!isJoined ? (
+        /* SOLO CAT MODE (When not in a joined room yet) */
+        <g
+          transform="translate(51, 26)"
+          onClick={() => handlePetCat('p1')}
+          style={{ cursor: interactive ? 'pointer' : 'default' }}
+        >
+          <CatAvatarSvg
+            breed={soloBreed}
+            accessory={soloAcc}
+            size={78}
+            animateIdle={true}
+            isPetting={p1PetActive && p1Reaction.emotion === 'happy'}
+            isAngryPet={p1PetActive && p1Reaction.emotion === 'angry'}
           />
-          <circle
-            cx="0"
-            cy="0"
-            r="15.5"
-            fill="#FFF8F2"
-            stroke="#5B2A4E"
-            stroke-width="2.6"
-          />
-          {showTrophy ? (
-            <g transform="translate(-10, -10) scale(0.84)">
-              <path
-                d="M6 4h12v5a6 6 0 0 1-12 0V4z"
-                fill="#FFBE0B"
-                stroke="#5B2A4E"
-                stroke-width="1.8"
-              />
-              <rect x="10" y="14" width="4" height="4" fill="#F59E0B" />
-              <rect
-                x="7"
-                y="18"
-                width="10"
-                height="3"
-                rx="1.5"
-                fill="#D97706"
-                stroke="#5B2A4E"
-                stroke-width="1.4"
-              />
-            </g>
-          ) : (
-            <>
-              <path
-                d="M 0 8.5 C -2 6.8, -9.5 1.2, -9.5 -4.2 A 5.2 5.2 0 0 1 0 -6.4 A 5.2 5.2 0 0 1 9.5 -4.2 C 9.5 1.2, 2 6.8, 0 8.5 Z"
-                fill="#FF4D6D"
-                stroke="#5B2A4E"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-              <ellipse
-                cx="-3.4"
-                cy="-3.6"
-                rx="2.1"
-                ry="1.1"
-                transform="rotate(-25 -3.4 -3.6)"
-                fill="rgba(255, 255, 255, 0.75)"
-              />
-            </>
+          {p1PetActive && (
+            <PetReactionOverlaySvg
+              cx={39}
+              cy={-2}
+              phrase={p1Reaction.phrase}
+              emotion={p1Reaction.emotion}
+            />
           )}
         </g>
-      </g>
+      ) : (
+        /* SIDE-BY-SIDE COUPLE CATS MODE (When in a room together) */
+        <>
+          {/* Left Cat (P-1 Host) */}
+          <g
+            transform="translate(24, 28)"
+            onClick={() => handlePetCat('p1')}
+            style={{ cursor: interactive ? 'pointer' : 'default' }}
+          >
+            <CatAvatarSvg
+              breed={p1Breed}
+              accessory={p1Accessory}
+              size={72}
+              animateIdle={true}
+              isPetting={p1PetActive && p1Reaction.emotion === 'happy'}
+              isAngryPet={p1PetActive && p1Reaction.emotion === 'angry'}
+            />
+            {p1PetActive && (
+              <PetReactionOverlaySvg
+                cx={36}
+                cy={-2}
+                phrase={p1Reaction.phrase}
+                emotion={p1Reaction.emotion}
+              />
+            )}
+          </g>
 
-      {/* Mini Floating Heart Bubbles on Left & Right */}
-      <g transform="translate(36, 26)">
-        <g className="sticker-anim-bob">
-          <path
-            d="M 0 4.5 C -1.2 3.5, -5.2 0.6, -5.2 -2.2 A 2.9 2.9 0 0 1 0 -3.4 A 2.9 2.9 0 0 1 5.2 -2.2 C 5.2 0.6, 1.2 3.5, 0 4.5 Z"
-            fill="#FF7AA5"
+          {/* Right Cat (P-2 Invited) */}
+          <g
+            transform="translate(84, 28)"
+            onClick={() => handlePetCat('p2')}
+            style={{ cursor: interactive ? 'pointer' : 'default' }}
+          >
+            <CatAvatarSvg
+              breed={p2Breed}
+              accessory={p2Accessory}
+              size={72}
+              animateIdle={true}
+              isPetting={p2PetActive && p2Reaction.emotion === 'happy'}
+              isAngryPet={p2PetActive && p2Reaction.emotion === 'angry'}
+            />
+            {p2PetActive && (
+              <PetReactionOverlaySvg
+                cx={36}
+                cy={-2}
+                phrase={p2Reaction.phrase}
+                emotion={p2Reaction.emotion}
+              />
+            )}
+          </g>
+
+          {/* Cozy Hugging Paws Meeting in the Middle */}
+          <ellipse
+            cx="84"
+            cy="86"
+            rx="6.2"
+            ry="4.2"
+            transform="rotate(14 84 86)"
+            fill={m1.fur}
             stroke="#5B2A4E"
-            stroke-width="1.5"
-            stroke-linejoin="round"
+            strokeWidth="2"
           />
-        </g>
-      </g>
-      <g transform="translate(144, 26)">
-        <g className="sticker-anim-bob">
-          <path
-            d="M 0 4.5 C -1.2 3.5, -5.2 0.6, -5.2 -2.2 A 2.9 2.9 0 0 1 0 -3.4 A 2.9 2.9 0 0 1 5.2 -2.2 C 5.2 0.6, 1.2 3.5, 0 4.5 Z"
-            fill="#FFBE0B"
+          <ellipse
+            cx="96"
+            cy="86"
+            rx="6.2"
+            ry="4.2"
+            transform="rotate(-14 96 86)"
+            fill={m2.fur}
             stroke="#5B2A4E"
-            stroke-width="1.5"
-            stroke-linejoin="round"
+            strokeWidth="2"
           />
-        </g>
-      </g>
+
+          {/* Center Floating Glossy Love Heart / Trophy Badge Between Couple Cats */}
+          <g transform="translate(90, 20)">
+            <g className="sticker-anim-bob">
+              <circle cx="0" cy="2" r="13.5" fill="#5B2A4E" />
+              <circle
+                cx="0"
+                cy="0"
+                r="13.5"
+                fill="#FFF8F2"
+                stroke="#5B2A4E"
+                strokeWidth="2.4"
+              />
+              {showTrophy ? (
+                <g transform="translate(-10, -10) scale(0.84)">
+                  <path
+                    d="M6 4h12v5a6 6 0 0 1-12 0V4z"
+                    fill="#FFBE0B"
+                    stroke="#5B2A4E"
+                    strokeWidth="1.8"
+                  />
+                  <rect x="10" y="14" width="4" height="4" fill="#F59E0B" />
+                  <rect
+                    x="7"
+                    y="18"
+                    width="10"
+                    height="3"
+                    rx="1.5"
+                    fill="#D97706"
+                    stroke="#5B2A4E"
+                    strokeWidth="1.4"
+                  />
+                </g>
+              ) : (
+                <>
+                  <path
+                    d="M 0 7.5 C -2 6, -8.5 1, -8.5 -3.8 A 4.6 4.6 0 0 1 0 -5.8 A 4.6 4.6 0 0 1 8.5 -3.8 C 8.5 1, 2 6, 0 7.5 Z"
+                    fill="#FF4D6D"
+                    stroke="#5B2A4E"
+                    strokeWidth="1.9"
+                    strokeLinejoin="round"
+                  />
+                  <ellipse
+                    cx="-3"
+                    cy="-3.2"
+                    rx="1.8"
+                    ry="0.9"
+                    transform="rotate(-25 -3 -3.2)"
+                    fill="rgba(255, 255, 255, 0.78)"
+                  />
+                </>
+              )}
+            </g>
+          </g>
+
+          {/* Role Indicator Pills Below Each Cat: Host & Invited */}
+          {showRoleLabels && (
+            <>
+              <g transform="translate(54, 113)">
+                <rect
+                  x="-36"
+                  y="-9"
+                  width="72"
+                  height="17"
+                  rx="8.5"
+                  fill="#FF6B9A"
+                  stroke="#5B2A4E"
+                  strokeWidth="1.8"
+                />
+                <text
+                  x="0"
+                  y="2.5"
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  style={{
+                    fontSize: '7.4px',
+                    fontFamily: "var(--font-display, 'Baloo 2', sans-serif)",
+                    fontWeight: 800,
+                  }}
+                >
+                  {p1Name.slice(0, 8)} • Host
+                </text>
+              </g>
+              <g transform="translate(126, 113)">
+                <rect
+                  x="-36"
+                  y="-9"
+                  width="72"
+                  height="17"
+                  rx="8.5"
+                  fill="#38BDF8"
+                  stroke="#5B2A4E"
+                  strokeWidth="1.8"
+                />
+                <text
+                  x="0"
+                  y="2.5"
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  style={{
+                    fontSize: '7.4px',
+                    fontFamily: "var(--font-display, 'Baloo 2', sans-serif)",
+                    fontWeight: 800,
+                  }}
+                >
+                  {p2Name.slice(0, 8)} • Invited
+                </text>
+              </g>
+            </>
+          )}
+        </>
+      )}
     </svg>
   );
 }

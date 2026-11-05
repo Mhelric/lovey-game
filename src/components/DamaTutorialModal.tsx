@@ -28,21 +28,21 @@ const DAMA_STEPS: readonly TutorialStep[] = [
     title: 'Move Diagonally Forward',
     description:
       'Each normal cat pawn (Tao) steps 1 tile diagonally forward onto an empty pink square.',
-    tip: 'Tap any of your cats to highlight its green destination tiles, then tap a green dot to move!',
+    tip: 'Tap your cat to show yellow destination tiles & green paw hints, then tap a hint to move!',
   },
   {
     badge: 'Cat Dama • Step 2 of 4',
     title: 'Jump Forward & Backward',
     description:
-      'In Filipino Dama, normal cats can leap over an adjacent rival cat BOTH forward and backward onto an empty square right behind it.',
-    tip: 'If another jump is available after landing, your cat continues pouncing in a multi-jump combo!',
+      'In Filipino Dama, normal cats leap over an adjacent rival cat BOTH forward and backward into an empty square behind it.',
+    tip: 'Red paw hints show capture jumps. Chain jumps continue pouncing in a combo!',
   },
   {
     badge: 'Cat Dama • Step 3 of 4',
     title: 'Mandatory Max Capture (Mayor)',
     description:
-      'Captures are mandatory. If more than one capture path exists, you must take the path that captures the MOST rival cats.',
-    tip: 'A red pulsing ring automatically highlights which cat must jump!',
+      'Captures are mandatory! If multiple jumps exist, you MUST choose the route that captures the most rival cats.',
+    tip: 'A dashed red pulsing ring highlights cats required to jump by the Mayor rule.',
   },
   {
     badge: 'Cat Dama • Step 4 of 4',
@@ -56,17 +56,17 @@ const DAMA_STEPS: readonly TutorialStep[] = [
 const SNAKES_STEPS: readonly TutorialStep[] = [
   {
     badge: 'Snakes & Ladders • Step 1 of 2',
-    title: 'Roll the Cat Paw Dice',
+    title: '100 or 150 Tile Race',
     description:
-      'Take turns tapping the centered Dice button at the top to hop your cat along the 100-tile path.',
+      'Tap the centered Dice button below the board to hop your cat along the 100-tile or 150-tile path (no bonus roll on 6).',
     tip: 'Landing at the bottom of a ladder climbs up; landing on a snake head slides down!',
   },
   {
     badge: 'Snakes & Ladders • Step 2 of 2',
-    title: 'Exact Roll to Tile 100',
+    title: 'Random Mystery Powerups',
     description:
-      'Mystery Twist tiles grant Fish Boosts, Yarn Shields, or Cat Swaps. Reach Tile 100 first to win!',
-    tip: 'If your roll overshoots 100, your cat bounces backward from 100.',
+      'Purple star tiles grant random powerups: Twin Paw 2x Dice (for 2 turns!), Catnip Zoomies, Bubble Shield, Lucky Paw, or Switcheroo!',
+    tip: 'Overshooting the final tile bounces your cat backward. Land on the crown tile to win!',
   },
 ];
 
@@ -102,10 +102,10 @@ function TutorialIllustrationSvg({
 
       {gameMode === 'snakes' ? (
         <>
-          <circle cx="52" cy="54" r="16" fill="#fff0f3" stroke="#ff6b8b" strokeWidth="1.5" />
-          <MiniCatFace cx={52} cy={54} fur="#ff9ebb" />
+          <circle cx="48" cy="52" r="16" fill="#fff0f3" stroke="#ff6b8b" strokeWidth="1.5" />
+          <MiniCatFace cx={48} cy={52} fur="#ff9ebb" />
           <path
-            d="M 74 48 Q 100 22 124 44"
+            d="M 68 46 Q 94 16 120 38"
             fill="none"
             stroke="#10b981"
             strokeWidth="2.8"
@@ -113,16 +113,16 @@ function TutorialIllustrationSvg({
             strokeLinecap="round"
           />
           <rect
-            x="122"
-            y="34"
-            width="30"
-            height="30"
+            x="116"
+            y="32"
+            width="32"
+            height="32"
             rx="8"
             fill="#fef08a"
             stroke="#f59e0b"
             strokeWidth="2"
           />
-          <text x="137" y="54" textAnchor="middle" fill="#b45309" fontSize="11" fontWeight="900">
+          <text x="132" y="52" textAnchor="middle" fill="#b45309" fontSize="11" fontWeight="900">
             100
           </text>
         </>
@@ -175,30 +175,47 @@ function TutorialIllustrationSvg({
       ) : stepIndex === 2 ? (
         <>
           <circle
-            cx="54"
-            cy="52"
-            r="20"
+            cx="42"
+            cy="48"
+            r="19"
             fill="none"
             stroke="#f43f5e"
             strokeWidth="2"
             strokeDasharray="4 3"
           />
-          <circle cx="54" cy="52" r="14" fill="#fff0f3" stroke="#ff6b8b" strokeWidth="1.5" />
-          <MiniCatFace cx={54} cy={52} fur="#ff9ebb" />
+          <circle cx="42" cy="48" r="14" fill="#fff0f3" stroke="#ff6b8b" strokeWidth="1.5" />
+          <MiniCatFace cx={42} cy={48} fur="#ff9ebb" />
           <rect
-            x="86"
-            y="29"
-            width="76"
-            height="38"
-            rx="10"
+            x="66"
+            y="26"
+            width="102"
+            height="44"
+            rx="12"
             fill="#fff0f3"
             stroke="#ff6b8b"
             strokeWidth="1.5"
           />
-          <text x="124" y="45" textAnchor="middle" fill="#be185d" fontSize="9.5" fontWeight="900">
+          <text
+            x="117"
+            y="43"
+            textAnchor="middle"
+            fill="#be185d"
+            fontSize="7.4"
+            fontWeight="800"
+            letterSpacing="0.3"
+            style={{ fontSize: '7.4px', fontWeight: 800 }}
+          >
             MAYOR RULE
           </text>
-          <text x="124" y="58" textAnchor="middle" fill="#432818" fontSize="8.5" fontWeight="700">
+          <text
+            x="117"
+            y="56"
+            textAnchor="middle"
+            fill="#432818"
+            fontSize="6.6"
+            fontWeight="700"
+            style={{ fontSize: '6.6px', fontWeight: 700 }}
+          >
             Max Capture First
           </text>
         </>
@@ -282,8 +299,8 @@ export function DamaTutorialModal({
               <TutorialBookIcon size={18} />
               <span>
                 {gameMode === 'snakes'
-                  ? 'How to Play Snakes & Ladders'
-                  : 'How to Play Cat Dama'}
+                  ? 'Snakes & Ladders'
+                  : 'Cat Dama'}
               </span>
             </h2>
             <p className="modal-subtitle">{current.badge}</p>
