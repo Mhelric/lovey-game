@@ -184,18 +184,31 @@ export async function fetchActiveMatch<T = Record<string, unknown>>(
 export async function upsertActiveMatch<T = Record<string, unknown>>(
   match: Omit<ActiveMatchRow<T>, 'updated_at'>
 ): Promise<void> {
-  try {
-    await fetch(`${REST_BASE}/active_matches?on_conflict=room_code`, {
-      method: 'POST',
-      headers: getHeaders('resolution=merge-duplicates'),
-      body: JSON.stringify({
-        ...match,
-        room_code: normalizeRoomCode(match.room_code),
-        updated_at: new Date().toISOString(),
-      }),
-    });
-  } catch {
-    // Ignored when offline
+  const payload = JSON.stringify({
+    ...match,
+    room_code: normalizeRoomCode(match.room_code),
+    updated_at: new Date().toISOString(),
+  });
+
+  const attemptUpsert = async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`${REST_BASE}/active_matches?on_conflict=room_code`, {
+        method: 'POST',
+        headers: getHeaders('resolution=merge-duplicates'),
+        body: payload,
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const ok = await attemptUpsert();
+  if (!ok) {
+    // Automatic retry for slow or momentarily flaky mobile data
+    window.setTimeout(() => {
+      attemptUpsert();
+    }, 2400);
   }
 }
 
@@ -286,7 +299,17 @@ export type RealtimeBroadcastEvent =
       sender: PlayerSlot;
     }
   | { type: 'partner_joined'; slot: PlayerSlot; avatar: CatAvatarConfig }
+  | { type: 'partner_left'; slot: PlayerSlot }
   | { type: 'presence_ping'; slot: PlayerSlot; timestamp: number }
+  | { type: 'request_savestate'; slot: PlayerSlot }
+  | {
+      type: 'savestate_snapshot';
+      damaState: unknown;
+      snakesState: unknown;
+      currentMode: GameMode;
+      isPlaying: boolean;
+      sender: PlayerSlot;
+    }
   | {
       type: 'match_sync';
       gameMode: GameMode;
@@ -316,6 +339,7 @@ export class CoupleRealtimeChannel {
   private reconnectTimer: number | null = null;
   private destroyed = false;
   private onlineSeen: Record<PlayerSlot, number> = { p1: 0, p2: 0 };
+  private pendingStateSync: RealtimeBroadcastEvent | null = null;
 
   constructor(
     roomCode: string,
@@ -346,11 +370,12 @@ export class CoupleRealtimeChannel {
       this.ws = ws;
 
       ws.onopen = () => {
-        if (this.destroyed) return;
+        if (this.destroyed) {
+          ws.close();
+          return;
+        }
         this.handlers.onConnectionChange?.(true);
         this.joinRef = this.nextRef();
-
-        // Join Phoenix Realtime Channel
         ws.send(
           JSON.stringify({
             topic: this.topic,
@@ -372,6 +397,20 @@ export class CoupleRealtimeChannel {
           slot: this.slot,
           timestamp: Date.now(),
         });
+
+        // Flush any buffered move made during a slow internet drop & request latest savestate from peer
+        window.setTimeout(() => {
+          if (this.destroyed) return;
+          if (this.pendingStateSync) {
+            const queued = this.pendingStateSync;
+            this.pendingStateSync = null;
+            this.sendBroadcast(queued);
+          }
+          this.sendBroadcast({
+            type: 'request_savestate',
+            slot: this.slot,
+          });
+        }, 260);
 
         this.heartbeatTimer = window.setInterval(() => {
           this.sendRaw('phoenix', 'heartbeat', {});
@@ -414,6 +453,12 @@ export class CoupleRealtimeChannel {
                 }
                 return;
               }
+              if (inner.type === 'partner_left') {
+                this.onlineSeen[inner.slot] = 0;
+                this.handlers.onPartnerOnlineChange({ ...this.onlineSeen });
+                this.handlers.onBroadcast(inner);
+                return;
+              }
               this.handlers.onBroadcast(inner);
             }
           }
@@ -452,7 +497,12 @@ export class CoupleRealtimeChannel {
   }
 
   public sendBroadcast(eventPayload: RealtimeBroadcastEvent): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      if (eventPayload.type === 'match_sync') {
+        this.pendingStateSync = eventPayload;
+      }
+      return;
+    }
     const ref = this.nextRef();
     this.ws.send(
       JSON.stringify({

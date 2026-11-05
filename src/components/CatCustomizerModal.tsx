@@ -40,6 +40,7 @@ interface CatCustomizerModalProps {
   onHostResetMatch: () => void;
   onOpenTutorial: () => void;
   onExitToMenu: () => void;
+  onLeaveJoinedRoom: () => void;
   onSave: (newAvatar: CatAvatarConfig) => void;
   onClose: () => void;
 }
@@ -60,6 +61,7 @@ export function CatCustomizerModal({
   onHostSwitchGame,
   onHostResetMatch,
   onExitToMenu,
+  onLeaveJoinedRoom,
   onSave,
   onClose,
 }: CatCustomizerModalProps) {
@@ -334,9 +336,22 @@ export function CatCustomizerModal({
                   </div>
                 </div>
               ) : (
-                <p className="cozy-subtle-note">
-                  Connected as P-2 (Invited). Only P-1 (Host) can switch games.
-                </p>
+                <div className="cozy-section">
+                  <p className="cozy-subtle-note">
+                    Connected as Invited. Only the Host can switch games. Your
+                    savestate is automatically preserved!
+                  </p>
+                  <button
+                    type="button"
+                    className="tertiary-text-btn danger"
+                    onClick={() => {
+                      onClose();
+                      onLeaveJoinedRoom();
+                    }}
+                  >
+                    Leave Room
+                  </button>
+                </div>
               )}
 
               {/* In-Game Actions */}

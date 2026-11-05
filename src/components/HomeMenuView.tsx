@@ -30,15 +30,20 @@ interface HomeMenuViewProps {
   myAvatar: CatAvatarConfig;
   isJoined: boolean;
   p2Online: boolean;
+  hasSavedDama: boolean;
+  hasSavedSnakes: boolean;
+  savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   onOpenSettings: () => void;
   onChangeMyRoomCode: (newCode: string) => Promise<void>;
   onAttemptJoinAsInvited: (targetCode: string) => Promise<boolean>;
   onLeaveJoinedRoom: () => void;
+  onRejoinSavedGame: (mode?: GameMode) => void;
   onHostLaunchGame: (
     mode: GameMode,
     soloPractice?: boolean,
-    snakesMaxTile?: SnakesMaxTile
+    snakesMaxTile?: SnakesMaxTile,
+    forceNewMatch?: boolean
   ) => void;
   onSendReaction: (content: string, kind: 'emoji' | 'chat') => void;
 }
@@ -49,16 +54,22 @@ export function HomeMenuView({
   myAvatar,
   isJoined,
   p2Online,
+  hasSavedDama,
+  hasSavedSnakes,
+  savedSnakesMaxTile,
   chatMessages,
   onOpenSettings,
   onChangeMyRoomCode,
   onAttemptJoinAsInvited,
   onLeaveJoinedRoom,
+  onRejoinSavedGame,
   onHostLaunchGame,
   onSendReaction,
 }: HomeMenuViewProps) {
   const [pickingGame, setPickingGame] = useState(false);
-  const [snakesTiles, setSnakesTiles] = useState<SnakesMaxTile>(100);
+  const [snakesTiles, setSnakesTiles] = useState<SnakesMaxTile>(
+    savedSnakesMaxTile || 100
+  );
   const [copied, setCopied] = useState(false);
 
   // Editable Room Code state on homescreen
@@ -456,14 +467,14 @@ export function HomeMenuView({
               </span>
               <button
                 type="button"
-                className="leave-room-mini-btn"
+                className="leave-room-mini-btn sticker-press"
                 onClick={() => {
                   setJoinStatus('idle');
                   setJoinExpanded(false);
                   onLeaveJoinedRoom();
                 }}
               >
-                Leave
+                Leave Room
               </button>
             </div>
           )}
@@ -494,7 +505,7 @@ export function HomeMenuView({
         {/* Centered Play Game / Game Picker Flow (No Host/Invited Prompt!) */}
         <div className="menu-flow-card">
           {!isHost ? (
-            /* Invited Player automatically waits for Host to pick a game */
+            /* Invited Player automatically waits for Host to pick a game, or can Rejoin Savestate / Leave Room */
             <div className="flow-step-panel invited-waiting-panel anim-fade-scale">
               <div className="status-pill-banner success">
                 <CheckCircleIcon size={14} />
@@ -511,17 +522,85 @@ export function HomeMenuView({
                   <span>.</span>
                 </span>
               </p>
+
+              <div className="invited-panel-actions">
+                {(hasSavedDama || hasSavedSnakes) && (
+                  <button
+                    type="button"
+                    className="rejoin-savestate-btn sticker-press"
+                    onClick={() =>
+                      onRejoinSavedGame(
+                        roomData.current_mode === 'snakes' && hasSavedSnakes
+                          ? 'snakes'
+                          : hasSavedDama
+                          ? 'dama'
+                          : 'snakes'
+                      )
+                    }
+                  >
+                    <PawIcon size={13} />
+                    <span>
+                      Rejoin Saved{' '}
+                      {roomData.current_mode === 'snakes' && hasSavedSnakes
+                        ? 'Snakes'
+                        : hasSavedDama
+                        ? 'Cat Dama'
+                        : 'Snakes'}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="invited-leave-full-btn sticker-press"
+                  onClick={() => {
+                    setJoinStatus('idle');
+                    setJoinExpanded(false);
+                    onLeaveJoinedRoom();
+                  }}
+                >
+                  Leave Room
+                </button>
+              </div>
             </div>
           ) : !pickingGame ? (
-            /* Host clicks Play Game to immediately pick from the games */
-            <button
-              type="button"
-              className="vibrant-play-btn sticker-press"
-              onClick={() => setPickingGame(true)}
-            >
-              <span>Play Game</span>
-              <PawIcon size={19} />
-            </button>
+            /* Host clicks Play Game (or Resume Saved Game if a savestate exists!) */
+            <div className="host-play-actions-stack">
+              {(hasSavedDama || hasSavedSnakes) && (
+                <button
+                  type="button"
+                  className="rejoin-savestate-btn host-resume sticker-press"
+                  onClick={() =>
+                    onRejoinSavedGame(
+                      roomData.current_mode === 'snakes' && hasSavedSnakes
+                        ? 'snakes'
+                        : hasSavedDama
+                        ? 'dama'
+                        : 'snakes'
+                    )
+                  }
+                >
+                  <PawIcon size={14} />
+                  <span>
+                    Resume Saved{' '}
+                    {roomData.current_mode === 'snakes' && hasSavedSnakes
+                      ? `Snakes (${savedSnakesMaxTile})`
+                      : hasSavedDama
+                      ? 'Cat Dama'
+                      : `Snakes (${savedSnakesMaxTile})`}
+                  </span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="vibrant-play-btn sticker-press"
+                onClick={() => setPickingGame(true)}
+              >
+                <span>Play Game</span>
+                <PawIcon size={19} />
+              </button>
+            </div>
           ) : (
             /* Host Game Picker Panel (Dama or Snakes 100 / 150 Tiles) */
             <div className="flow-step-panel anim-fade-scale">
@@ -547,7 +626,9 @@ export function HomeMenuView({
                 >
                   <CrownIcon size={26} />
                   <span className="role-main-label">Cat Dama</span>
-                  <span className="role-sub-label">3D Filipino Checkers</span>
+                  <span className="role-sub-label">
+                    {hasSavedDama ? 'Resume Saved Match' : '3D Filipino Checkers'}
+                  </span>
                 </button>
 
                 {/* Snakes & Ladders Card with 100 / 150 Mode Switch */}
@@ -561,6 +642,9 @@ export function HomeMenuView({
                   >
                     <SnakeLadderIcon size={24} />
                     <span className="role-main-label">Snakes &amp; Ladders</span>
+                    {hasSavedSnakes && savedSnakesMaxTile === snakesTiles && (
+                      <span className="role-sub-label">Resume Saved Match</span>
+                    )}
                   </button>
                   <div
                     className="snakes-mode-pills"
