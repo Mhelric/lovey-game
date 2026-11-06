@@ -12,13 +12,8 @@ import {
   samePos,
 } from '../engines/damaEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
-import { CatAvatarSvg, CoupleCatsSceneSvg } from './CatAvatarSvg';
-import {
-  ConfettiCelebrationOverlay,
-  CrownIcon,
-  DoubleHeartIcon,
-  SparkleIcon,
-} from './ArcadeIcons';
+import { CatAvatarSvg } from './CatAvatarSvg';
+import { SparkleIcon } from './ArcadeIcons';
 import {
   playAscensionChime,
   playCatPounceCapture,
@@ -36,7 +31,6 @@ interface DamaBoardViewProps {
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
   onCommitState: (nextState: DamaGameState) => void;
-  onResetMatch: () => void;
 }
 
 interface PoofEffect {
@@ -367,7 +361,6 @@ export function DamaBoardView({
   p2Avatar,
   passAndPlay,
   onCommitState,
-  onResetMatch,
 }: DamaBoardViewProps) {
   const [selectedPos, setSelectedPos] = useState<BoardPos | null>(null);
   const [poofEffect, setPoofEffect] = useState<PoofEffect | null>(null);
@@ -767,36 +760,6 @@ export function DamaBoardView({
                 {ascendPopup.avatar.name} unlocked Flying Royal Wings!
               </span>
             </div>
-          </div>
-        )}
-
-        {/* Victory Celebration Sticker Card with Confetti */}
-        {gameState.winner && (
-          <div className="victory-overlay-card">
-            <ConfettiCelebrationOverlay />
-            <CoupleCatsSceneSvg
-              p1Breed={p1Avatar.breed}
-              p2Breed={p2Avatar.breed}
-              p1Accessory={p1Avatar.accessory}
-              p2Accessory={p2Avatar.accessory}
-              showTrophy
-              size={140}
-            />
-            <div className="victory-title">
-              <CrownIcon size={20} />
-              <span>
-                {gameState.winner === 'p1' ? p1Avatar.name : p2Avatar.name} Wins
-                Cat Dama!
-              </span>
-            </div>
-            <button
-              type="button"
-              className="victory-rematch-btn"
-              onClick={onResetMatch}
-            >
-              <span>Play Rematch</span>
-              <DoubleHeartIcon size={16} />
-            </button>
           </div>
         )}
       </div>

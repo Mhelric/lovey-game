@@ -51,177 +51,71 @@ export function setSoundMuted(muted: boolean): boolean {
    - 'dama'  : Groovy Playful Cat Duel Showdown Theme
    - 'snakes': Whimsical Carnival Adventure March Theme
    ========================================================================== */
-export type BgmTrack = 'menu' | 'dama' | 'snakes';
+export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno';
+
+const UNO_MELODY: readonly [number, number][] = [
+  [698, 349], [880, 0], [1047, 349], [880, 0],
+  [784, 392], [988, 0], [1175, 392], [988, 0],
+  [659, 330], [784, 0], [988, 330], [784, 0],
+  [880, 440], [1047, 0], [1319, 440], [880, 0],
+];
 
 const MENU_MELODY: readonly [number, number][] = [
-  // Bar 1 (Fmaj7 / Cmaj7 sunny kawaii bounce)
-  [523.25, 261.63], // C5 + C4
-  [659.25, 0],      // E5
-  [783.99, 392.0],  // G5 + G4
-  [880.0, 0],       // A5
-  [783.99, 329.63], // G5 + E4
-  [659.25, 0],      // E5
-  [587.33, 293.66], // D5 + D4
-  [523.25, 0],      // C5
-  // Bar 2 (Playful upward skip)
-  [587.33, 349.23], // D5 + F4
-  [659.25, 0],      // E5
-  [783.99, 440.0],  // G5 + A4
-  [1046.5, 0],      // C6
-  [880.0, 392.0],   // A5 + G4
-  [783.99, 0],      // G5
-  [659.25, 329.63], // E5 + E4
-  [587.33, 0],      // D5
-  // Bar 3 (Cozy pastel bridge)
-  [659.25, 261.63], // E5 + C4
-  [783.99, 0],      // G5
-  [880.0, 349.23],  // A5 + F4
-  [783.99, 0],      // G5
-  [659.25, 329.63], // E5 + E4
-  [523.25, 0],      // C5
-  [587.33, 293.66], // D5 + D4
-  [659.25, 0],      // E5
-  // Bar 4 (Happy cadence turnaround)
-  [783.99, 392.0],  // G5 + G4
-  [880.0, 0],       // A5
-  [659.25, 329.63], // E5 + E4
-  [587.33, 0],      // D5
-  [523.25, 261.63], // C5 + C4
-  [659.25, 329.63], // E5 + E4
-  [783.99, 392.0],  // G5 + G4
-  [523.25, 0],      // C5
+  [523, 262], [659, 0], [784, 392], [880, 0], [784, 330], [659, 0], [587, 294], [523, 0],
+  [587, 349], [659, 0], [784, 440], [1047, 0], [880, 392], [784, 0], [659, 330], [587, 0],
+  [659, 262], [784, 0], [880, 349], [784, 0], [659, 330], [523, 0], [587, 294], [659, 0],
+  [784, 392], [880, 0], [659, 330], [587, 0], [523, 262], [659, 330], [784, 392], [523, 0],
 ];
 
-// Cat Dama: Playful, rhythmic pentatonic cat-duel groove (Am7 -> Dm7 -> G7 -> Cmaj7)
 const DAMA_MELODY: readonly [number, number][] = [
-  // Bar 1 (Am7 sneaky cat paws)
-  [440.0, 220.0],   // A4 + A3
-  [523.25, 0],      // C5
-  [659.25, 329.63], // E5 + E4
-  [587.33, 0],      // D5
-  [659.25, 220.0],  // E5 + A3
-  [783.99, 0],      // G5
-  [880.0, 329.63],  // A5 + E4
-  [0, 246.94],      // rest + B3
-  // Bar 2 (Dm7 clever tactic bounce)
-  [587.33, 293.66], // D5 + D4
-  [698.46, 0],      // F5
-  [880.0, 440.0],   // A5 + A4
-  [783.99, 0],      // G5
-  [698.46, 293.66], // F5 + D4
-  [659.25, 0],      // E5
-  [587.33, 349.23], // D5 + F4
-  [523.25, 0],      // C5
-  // Bar 3 (G7 -> Cmaj7 royal pounce)
-  [493.88, 196.0],  // B4 + G3
-  [587.33, 0],      // D5
-  [783.99, 293.66], // G5 + D4
-  [659.25, 0],      // E5
-  [523.25, 261.63], // C5 + C4
-  [659.25, 0],      // E5
-  [783.99, 329.63], // G5 + E4
-  [987.77, 0],      // B5
-  // Bar 4 (E7 playful turnaround)
-  [880.0, 220.0],   // A5 + A3
-  [783.99, 0],      // G5
-  [659.25, 329.63], // E5 + E4
-  [587.33, 0],      // D5
-  [523.25, 246.94], // C5 + B3
-  [587.33, 0],      // D5
-  [659.25, 329.63], // E5 + E4
-  [440.0, 220.0],   // A4 + A3
+  [440, 220], [523, 0], [659, 330], [587, 0], [659, 220], [784, 0], [880, 330], [0, 247],
+  [587, 294], [698, 0], [880, 440], [784, 0], [698, 294], [659, 0], [587, 349], [523, 0],
+  [494, 196], [587, 0], [784, 294], [659, 0], [523, 262], [659, 0], [784, 330], [988, 0],
+  [880, 220], [784, 0], [659, 330], [587, 0], [523, 247], [587, 0], [659, 330], [440, 220],
 ];
 
-// Snakes & Ladders: Whimsical, hopping G-major carnival board-game adventure
 const SNAKES_MELODY: readonly [number, number][] = [
-  // Bar 1 (G major bouncy hop)
-  [392.0, 196.0],   // G4 + G3
-  [493.88, 293.66], // B4 + D4
-  [587.33, 196.0],  // D5 + G3
-  [783.99, 293.66], // G5 + D4
-  [659.25, 261.63], // E5 + C4
-  [783.99, 0],      // G5
-  [587.33, 196.0],  // D5 + G3
-  [0, 293.66],      // D4
-  // Bar 2 (C major -> D7 ladder climb arpeggio)
-  [523.25, 261.63], // C5 + C4
-  [659.25, 329.63], // E5 + E4
-  [783.99, 261.63], // G5 + C4
-  [1046.5, 0],      // C6
-  [880.0, 293.66],  // A5 + D4
-  [739.99, 0],      // F#5
-  [587.33, 293.66], // D5 + D4
-  [659.25, 0],      // E5
-  // Bar 3 (Playful snake wiggle motif)
-  [783.99, 196.0],  // G5 + G3
-  [739.99, 0],      // F#5
-  [783.99, 293.66], // G5 + D4
-  [880.0, 0],       // A5
-  [587.33, 246.94], // D5 + B3
-  [659.25, 0],      // E5
-  [783.99, 293.66], // G5 + D4
-  [587.33, 0],      // D5
-  // Bar 4 (Cheerful carnival finish)
-  [523.25, 261.63], // C5 + C4
-  [587.33, 0],      // D5
-  [659.25, 293.66], // E5 + D4
-  [739.99, 0],      // F#5
-  [783.99, 196.0],  // G5 + G3
-  [587.33, 293.66], // D5 + D4
-  [783.99, 196.0],  // G5 + G3
-  [0, 0],
+  [392, 196], [494, 294], [587, 196], [784, 294], [659, 262], [784, 0], [587, 196], [0, 294],
+  [523, 262], [659, 330], [784, 262], [1047, 0], [880, 294], [740, 0], [587, 294], [659, 0],
+  [784, 196], [740, 0], [784, 294], [880, 0], [587, 247], [659, 0], [784, 294], [587, 0],
+  [523, 262], [587, 0], [659, 294], [740, 0], [784, 196], [587, 294], [784, 196], [0, 0],
 ];
+
+const BGM_CONFIGS: Record<
+  BgmTrack,
+  {
+    stepMs: number;
+    melody: readonly [number, number][];
+    lType: OscillatorType;
+    lVol: number;
+    bType: OscillatorType;
+    bVol: number;
+  }
+> = {
+  uno: { stepMs: 180, melody: UNO_MELODY, lType: 'triangle', lVol: 0.024, bType: 'square', bVol: 0.012 },
+  dama: { stepMs: 195, melody: DAMA_MELODY, lType: 'square', lVol: 0.016, bType: 'triangle', bVol: 0.025 },
+  snakes: { stepMs: 210, melody: SNAKES_MELODY, lType: 'triangle', lVol: 0.028, bType: 'sine', bVol: 0.024 },
+  menu: { stepMs: 240, melody: MENU_MELODY, lType: 'triangle', lVol: 0.026, bType: 'sine', bVol: 0.02 },
+};
 
 let bgmTimer: number | null = null;
 let bgmStep = 0;
 let currentBgmTrack: BgmTrack = 'menu';
-
-function getTrackStepMs(track: BgmTrack): number {
-  if (track === 'dama') return 195;
-  if (track === 'snakes') return 210;
-  return 240;
-}
 
 function playBgmStep(): void {
   if (mutedState) return;
   const ctx = getAudioContext();
   if (!ctx || ctx.state !== 'running') return;
 
-  const melody =
-    currentBgmTrack === 'dama'
-      ? DAMA_MELODY
-      : currentBgmTrack === 'snakes'
-      ? SNAKES_MELODY
-      : MENU_MELODY;
+  const cfg = BGM_CONFIGS[currentBgmTrack];
+  const [leadFreq, bassFreq] = cfg.melody[bgmStep % cfg.melody.length];
+  bgmStep = (bgmStep + 1) % cfg.melody.length;
 
-  const [leadFreq, bassFreq] = melody[bgmStep % melody.length];
-  bgmStep = (bgmStep + 1) % melody.length;
-
-  if (currentBgmTrack === 'dama') {
-    // Crisp, rhythmic chiptune-bell lead + punchy triangle bass for Cat Dama
-    if (leadFreq > 0) {
-      playTone(leadFreq, leadFreq * 1.002, 0.14, 'square', 0.014, 0);
-      playTone(leadFreq, leadFreq, 0.16, 'triangle', 0.02, 0);
-    }
-    if (bassFreq > 0) {
-      playTone(bassFreq, bassFreq, 0.18, 'triangle', 0.025, 0);
-    }
-  } else if (currentBgmTrack === 'snakes') {
-    // Bouncy carnival adventure flute/xylophone lead + tuba sine bass for Snakes & Ladders
-    if (leadFreq > 0) {
-      playTone(leadFreq, leadFreq * 1.01, 0.15, 'triangle', 0.028, 0);
-    }
-    if (bassFreq > 0) {
-      playTone(bassFreq, bassFreq * 0.99, 0.16, 'sine', 0.024, 0);
-    }
-  } else {
-    // Cozy Music-Box Lead + Soft Sine Harmony for Main Menu
-    if (leadFreq > 0) {
-      playTone(leadFreq, leadFreq * 1.003, 0.19, 'triangle', 0.026, 0);
-    }
-    if (bassFreq > 0) {
-      playTone(bassFreq, bassFreq, 0.26, 'sine', 0.02, 0);
-    }
+  if (leadFreq > 0) {
+    playTone(leadFreq, leadFreq * 1.004, 0.14, cfg.lType, cfg.lVol, 0);
+  }
+  if (bassFreq > 0) {
+    playTone(bassFreq, bassFreq, 0.16, cfg.bType, cfg.bVol, 0);
   }
 }
 
@@ -231,14 +125,14 @@ export function setBgMusicTrack(track: BgmTrack): void {
   bgmStep = 0;
   if (bgmTimer !== null && typeof window !== 'undefined') {
     window.clearInterval(bgmTimer);
-    bgmTimer = window.setInterval(playBgmStep, getTrackStepMs(currentBgmTrack));
+    bgmTimer = window.setInterval(playBgmStep, BGM_CONFIGS[currentBgmTrack].stepMs);
   }
 }
 
 export function startBgMusicLoop(): void {
   if (typeof window === 'undefined' || mutedState || bgmTimer !== null) return;
   getAudioContext();
-  bgmTimer = window.setInterval(playBgmStep, getTrackStepMs(currentBgmTrack));
+  bgmTimer = window.setInterval(playBgmStep, BGM_CONFIGS[currentBgmTrack].stepMs);
 }
 
 function stopBgMusicLoop(): void {
@@ -385,4 +279,31 @@ export function playVictoryFanfare(): void {
   fanfare.forEach(([freq, dur, delay]) => {
     playTone(freq, freq * 1.015, dur, 'triangle', 0.14, delay);
   });
+}
+
+export function playCardPlay(): void {
+  playTone(520, 780, 0.065, 'sine', 0.11, 0);
+  playTone(780, 1040, 0.05, 'triangle', 0.09, 0.04);
+}
+
+export function playCardDraw(): void {
+  playTone(440, 620, 0.06, 'triangle', 0.1, 0);
+}
+
+export function playUnoCall(): void {
+  // Joyful high arpeggio + cat chirp
+  playTone(587.33, 587.33, 0.08, 'sine', 0.12, 0);
+  playTone(880.0, 880.0, 0.09, 'triangle', 0.13, 0.06);
+  playTone(1174.66, 1174.66, 0.16, 'sine', 0.15, 0.13);
+  playCatMeow();
+}
+
+export function playColorSelect(): void {
+  playTone(659.25, 880.0, 0.08, 'sine', 0.1, 0);
+  playTone(880.0, 1046.5, 0.1, 'triangle', 0.11, 0.06);
+}
+
+export function playHandSwap(): void {
+  playTone(783.99, 392.0, 0.16, 'sine', 0.14, 0);
+  playTone(392.0, 880.0, 0.18, 'triangle', 0.14, 0.1);
 }

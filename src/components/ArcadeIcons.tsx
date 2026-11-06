@@ -200,33 +200,6 @@ export function EditPenIcon({ size = 14, className }: IconProps) {
   );
 }
 
-export function ExitDoorIcon({ size = 16, className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M9 12h10m0 0l-3.5-3.5M19 12l-3.5 3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 export function ArrowBackIcon({ size = 16, className }: IconProps) {
   return (
@@ -305,6 +278,16 @@ export function AlertCircleIcon({ size = 16, className }: IconProps) {
   );
 }
 
+const DICE_DOTS: readonly [number, number][][] = [
+  [],
+  [[12, 12]],
+  [[7.5, 7.5], [16.5, 16.5]],
+  [[7, 7], [12, 12], [17, 17]],
+  [[7.5, 7.5], [16.5, 7.5], [7.5, 16.5], [16.5, 16.5]],
+  [[7.5, 7.5], [16.5, 7.5], [12, 12], [7.5, 16.5], [16.5, 16.5]],
+  [[7.5, 6.8], [16.5, 6.8], [7.5, 12], [16.5, 12], [7.5, 17.2], [16.5, 17.2]],
+];
+
 export function DiceFaceSvg({
   value,
   size = 24,
@@ -314,43 +297,9 @@ export function DiceFaceSvg({
   size?: number;
   tint?: string;
 }) {
-  const dots: Record<number, [number, number][]> = {
-    1: [[12, 12]],
-    2: [
-      [7.5, 7.5],
-      [16.5, 16.5],
-    ],
-    3: [
-      [7, 7],
-      [12, 12],
-      [17, 17],
-    ],
-    4: [
-      [7.5, 7.5],
-      [16.5, 7.5],
-      [7.5, 16.5],
-      [16.5, 16.5],
-    ],
-    5: [
-      [7.5, 7.5],
-      [16.5, 7.5],
-      [12, 12],
-      [7.5, 16.5],
-      [16.5, 16.5],
-    ],
-    6: [
-      [7.5, 6.8],
-      [16.5, 6.8],
-      [7.5, 12],
-      [16.5, 12],
-      [7.5, 17.2],
-      [16.5, 17.2],
-    ],
-  };
-  const activeDots = dots[value] || dots[6];
+  const activeDots = DICE_DOTS[value] || DICE_DOTS[6];
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      {/* 3D Bottom Lip */}
       <rect
         x="2"
         y="3.4"
@@ -369,7 +318,6 @@ export function DiceFaceSvg({
         stroke="#5B2A4E"
         strokeWidth="2.2"
       />
-      {/* Glossy Top Specular Shine */}
       <path
         d="M 5.5 4.2 H 14.5"
         stroke="rgba(255,255,255,0.85)"
@@ -631,79 +579,6 @@ export function SoundIcon({
   );
 }
 
-export function ModeLiveIcon({
-  passAndPlay,
-  size = 15,
-}: {
-  passAndPlay: boolean;
-  size?: number;
-}) {
-  if (passAndPlay) {
-    return (
-      <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-        <rect
-          x="6"
-          y="2.5"
-          width="12"
-          height="19"
-          rx="3"
-          fill="#FF9F1C"
-          stroke="#5B2A4E"
-          strokeWidth="1.8"
-        />
-        <rect x="8" y="5" width="8" height="12.5" rx="1.2" fill="#FFF8F0" />
-        <circle cx="12" cy="19.3" r="1" fill="#FFF8F0" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="#38BDF8"
-        stroke="#5B2A4E"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M3.6 12h16.8M12 3.2c2.5 2.6 3.8 5.6 3.8 8.8s-1.3 6.2-3.8 8.8c-2.5-2.6-3.8-5.6-3.8-8.8S9.5 5.8 12 3.2z"
-        fill="none"
-        stroke="#E0F2FE"
-        strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-
-export function ResetIcon({ size = 15 }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <path
-        d="M4.5 12a7.5 7.5 0 1 1 2.2 5.3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <polygon points="3,7.5 8.5,7.5 5.5,12.5" fill="currentColor" />
-    </svg>
-  );
-}
-
-export function HomeMenuIcon({ size = 16 }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <path
-        d="M3.5 11.2L12 4l8.5 7.2v8.3a1.5 1.5 0 0 1-1.5 1.5h-4.8v-5.5H9.8V21H5a1.5 1.5 0 0 1-1.5-1.5v-8.3z"
-        fill="#FF6B9A"
-        stroke="#5B2A4E"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 export function TutorialBookIcon({ size = 16 }: IconProps) {
   return (
@@ -830,124 +705,98 @@ export function SnakeLadderIcon({ size = 18 }: IconProps) {
   );
 }
 
-export function AccessoryBadgeIcon({
-  accessory,
-  size = 22,
-}: {
-  accessory: CatAccessoryId;
-  size?: number;
-}) {
-  switch (accessory) {
-    case 'crown':
-      return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-          <path
-            d="M3 18h18l1.2-9.5-5.2 3.6L12 5 7 12.1 1.8 8.5 3 18z"
-            fill="#FFBE0B"
-            stroke="#5B2A4E"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
+export function UnoCardsIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 26 26"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Back Sky Blue Card tilted left */}
+      <g transform="translate(4.5, 3) rotate(-14 8 10)">
+        <rect
+          x="0"
+          y="0"
+          width="12.5"
+          height="17.5"
+          rx="3.2"
+          fill="#38BDF8"
+          stroke="#5B2A4E"
+          strokeWidth="2"
+        />
+        <ellipse
+          cx="6.25"
+          cy="8.75"
+          rx="4.2"
+          ry="3"
+          transform="rotate(25 6.25 8.75)"
+          fill="#ffffff"
+        />
+      </g>
+      {/* Front Strawberry Red Card tilted right */}
+      <g transform="translate(10, 5) rotate(12 8 10)">
+        <rect
+          x="0"
+          y="0"
+          width="12.5"
+          height="17.5"
+          rx="3.2"
+          fill="#FF4B72"
+          stroke="#5B2A4E"
+          strokeWidth="2"
+        />
+        <ellipse
+          cx="6.25"
+          cy="8.75"
+          rx="4.2"
+          ry="3"
+          transform="rotate(-25 6.25 8.75)"
+          fill="#FFF8F2"
+        />
+        <circle cx="6.25" cy="8.75" r="1.4" fill="#FF4B72" />
+      </g>
+    </svg>
+  );
+}
+
+export function AccessoryBadgeIcon({ accessory, size = 22 }: { accessory: CatAccessoryId; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
+      {accessory === 'crown' ? (
+        <>
+          <path d="M3 18h18l1.2-9.5-5.2 3.6L12 5 7 12.1 1.8 8.5 3 18z" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2" strokeLinejoin="round" />
           <circle cx="12" cy="13.5" r="1.6" fill="#FF4D6D" />
-        </svg>
-      );
-    case 'ribbon':
-      return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-          <path
-            d="M4.5 7.5c0-2 3.8-1 7.5 2.8 3.7-3.8 7.5-4.8 7.5-2.8v9c0 2-3.8 1-7.5-2.8-3.7 3.8-7.5 4.8-7.5 2.8v-9z"
-            fill="#FF4D6D"
-            stroke="#5B2A4E"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <circle
-            cx="12"
-            cy="12"
-            r="2.5"
-            fill="#FFB3C1"
-            stroke="#5B2A4E"
-            strokeWidth="1.8"
-          />
-        </svg>
-      );
-    case 'sakura':
-      return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-          <path
-            d="M12 4.2a3.2 3.2 0 0 1 2.7 4.6 3.2 3.2 0 0 1 4 4 3.2 3.2 0 0 1-2.6 5.2 3.2 3.2 0 0 1-4.1 0 3.2 3.2 0 0 1-2.6-5.2 3.2 3.2 0 0 1 4-4A3.2 3.2 0 0 1 12 4.2z"
-            fill="#FFB3C1"
-            stroke="#5B2A4E"
-            strokeWidth="1.9"
-            strokeLinejoin="round"
-          />
+        </>
+      ) : accessory === 'ribbon' ? (
+        <>
+          <path d="M4.5 7.5c0-2 3.8-1 7.5 2.8 3.7-3.8 7.5-4.8 7.5-2.8v9c0 2-3.8 1-7.5-2.8-3.7 3.8-7.5 4.8-7.5 2.8v-9z" fill="#FF4D6D" stroke="#5B2A4E" strokeWidth="2" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="2.5" fill="#FFB3C1" stroke="#5B2A4E" strokeWidth="1.8" />
+        </>
+      ) : accessory === 'sakura' ? (
+        <>
+          <path d="M12 4.2a3.2 3.2 0 0 1 2.7 4.6 3.2 3.2 0 0 1 4 4 3.2 3.2 0 0 1-2.6 5.2 3.2 3.2 0 0 1-4.1 0 3.2 3.2 0 0 1-2.6-5.2 3.2 3.2 0 0 1 4-4A3.2 3.2 0 0 1 12 4.2z" fill="#FFB3C1" stroke="#5B2A4E" strokeWidth="1.9" strokeLinejoin="round" />
           <circle cx="12" cy="12.2" r="2.2" fill="#FFBE0B" />
-        </svg>
-      );
-    case 'sunglasses':
-      return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-          <rect
-            x="2"
-            y="8.5"
-            width="8.5"
-            height="6.5"
-            rx="2.2"
-            fill="#334155"
-            stroke="#5B2A4E"
-            strokeWidth="2"
-          />
-          <rect
-            x="13.5"
-            y="8.5"
-            width="8.5"
-            height="6.5"
-            rx="2.2"
-            fill="#334155"
-            stroke="#5B2A4E"
-            strokeWidth="2"
-          />
+        </>
+      ) : accessory === 'sunglasses' ? (
+        <>
+          <rect x="2" y="8.5" width="8.5" height="6.5" rx="2.2" fill="#334155" stroke="#5B2A4E" strokeWidth="2" />
+          <rect x="13.5" y="8.5" width="8.5" height="6.5" rx="2.2" fill="#334155" stroke="#5B2A4E" strokeWidth="2" />
           <path d="M10.5 11.2h3" stroke="#FFBE0B" strokeWidth="2.2" />
-          <line
-            x1="4"
-            y1="10.2"
-            x2="6.5"
-            y2="13"
-            stroke="#ffffff"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-          <line
-            x1="15.5"
-            y1="10.2"
-            x2="18"
-            y2="13"
-            stroke="#ffffff"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'none':
-    default:
-      return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-          <ellipse
-            cx="12"
-            cy="15"
-            rx="4.2"
-            ry="3.4"
-            fill="#FFE5EC"
-            stroke="#5B2A4E"
-            strokeWidth="1.9"
-          />
-          <circle cx="7" cy="10" r="1.7" fill="#FF8FAB" stroke="#5B2A4E" strokeWidth="1.5" />
-          <circle cx="10.3" cy="7.8" r="1.7" fill="#FF8FAB" stroke="#5B2A4E" strokeWidth="1.5" />
-          <circle cx="13.7" cy="7.8" r="1.7" fill="#FF8FAB" stroke="#5B2A4E" strokeWidth="1.5" />
-          <circle cx="17" cy="10" r="1.7" fill="#FF8FAB" stroke="#5B2A4E" strokeWidth="1.5" />
-        </svg>
-      );
-  }
+          <line x1="4" y1="10.2" x2="6.5" y2="13" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+          <line x1="15.5" y1="10.2" x2="18" y2="13" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+        </>
+      ) : (
+        <>
+          <ellipse cx="12" cy="15" rx="4.2" ry="3.4" fill="#FFE5EC" stroke="#5B2A4E" strokeWidth="1.9" />
+          {[7, 10.3, 13.7, 17].map((cx, i) => (
+            <circle key={i} cx={cx} cy={i === 0 || i === 3 ? 10 : 7.8} r="1.7" fill="#FF8FAB" stroke="#5B2A4E" strokeWidth="1.5" />
+          ))}
+        </>
+      )}
+    </svg>
+  );
 }
 
 /**
@@ -966,197 +815,88 @@ export function PowerupIllustrationSvg({
     | 'swap';
   size?: number;
 }) {
-  switch (kind) {
-    case 'double_dice':
-      return (
-        <svg viewBox="0 0 56 56" width={size} height={size} aria-hidden="true">
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            fill="#FEF3C7"
-            stroke="#5B2A4E"
-            strokeWidth="2.8"
-          />
+  const bg =
+    kind === 'double_dice'
+      ? '#FEF3C7'
+      : kind === 'boost'
+      ? '#DCFCE7'
+      : kind === 'shield_gain' || kind === 'shield_saved'
+      ? '#E0F2FE'
+      : kind === 'extra_roll'
+      ? '#FCE7F3'
+      : '#F3E8FF';
+
+  return (
+    <svg viewBox="0 0 56 56" width={size} height={size} aria-hidden="true">
+      <circle cx="28" cy="28" r="24" fill={bg} stroke="#5B2A4E" strokeWidth="2.8" />
+      {kind === 'double_dice' ? (
+        <>
           <g transform="translate(6, 12) rotate(-12 12 12)">
-            <rect
-              x="2"
-              y="2"
-              width="20"
-              height="20"
-              rx="5"
-              fill="#FFBE0B"
-              stroke="#5B2A4E"
-              strokeWidth="2.4"
-            />
+            <rect x="2" y="2" width="20" height="20" rx="5" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.4" />
             <circle cx="8" cy="8" r="2" fill="#5B2A4E" />
             <circle cx="16" cy="16" r="2" fill="#5B2A4E" />
           </g>
           <g transform="translate(24, 15) rotate(12 12 12)">
-            <rect
-              x="2"
-              y="2"
-              width="20"
-              height="20"
-              rx="5"
-              fill="#FF6B9A"
-              stroke="#5B2A4E"
-              strokeWidth="2.4"
-            />
-            <circle cx="7.5" cy="7.5" r="1.8" fill="#FFF8F2" />
-            <circle cx="16.5" cy="7.5" r="1.8" fill="#FFF8F2" />
-            <circle cx="12" cy="12" r="1.8" fill="#FFF8F2" />
-            <circle cx="7.5" cy="16.5" r="1.8" fill="#FFF8F2" />
-            <circle cx="16.5" cy="16.5" r="1.8" fill="#FFF8F2" />
+            <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF6B9A" stroke="#5B2A4E" strokeWidth="2.4" />
+            {[[7.5, 7.5], [16.5, 7.5], [12, 12], [7.5, 16.5], [16.5, 16.5]].map(([cx, cy], i) => (
+              <circle key={i} cx={cx} cy={cy} r="1.8" fill="#FFF8F2" />
+            ))}
           </g>
-        </svg>
-      );
-    case 'boost':
-      return (
-        <svg viewBox="0 0 56 56" width={size} height={size} aria-hidden="true">
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            fill="#DCFCE7"
-            stroke="#5B2A4E"
-            strokeWidth="2.8"
-          />
-          <path
-            d="M 16 36 C 16 20, 28 12, 40 14 C 38 28, 30 38, 16 36 Z"
-            fill="#10B981"
-            stroke="#5B2A4E"
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M 16 36 Q 26 26 36 18"
-            fill="none"
-            stroke="#A7F3D0"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M 14 42 L 22 34 M 24 44 L 30 38"
-            stroke="#F59E0B"
-            strokeWidth="2.8"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'shield_gain':
-    case 'shield_saved':
-      return (
-        <svg viewBox="0 0 56 56" width={size} height={size} aria-hidden="true">
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            fill="#E0F2FE"
-            stroke="#5B2A4E"
-            strokeWidth="2.8"
-          />
-          <path
-            d="M 28 11 L 42 16 V 27 C 42 36.5, 35.5 42.5, 28 45 C 20.5 42.5, 14 36.5, 14 27 V 16 Z"
-            fill="#2EC4B6"
-            stroke="#5B2A4E"
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M 28 15.5 L 37.5 19 V 26.5 C 37.5 33, 33 37.5, 28 39.5"
-            fill="none"
-            stroke="#A5F3FC"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
+        </>
+      ) : kind === 'boost' ? (
+        <>
+          <path d="M 16 36 C 16 20, 28 12, 40 14 C 38 28, 30 38, 16 36 Z" fill="#10B981" stroke="#5B2A4E" strokeWidth="2.5" strokeLinejoin="round" />
+          <path d="M 16 36 Q 26 26 36 18" fill="none" stroke="#A7F3D0" strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M 14 42 L 22 34 M 24 44 L 30 38" stroke="#F59E0B" strokeWidth="2.8" strokeLinecap="round" />
+        </>
+      ) : kind === 'shield_gain' || kind === 'shield_saved' ? (
+        <>
+          <path d="M 28 11 L 42 16 V 27 C 42 36.5, 35.5 42.5, 28 45 C 20.5 42.5, 14 36.5, 14 27 V 16 Z" fill="#2EC4B6" stroke="#5B2A4E" strokeWidth="2.5" strokeLinejoin="round" />
+          <path d="M 28 15.5 L 37.5 19 V 26.5 C 37.5 33, 33 37.5, 28 39.5" fill="none" stroke="#A5F3FC" strokeWidth="2" strokeLinecap="round" />
           <circle cx="28" cy="27" r="4.5" fill="#FFF8F2" />
-        </svg>
-      );
-    case 'extra_roll':
-      return (
-        <svg viewBox="0 0 56 56" width={size} height={size} aria-hidden="true">
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            fill="#FCE7F3"
-            stroke="#5B2A4E"
-            strokeWidth="2.8"
-          />
-          <ellipse
-            cx="28"
-            cy="33"
-            rx="8.5"
-            ry="6.8"
-            fill="#FFBE0B"
-            stroke="#5B2A4E"
-            strokeWidth="2.4"
-          />
-          <circle cx="17.5" cy="23.5" r="3.8" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.2" />
-          <circle cx="24" cy="18.5" r="3.8" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.2" />
-          <circle cx="32" cy="18.5" r="3.8" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.2" />
-          <circle cx="38.5" cy="23.5" r="3.8" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.2" />
-        </svg>
-      );
-    case 'swap':
-    default:
-      return (
-        <svg viewBox="0 0 56 56" width={size} height={size} aria-hidden="true">
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            fill="#F3E8FF"
-            stroke="#5B2A4E"
-            strokeWidth="2.8"
-          />
-          <path
-            d="M 16 22 H 38 L 33 16 M 40 34 H 18 L 23 40"
-            fill="none"
-            stroke="#A855F7"
-            strokeWidth="3.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      );
-  }
+        </>
+      ) : kind === 'extra_roll' ? (
+        <>
+          <ellipse cx="28" cy="33" rx="8.5" ry="6.8" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.4" />
+          {[[17.5, 23.5], [24, 18.5], [32, 18.5], [38.5, 23.5]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="3.8" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="2.2" />
+          ))}
+        </>
+      ) : (
+        <path d="M 16 22 H 38 L 33 16 M 40 34 H 18 L 23 40" fill="none" stroke="#A855F7" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
 }
 
 /**
  * Compositor-Only Confetti Burst Overlay for Winning Celebrations
  */
-const CONFETTI_PIECES: readonly {
-  x: string;
-  delay: string;
-  color: string;
-  rot: string;
-}[] = [
-  { x: '8%', delay: '0s', color: '#FF6B9A', rot: '-25deg' },
-  { x: '18%', delay: '0.15s', color: '#FFBE0B', rot: '20deg' },
-  { x: '28%', delay: '0.05s', color: '#2EC4B6', rot: '-15deg' },
-  { x: '38%', delay: '0.25s', color: '#A855F7', rot: '35deg' },
-  { x: '48%', delay: '0.1s', color: '#FF4D6D', rot: '-30deg' },
-  { x: '58%', delay: '0.3s', color: '#38BDF8', rot: '18deg' },
-  { x: '68%', delay: '0.08s', color: '#10B981', rot: '-22deg' },
-  { x: '78%', delay: '0.2s', color: '#FB923C', rot: '28deg' },
-  { x: '88%', delay: '0.12s', color: '#FF6B9A', rot: '-18deg' },
-  { x: '94%', delay: '0.28s', color: '#FFBE0B', rot: '24deg' },
+const CONFETTI_PIECES: readonly [string, string, string, string][] = [
+  ['8%', '0s', '#FF6B9A', '-25deg'],
+  ['18%', '0.15s', '#FFBE0B', '20deg'],
+  ['28%', '0.05s', '#2EC4B6', '-15deg'],
+  ['38%', '0.25s', '#A855F7', '35deg'],
+  ['48%', '0.1s', '#FF4D6D', '-30deg'],
+  ['58%', '0.3s', '#38BDF8', '18deg'],
+  ['68%', '0.08s', '#10B981', '-22deg'],
+  ['78%', '0.2s', '#FB923C', '28deg'],
+  ['88%', '0.12s', '#FF6B9A', '-18deg'],
+  ['94%', '0.28s', '#FFBE0B', '24deg'],
 ];
 
 export function ConfettiCelebrationOverlay() {
   return (
     <div className="victory-confetti-layer" aria-hidden="true">
-      {CONFETTI_PIECES.map((p, idx) => (
+      {CONFETTI_PIECES.map(([x, delay, color, rot], idx) => (
         <span
           key={idx}
           className="confetti-ribbon"
           style={{
-            left: p.x,
-            backgroundColor: p.color,
-            animationDelay: p.delay,
-            transform: `rotate(${p.rot})`,
+            left: x,
+            backgroundColor: color,
+            animationDelay: delay,
+            transform: `rotate(${rot})`,
           }}
         />
       ))}
@@ -1167,6 +907,9 @@ export function ConfettiCelebrationOverlay() {
 /**
  * Finch-style Lineless Pastel Cat Reaction Stickers (with subtle compositor animation)
  */
+const CAT_HEAD_PATH =
+  'M7 16 C6 9 9 5 13 9 C16 8 20 8 23 9 C27 5 30 9 29 16 C31 22 27 29 18 29 C9 29 5 22 7 16 Z';
+
 export function ReactionStickerSvg({
   id,
   size = 26,
@@ -1176,175 +919,80 @@ export function ReactionStickerSvg({
   size?: number;
   animated?: boolean;
 }) {
-  const cls = animated ? 'sticker-anim-bob' : undefined;
-  switch (id) {
-    case 'love':
-      return (
-        <svg
-          viewBox="0 0 36 36"
-          width={size}
-          height={size}
-          className={cls}
-          aria-hidden="true"
-        >
-          <path
-            d="M7 16 C6 9 9 5 13 9 C16 8 20 8 23 9 C27 5 30 9 29 16 C31 22 27 29 18 29 C9 29 5 22 7 16 Z"
-            fill="#ff8fab"
-            stroke="#5B2A4E"
-            strokeWidth="1.6"
-          />
-          <ellipse cx="18" cy="21" rx="8.5" ry="6.2" fill="#ffe5ec" />
-          <path
-            d="M13 18.5s-2.8-1.6-2.8-3.5a1.5 1.5 0 0 1 2.8-.9 1.5 1.5 0 0 1 2.8.9c0 1.9-2.8 3.5-2.8 3.5z"
-            fill="#e63946"
-          />
-          <path
-            d="M23 18.5s-2.8-1.6-2.8-3.5a1.5 1.5 0 0 1 2.8-.9 1.5 1.5 0 0 1 2.8.9c0 1.9-2.8 3.5-2.8 3.5z"
-            fill="#e63946"
-          />
-          <path
-            d="M15.8 21.5 Q16.9 23 18 21.5 Q19.1 23 20.2 21.5"
-            fill="none"
-            stroke="#5e3023"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'joy':
-      return (
-        <svg
-          viewBox="0 0 36 36"
-          width={size}
-          height={size}
-          className={cls}
-          aria-hidden="true"
-        >
-          <path
-            d="M7 16 C6 9 9 5 13 9 C16 8 20 8 23 9 C27 5 30 9 29 16 C31 22 27 29 18 29 C9 29 5 22 7 16 Z"
-            fill="#ffbe0b"
-            stroke="#5B2A4E"
-            strokeWidth="1.6"
-          />
-          <ellipse cx="18" cy="21" rx="8.5" ry="6.2" fill="#fff8f0" />
-          <path
-            d="M11 16.5 Q13 14 15 16.5M21 16.5 Q23 14 25 16.5"
-            fill="none"
-            stroke="#432818"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-          <path d="M14.5 20.2 H21.5 Q18 25.5 14.5 20.2 Z" fill="#ff4d6d" />
-          <Drop cx={9} cy={18.5} />
-          <Drop cx={27} cy={18.5} />
-        </svg>
-      );
-    case 'cry':
-      return (
-        <svg
-          viewBox="0 0 36 36"
-          width={size}
-          height={size}
-          className={cls}
-          aria-hidden="true"
-        >
-          <path
-            d="M7 16 C6 9 9 5 13 9 C16 8 20 8 23 9 C27 5 30 9 29 16 C31 22 27 29 18 29 C9 29 5 22 7 16 Z"
-            fill="#94a3b8"
-            stroke="#5B2A4E"
-            strokeWidth="1.6"
-          />
-          <ellipse cx="18" cy="21" rx="8.2" ry="6" fill="#f1f5f9" />
-          <circle cx="13" cy="16.5" r="2" fill="#1e293b" />
-          <circle cx="23" cy="16.5" r="2" fill="#1e293b" />
-          <circle cx="12.4" cy="15.8" r="0.7" fill="#ffffff" />
-          <circle cx="22.4" cy="15.8" r="0.7" fill="#ffffff" />
-          <rect
-            x="11.8"
-            y="18.5"
-            width="2.2"
-            height="5.5"
-            rx="1.1"
-            fill="#38bdf8"
-          />
-          <rect
-            x="22"
-            y="18.5"
-            width="2.2"
-            height="5.5"
-            rx="1.1"
-            fill="#38bdf8"
-          />
-          <path
-            d="M15.5 22.8 Q18 20.8 20.5 22.8"
-            fill="none"
-            stroke="#334155"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'paws':
-      return (
-        <svg
-          viewBox="0 0 36 36"
-          width={size}
-          height={size}
-          className={cls}
-          aria-hidden="true"
-        >
-          <circle cx="18" cy="18" r="14" fill="#ffe5ec" stroke="#5B2A4E" strokeWidth="1.6" />
-          <ellipse cx="18" cy="21" rx="5.5" ry="4.5" fill="#ff4d6d" />
-          <circle cx="11.5" cy="14.5" r="2.4" fill="#ff4d6d" />
-          <circle cx="15.6" cy="11.6" r="2.4" fill="#ff4d6d" />
-          <circle cx="20.4" cy="11.6" r="2.4" fill="#ff4d6d" />
-          <circle cx="24.5" cy="14.5" r="2.4" fill="#ff4d6d" />
-        </svg>
-      );
-    case 'fish':
-      return (
-        <svg
-          viewBox="0 0 36 36"
-          width={size}
-          height={size}
-          className={cls}
-          aria-hidden="true"
-        >
-          <circle cx="18" cy="18" r="14" fill="#e0f2fe" stroke="#5B2A4E" strokeWidth="1.6" />
-          <path d="M24 18l5.5-4.5v9L24 18z" fill="#0284c7" />
-          <ellipse cx="16.5" cy="18" rx="8.5" ry="5.5" fill="#38bdf8" />
-          <circle cx="12" cy="16.8" r="1.3" fill="#0f172a" />
-          <ellipse
-            cx="13.5"
-            cy="19.2"
-            rx="1.4"
-            ry="0.8"
-            fill="#ff758f"
-            opacity="0.8"
-          />
-        </svg>
-      );
-    case 'heart':
-    default:
-      return (
-        <svg
-          viewBox="0 0 36 36"
-          width={size}
-          height={size}
-          className={cls}
-          aria-hidden="true"
-        >
-          <circle cx="18" cy="18" r="14" fill="#fff0f3" stroke="#5B2A4E" strokeWidth="1.6" />
-          <path
-            d="M18 27.5s-9.5-5.6-9.5-12.2A5.2 5.2 0 0 1 18 11.5a5.2 5.2 0 0 1 9.5 3.8c0 6.6-9.5 12.2-9.5 12.2z"
-            fill="#ff4d6d"
-          />
-          <circle cx="13.5" cy="14.5" r="1.6" fill="#ffb3c1" />
-        </svg>
-      );
-  }
-}
+  const isHead = id === 'love' || id === 'joy' || id === 'cry';
+  const headFill = id === 'love' ? '#ff8fab' : id === 'joy' ? '#ffbe0b' : '#94a3b8';
+  const headBelly = id === 'love' ? '#ffe5ec' : id === 'joy' ? '#fff8f0' : '#f1f5f9';
+  const circleFill = id === 'paws' ? '#ffe5ec' : id === 'fish' ? '#e0f2fe' : '#fff0f3';
 
-function Drop({ cx, cy }: { cx: number; cy: number }) {
-  return <circle cx={cx} cy={cy} r="1.9" fill="#38bdf8" />;
+  return (
+    <svg
+      viewBox="0 0 36 36"
+      width={size}
+      height={size}
+      className={animated ? 'sticker-anim-bob' : undefined}
+      aria-hidden="true"
+    >
+      {isHead ? (
+        <>
+          <path d={CAT_HEAD_PATH} fill={headFill} stroke="#5B2A4E" strokeWidth="1.6" />
+          <ellipse cx="18" cy="21" rx={id === 'cry' ? 8.2 : 8.5} ry={id === 'cry' ? 6 : 6.2} fill={headBelly} />
+          {id === 'love' ? (
+            <>
+              {[13, 23].map((cx) => (
+                <path
+                  key={cx}
+                  d={`M${cx} 18.5s-2.8-1.6-2.8-3.5a1.5 1.5 0 0 1 2.8-.9 1.5 1.5 0 0 1 2.8.9c0 1.9-2.8 3.5-2.8 3.5z`}
+                  fill="#e63946"
+                />
+              ))}
+              <path d="M15.8 21.5 Q16.9 23 18 21.5 Q19.1 23 20.2 21.5" fill="none" stroke="#5e3023" strokeWidth="1.4" strokeLinecap="round" />
+            </>
+          ) : id === 'joy' ? (
+            <>
+              <path d="M11 16.5 Q13 14 15 16.5M21 16.5 Q23 14 25 16.5" fill="none" stroke="#432818" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M14.5 20.2 H21.5 Q18 25.5 14.5 20.2 Z" fill="#ff4d6d" />
+              {[9, 27].map((cx) => (
+                <circle key={cx} cx={cx} cy={18.5} r="1.9" fill="#38bdf8" />
+              ))}
+            </>
+          ) : (
+            <>
+              {[13, 23].map((cx) => (
+                <g key={cx}>
+                  <circle cx={cx} cy={16.5} r="2" fill="#1e293b" />
+                  <circle cx={cx - 0.6} cy={15.8} r="0.7" fill="#ffffff" />
+                  <rect x={cx - 1.2} y={18.5} width="2.2" height="5.5" rx="1.1" fill="#38bdf8" />
+                </g>
+              ))}
+              <path d="M15.5 22.8 Q18 20.8 20.5 22.8" fill="none" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" />
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <circle cx="18" cy="18" r="14" fill={circleFill} stroke="#5B2A4E" strokeWidth="1.6" />
+          {id === 'paws' ? (
+            <>
+              <ellipse cx="18" cy="21" rx="5.5" ry="4.5" fill="#ff4d6d" />
+              {[[11.5, 14.5], [15.6, 11.6], [20.4, 11.6], [24.5, 14.5]].map(([cx, cy], i) => (
+                <circle key={i} cx={cx} cy={cy} r="2.4" fill="#ff4d6d" />
+              ))}
+            </>
+          ) : id === 'fish' ? (
+            <>
+              <path d="M24 18l5.5-4.5v9L24 18z" fill="#0284c7" />
+              <ellipse cx="16.5" cy="18" rx="8.5" ry="5.5" fill="#38bdf8" />
+              <circle cx="12" cy="16.8" r="1.3" fill="#0f172a" />
+              <ellipse cx="13.5" cy="19.2" rx="1.4" ry="0.8" fill="#ff758f" opacity="0.8" />
+            </>
+          ) : (
+            <>
+              <path d="M18 27.5s-9.5-5.6-9.5-12.2A5.2 5.2 0 0 1 18 11.5a5.2 5.2 0 0 1 9.5 3.8c0 6.6-9.5 12.2-9.5 12.2z" fill="#ff4d6d" />
+              <circle cx="13.5" cy="14.5" r="1.6" fill="#ffb3c1" />
+            </>
+          )}
+        </>
+      )}
+    </svg>
+  );
 }

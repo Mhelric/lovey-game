@@ -146,6 +146,9 @@ interface CatAvatarSvgProps {
   actionAnim?: CatActionAnim;
 }
 
+const TAIL_D =
+  'M 35.5 37 C 43 36, 45.2 28.8, 41 25.8 C 38.4 24.3, 36.8 27.8, 38.5 30.5';
+
 /**
  * Finch-inspired Chubby Pastel Illustrated Cat Avatar
  * Enhanced with grounded rossark-motion choreography:
@@ -187,24 +190,18 @@ export function CatAvatarSvg({
     >
       <g className={actionClass || undefined}>
         {/* Grounded Little Bottom Feet (Stay planted on cushion) */}
-        <ellipse
-          cx="16.5"
-          cy="43"
-          rx="3.4"
-          ry="1.9"
-          fill={meta.secondaryFur}
-          stroke="#5B2A4E"
-          strokeWidth="1.2"
-        />
-        <ellipse
-          cx="31.5"
-          cy="43"
-          rx="3.4"
-          ry="1.9"
-          fill={meta.secondaryFur}
-          stroke="#5B2A4E"
-          strokeWidth="1.2"
-        />
+        {[16.5, 31.5].map((cx) => (
+          <ellipse
+            key={cx}
+            cx={cx}
+            cy="43"
+            rx="3.4"
+            ry="1.9"
+            fill={meta.secondaryFur}
+            stroke="#5B2A4E"
+            strokeWidth="1.2"
+          />
+        ))}
 
         {/* Mochi Body & Head Group (Pivots cleanly from base 24, 42) */}
         <g
@@ -229,14 +226,14 @@ export function CatAvatarSvg({
             }
           >
             <path
-              d="M 35.5 37 C 43 36, 45.2 28.8, 41 25.8 C 38.4 24.3, 36.8 27.8, 38.5 30.5"
+              d={TAIL_D}
               fill="none"
               stroke="#5B2A4E"
               strokeWidth="5.8"
               strokeLinecap="round"
             />
             <path
-              d="M 35.5 37 C 43 36, 45.2 28.8, 41 25.8 C 38.4 24.3, 36.8 27.8, 38.5 30.5"
+              d={TAIL_D}
               fill="none"
               stroke={meta.secondaryFur}
               strokeWidth="3.8"
@@ -337,30 +334,27 @@ export function CatAvatarSvg({
           )}
 
           {/* Rosy Pastel Oval Cheeks */}
-          <ellipse
-            cx="13.8"
-            cy={squintActive ? '25.2' : '26.2'}
-            rx={squintActive ? '3.5' : '3.2'}
-            ry={squintActive ? '2.1' : '1.9'}
-            fill={meta.cheekColor}
-            opacity={squintActive ? '0.92' : '0.78'}
-          />
-          <ellipse
-            cx="34.2"
-            cy={squintActive ? '25.2' : '26.2'}
-            rx={squintActive ? '3.5' : '3.2'}
-            ry={squintActive ? '2.1' : '1.9'}
-            fill={meta.cheekColor}
-            opacity={squintActive ? '0.92' : '0.78'}
-          />
+          {[13.8, 34.2].map((cx) => (
+            <ellipse
+              key={cx}
+              cx={cx}
+              cy={squintActive ? '25.2' : '26.2'}
+              rx={squintActive ? '3.5' : '3.2'}
+              ry={squintActive ? '2.1' : '1.9'}
+              fill={meta.cheekColor}
+              opacity={squintActive ? '0.92' : '0.78'}
+            />
+          ))}
 
           {/* Expressive Live Cat Eyes */}
           {dizzy ? (
             <g stroke="#432818" strokeWidth="1.8" strokeLinecap="round">
-              <line x1="15.5" y1="20.5" x2="19.5" y2="24.5" />
-              <line x1="19.5" y1="20.5" x2="15.5" y2="24.5" />
-              <line x1="28.5" y1="20.5" x2="32.5" y2="24.5" />
-              <line x1="32.5" y1="20.5" x2="28.5" y2="24.5" />
+              {[17.5, 30.5].map((cx) => (
+                <g key={cx}>
+                  <line x1={cx - 2} y1="20.5" x2={cx + 2} y2="24.5" />
+                  <line x1={cx + 2} y1="20.5" x2={cx - 2} y2="24.5" />
+                </g>
+              ))}
             </g>
           ) : isAngryPet ? (
             <g>
@@ -377,10 +371,12 @@ export function CatAvatarSvg({
                 stroke="#432818"
                 strokeWidth="0.9"
               />
-              <circle cx="17.8" cy="22.8" r="1.9" fill="#E11D48" />
-              <circle cx="30.2" cy="22.8" r="1.9" fill="#E11D48" />
-              <circle cx="17.3" cy="22.3" r="0.7" fill="#ffffff" />
-              <circle cx="29.7" cy="22.3" r="0.7" fill="#ffffff" />
+              {[17.8, 30.2].map((cx) => (
+                <circle key={cx} cx={cx} cy="22.8" r="1.9" fill="#E11D48" />
+              ))}
+              {[17.3, 29.7].map((cx) => (
+                <circle key={cx} cx={cx} cy="22.3" r="0.7" fill="#ffffff" />
+              ))}
               {/* Furrowed V-Shaped Angry Eyebrows */}
               <line
                 x1="13.8"
@@ -408,10 +404,7 @@ export function CatAvatarSvg({
                 strokeLinecap="round"
                 fill="none"
               >
-                <path d="M -2.6 -1.1 Q -0.9 -0.9 -1.1 -2.6" />
-                <path d="M 2.6 -1.1 Q 0.9 -0.9 1.1 -2.6" />
-                <path d="M -2.6 1.1 Q -0.9 0.9 -1.1 2.6" />
-                <path d="M 2.6 1.1 Q 0.9 0.9 1.1 2.6" />
+                <path d="M -2.6 -1.1 Q -0.9 -0.9 -1.1 -2.6 M 2.6 -1.1 Q 0.9 -0.9 1.1 -2.6 M -2.6 1.1 Q -0.9 0.9 -1.1 2.6 M 2.6 1.1 Q 0.9 0.9 1.1 2.6" />
               </g>
             </g>
           ) : squintActive ? (
@@ -421,48 +414,36 @@ export function CatAvatarSvg({
               strokeWidth="2.2"
               strokeLinecap="round"
             >
-              <path d="M 14.5 23.2 Q 17.5 19.2 20.5 23.2" />
-              <path d="M 27.5 23.2 Q 30.5 19.2 33.5 23.2" />
+              <path d="M 14.5 23.2 Q 17.5 19.2 20.5 23.2 M 27.5 23.2 Q 30.5 19.2 33.5 23.2" />
             </g>
           ) : (
             <g className={animateIdle ? 'cat-eye-blink' : undefined}>
-              <ellipse
-                cx="17.5"
-                cy="22.4"
-                rx="3.05"
-                ry="2.95"
-                fill="#FFFDF9"
-                stroke="#432818"
-                strokeWidth="0.6"
-              />
-              <ellipse
-                cx="30.5"
-                cy="22.4"
-                rx="3.05"
-                ry="2.95"
-                fill="#FFFDF9"
-                stroke="#432818"
-                strokeWidth="0.6"
-              />
+              {[17.5, 30.5].map((cx) => (
+                <ellipse
+                  key={cx}
+                  cx={cx}
+                  cy="22.4"
+                  rx="3.05"
+                  ry="2.95"
+                  fill="#FFFDF9"
+                  stroke="#432818"
+                  strokeWidth="0.6"
+                />
+              ))}
               <g className={animateIdle ? 'cat-pupil-glide' : undefined}>
-                <circle cx="17.5" cy="22.4" r="2.55" fill={meta.eyeColor} />
-                <circle cx="30.5" cy="22.4" r="2.55" fill={meta.eyeColor} />
-                <circle cx="16.6" cy="21.3" r="1.05" fill="#ffffff" />
-                <circle cx="29.6" cy="21.3" r="1.05" fill="#ffffff" />
-                <circle
-                  cx="18.3"
-                  cy="23.3"
-                  r="0.48"
-                  fill="#ffffff"
-                  opacity="0.85"
-                />
-                <circle
-                  cx="31.3"
-                  cy="23.3"
-                  r="0.48"
-                  fill="#ffffff"
-                  opacity="0.85"
-                />
+                {[17.5, 30.5].map((cx) => (
+                  <g key={cx}>
+                    <circle cx={cx} cy="22.4" r="2.55" fill={meta.eyeColor} />
+                    <circle cx={cx - 0.9} cy="21.3" r="1.05" fill="#ffffff" />
+                    <circle
+                      cx={cx + 0.8}
+                      cy="23.3"
+                      r="0.48"
+                      fill="#ffffff"
+                      opacity="0.85"
+                    />
+                  </g>
+                ))}
               </g>
             </g>
           )}
@@ -515,39 +496,27 @@ export function CatAvatarSvg({
             <line x1="41.4" y1="27" x2="37.2" y2="26.8" />
           </g>
 
-          {/* Cute Chubby Front Paws Resting on Chest (Wave happily or swat when angry!) */}
-          <g
-            className={
-              isPetting || isAngryPet ? 'cat-paw-left-wave' : undefined
-            }
-          >
-            <ellipse
-              cx="18.2"
-              cy="35.5"
-              rx="3.6"
-              ry="2.5"
-              transform="rotate(14 18.2 35.5)"
-              fill={meta.fur}
-              stroke={meta.secondaryFur}
-              strokeWidth="0.95"
-            />
-          </g>
-          <g
-            className={
-              isPetting || isAngryPet ? 'cat-paw-right-wave' : undefined
-            }
-          >
-            <ellipse
-              cx="29.8"
-              cy="35.5"
-              rx="3.6"
-              ry="2.5"
-              transform="rotate(-14 29.8 35.5)"
-              fill={meta.fur}
-              stroke={meta.secondaryFur}
-              strokeWidth="0.95"
-            />
-          </g>
+          {/* Cute Chubby Front Paws Resting on Chest */}
+          {([
+            [18.2, 14, 'cat-paw-left-wave'],
+            [29.8, -14, 'cat-paw-right-wave'],
+          ] as const).map(([cx, rot, cls]) => (
+            <g
+              key={cx}
+              className={isPetting || isAngryPet ? cls : undefined}
+            >
+              <ellipse
+                cx={cx}
+                cy="35.5"
+                rx="3.6"
+                ry="2.5"
+                transform={`rotate(${rot} ${cx} 35.5)`}
+                fill={meta.fur}
+                stroke={meta.secondaryFur}
+                strokeWidth="0.95"
+              />
+            </g>
+          ))}
 
           {/* Accessories / Outfits */}
           {effectiveAccessory === 'crown' && (
@@ -587,37 +556,48 @@ export function CatAvatarSvg({
 
           {effectiveAccessory === 'sakura' && (
             <g transform="translate(14, 10.8)" stroke="#5B2A4E" strokeWidth="0.7">
-              <circle cx="0" cy="-2.6" r="2.1" fill="#ffb3c1" />
-              <circle cx="2.5" cy="-0.8" r="2.1" fill="#ffb3c1" />
-              <circle cx="1.6" cy="2.1" r="2.1" fill="#ffb3c1" />
-              <circle cx="-1.6" cy="2.1" r="2.1" fill="#ffb3c1" />
-              <circle cx="-2.5" cy="-0.8" r="2.1" fill="#ffb3c1" />
+              {[
+                [0, -2.6],
+                [2.5, -0.8],
+                [1.6, 2.1],
+                [-1.6, 2.1],
+                [-2.5, -0.8],
+              ].map(([cx, cy], i) => (
+                <circle key={i} cx={cx} cy={cy} r="2.1" fill="#ffb3c1" />
+              ))}
               <circle cx="0" cy="0" r="1.4" fill="#ffbe0b" />
             </g>
           )}
 
           {effectiveAccessory === 'sunglasses' && (
             <g>
-              <rect
-                x="12.2"
-                y="19"
-                width="10.4"
-                height="6.4"
-                rx="2.1"
-                fill="#1e293b"
-                stroke="#5B2A4E"
-                strokeWidth="1"
-              />
-              <rect
-                x="25.4"
-                y="19"
-                width="10.4"
-                height="6.4"
-                rx="2.1"
-                fill="#1e293b"
-                stroke="#5B2A4E"
-                strokeWidth="1"
-              />
+              {[
+                [12.2, 14],
+                [25.4, 27.2],
+              ].map(([rx, lx]) => (
+                <g key={rx}>
+                  <rect
+                    x={rx}
+                    y="19"
+                    width="10.4"
+                    height="6.4"
+                    rx="2.1"
+                    fill="#1e293b"
+                    stroke="#5B2A4E"
+                    strokeWidth="1"
+                  />
+                  <line
+                    x1={lx}
+                    y1="20.6"
+                    x2={lx + 2.8}
+                    y2="23.8"
+                    stroke="#ffffff"
+                    strokeWidth="1.2"
+                    opacity="0.78"
+                    strokeLinecap="round"
+                  />
+                </g>
+              ))}
               <line
                 x1="22.6"
                 y1="21.5"
@@ -625,26 +605,6 @@ export function CatAvatarSvg({
                 y2="21.5"
                 stroke="#ffbe0b"
                 strokeWidth="1.8"
-              />
-              <line
-                x1="14"
-                y1="20.6"
-                x2="16.8"
-                y2="23.8"
-                stroke="#ffffff"
-                strokeWidth="1.2"
-                opacity="0.78"
-                strokeLinecap="round"
-              />
-              <line
-                x1="27.2"
-                y1="20.6"
-                x2="30"
-                y2="23.8"
-                stroke="#ffffff"
-                strokeWidth="1.2"
-                opacity="0.78"
-                strokeLinecap="round"
               />
             </g>
           )}
@@ -681,58 +641,43 @@ function PetReactionOverlaySvg({
   return (
     <g transform={`translate(${cx}, ${cy})`} pointerEvents="none">
       {isAngry ? (
-        /* Floating Feisty Anger Sparks Around the Cat */
         <>
-          <g
-            className="pet-heart-burst h1"
-            transform="translate(-28, 13)"
-            stroke="#E11D48"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            fill="none"
-          >
-            <path d="M -3.2 -1.3 Q -1.1 -1.1 -1.3 -3.2" />
-            <path d="M 3.2 -1.3 Q 1.1 -1.1 1.3 -3.2" />
-            <path d="M -3.2 1.3 Q -1.1 1.1 -1.3 3.2" />
-            <path d="M 3.2 1.3 Q 1.1 1.1 1.3 3.2" />
-          </g>
-          <g
-            className="pet-heart-burst h2"
-            transform="translate(28, 11)"
-            stroke="#E11D48"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            fill="none"
-          >
-            <path d="M -3.2 -1.3 Q -1.1 -1.1 -1.3 -3.2" />
-            <path d="M 3.2 -1.3 Q 1.1 -1.1 1.3 -3.2" />
-            <path d="M -3.2 1.3 Q -1.1 1.1 -1.3 3.2" />
-            <path d="M 3.2 1.3 Q 1.1 1.1 1.3 3.2" />
-          </g>
+          {[
+            [-28, 13],
+            [28, 11],
+          ].map(([bx, by], i) => (
+            <g
+              key={i}
+              className={`pet-heart-burst h${i + 1}`}
+              transform={`translate(${bx}, ${by})`}
+              stroke="#E11D48"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              fill="none"
+            >
+              <path d="M -3.2 -1.3 Q -1.1 -1.1 -1.3 -3.2 M 3.2 -1.3 Q 1.1 -1.1 1.3 -3.2 M -3.2 1.3 Q -1.1 1.1 -1.3 3.2 M 3.2 1.3 Q 1.1 1.1 1.3 3.2" />
+            </g>
+          ))}
         </>
       ) : (
-        /* Floating Mini Love Hearts Rising Around the Cat */
         <>
-          <g className="pet-heart-burst h1">
-            <path
-              d="M -28 18 C -29.5 16.5, -33 13.5, -33 10.5 A 2.6 2.6 0 0 1 -28 9 A 2.6 2.6 0 0 1 -23 10.5 C -23 13.5, -26.5 16.5, -28 18 Z"
-              fill="#FF4D6D"
-              stroke="#5B2A4E"
-              strokeWidth="1.1"
-            />
-          </g>
-          <g className="pet-heart-burst h2">
-            <path
-              d="M 28 16 C 26.5 14.5, 23 11.5, 23 8.5 A 2.6 2.6 0 0 1 28 7 A 2.6 2.6 0 0 1 33 8.5 C 33 11.5, 29.5 14.5, 28 16 Z"
-              fill="#FF6B9A"
-              stroke="#5B2A4E"
-              strokeWidth="1.1"
-            />
-          </g>
+          {([
+            [-28, 18, '#FF4D6D'],
+            [28, 16, '#FF6B9A'],
+          ] as const).map(([bx, by, fill], i) => (
+            <g key={i} className={`pet-heart-burst h${i + 1}`}>
+              <path
+                d={`M ${bx} ${by} C ${+bx - 1.5} ${+by - 1.5}, ${+bx - 5} ${+by - 4.5}, ${+bx - 5} ${+by - 7.5} A 2.6 2.6 0 0 1 ${bx} ${+by - 9} A 2.6 2.6 0 0 1 ${+bx + 5} ${+by - 7.5} C ${+bx + 5} ${+by - 4.5}, ${+bx + 1.5} ${+by - 1.5}, ${bx} ${by} Z`}
+                fill={fill}
+                stroke="#5B2A4E"
+                strokeWidth="1.1"
+              />
+            </g>
+          ))}
         </>
       )}
 
-      {/* Properly Centered Speech Bubble Pill Above Cat */}
+      {/* Centered Speech Bubble Pill Above Cat */}
       <g className="pet-pop-bubble">
         <rect
           x="-34"
@@ -811,48 +756,50 @@ export function CoupleCatsSceneSvg({
   showTrophy?: boolean;
   size?: number;
 }) {
-  const [p1PetCount, setP1PetCount] = useState(0);
-  const [p2PetCount, setP2PetCount] = useState(0);
-  const [p1PetActive, setP1PetActive] = useState(false);
-  const [p2PetActive, setP2PetActive] = useState(false);
+  const [petCounts, setPetCounts] = useState<{ p1: number; p2: number }>({
+    p1: 0,
+    p2: 0,
+  });
+  const [petActive, setPetActive] = useState<{ p1: boolean; p2: boolean }>({
+    p1: false,
+    p2: false,
+  });
 
   const m1 = getCatBreedMeta(isJoined ? p1Breed : soloAvatar?.breed ?? p1Breed);
   const m2 = getCatBreedMeta(p2Breed);
 
-  const p1Reaction = PET_REACTIONS[p1PetCount % PET_REACTIONS.length];
-  const p2Reaction = PET_REACTIONS[p2PetCount % PET_REACTIONS.length];
-
   const handlePetCat = (which: 'p1' | 'p2') => {
     if (!interactive) return;
-    if (which === 'p1') {
-      const nextIdx = p1PetCount + 1;
-      const nextEmotion = PET_REACTIONS[nextIdx % PET_REACTIONS.length].emotion;
-      if (nextEmotion === 'angry') {
-        playCatAngryMeow();
-      } else {
-        playCatMeow();
-      }
-      setP1PetCount(nextIdx);
-      setP1PetActive(false);
-      window.requestAnimationFrame(() => setP1PetActive(true));
-      window.setTimeout(() => setP1PetActive(false), 1000);
+    const nextIdx = petCounts[which] + 1;
+    const nextEmotion = PET_REACTIONS[nextIdx % PET_REACTIONS.length].emotion;
+    if (nextEmotion === 'angry') {
+      playCatAngryMeow();
     } else {
-      const nextIdx = p2PetCount + 1;
-      const nextEmotion = PET_REACTIONS[nextIdx % PET_REACTIONS.length].emotion;
-      if (nextEmotion === 'angry') {
-        playCatAngryMeow();
-      } else {
-        playCatMeow();
-      }
-      setP2PetCount(nextIdx);
-      setP2PetActive(false);
-      window.requestAnimationFrame(() => setP2PetActive(true));
-      window.setTimeout(() => setP2PetActive(false), 1000);
+      playCatMeow();
     }
+
+    setPetCounts((prev) => ({ ...prev, [which]: nextIdx }));
+    setPetActive((prev) => ({ ...prev, [which]: false }));
+    window.requestAnimationFrame(() =>
+      setPetActive((prev) => ({ ...prev, [which]: true }))
+    );
+    window.setTimeout(
+      () => setPetActive((prev) => ({ ...prev, [which]: false })),
+      1000
+    );
   };
 
   const soloBreed = soloAvatar?.breed ?? p1Breed;
   const soloAcc = soloAvatar?.accessory ?? p1Accessory;
+
+  const catsToRender = isJoined
+    ? [
+        { slot: 'p1' as const, breed: p1Breed, acc: p1Accessory, x: 24, size: 72 },
+        { slot: 'p2' as const, breed: p2Breed, acc: p2Accessory, x: 84, size: 72 },
+      ]
+    : [
+        { slot: 'p1' as const, breed: soloBreed, acc: soloAcc, x: 51, size: 78 },
+      ];
 
   return (
     <svg
@@ -915,81 +862,39 @@ export function CoupleCatsSceneSvg({
         strokeWidth="1.1"
       />
 
-      {!isJoined ? (
-        /* SOLO CAT MODE (When not in a joined room yet) */
-        <g
-          transform="translate(51, 26)"
-          onClick={() => handlePetCat('p1')}
-          style={{ cursor: interactive ? 'pointer' : 'default' }}
-        >
-          <CatAvatarSvg
-            breed={soloBreed}
-            accessory={soloAcc}
-            size={78}
-            animateIdle={true}
-            isPetting={p1PetActive && p1Reaction.emotion === 'happy'}
-            isAngryPet={p1PetActive && p1Reaction.emotion === 'angry'}
-          />
-          {p1PetActive && (
-            <PetReactionOverlaySvg
-              cx={39}
-              cy={-2}
-              phrase={p1Reaction.phrase}
-              emotion={p1Reaction.emotion}
+      {catsToRender.map((c) => {
+        const count = petCounts[c.slot];
+        const active = petActive[c.slot];
+        const reaction = PET_REACTIONS[count % PET_REACTIONS.length];
+        return (
+          <g
+            key={c.slot}
+            transform={`translate(${c.x}, 28)`}
+            onClick={() => handlePetCat(c.slot)}
+            style={{ cursor: interactive ? 'pointer' : 'default' }}
+          >
+            <CatAvatarSvg
+              breed={c.breed}
+              accessory={c.acc}
+              size={c.size}
+              animateIdle={true}
+              isPetting={active && reaction.emotion === 'happy'}
+              isAngryPet={active && reaction.emotion === 'angry'}
             />
-          )}
-        </g>
-      ) : (
-        /* SIDE-BY-SIDE COUPLE CATS MODE (When in a room together) */
+            {active && (
+              <PetReactionOverlaySvg
+                cx={c.size / 2}
+                cy={-2}
+                phrase={reaction.phrase}
+                emotion={reaction.emotion}
+              />
+            )}
+          </g>
+        );
+      })}
+
+      {isJoined && (
         <>
-          {/* Left Cat (P-1 Host) */}
-          <g
-            transform="translate(24, 28)"
-            onClick={() => handlePetCat('p1')}
-            style={{ cursor: interactive ? 'pointer' : 'default' }}
-          >
-            <CatAvatarSvg
-              breed={p1Breed}
-              accessory={p1Accessory}
-              size={72}
-              animateIdle={true}
-              isPetting={p1PetActive && p1Reaction.emotion === 'happy'}
-              isAngryPet={p1PetActive && p1Reaction.emotion === 'angry'}
-            />
-            {p1PetActive && (
-              <PetReactionOverlaySvg
-                cx={36}
-                cy={-2}
-                phrase={p1Reaction.phrase}
-                emotion={p1Reaction.emotion}
-              />
-            )}
-          </g>
-
-          {/* Right Cat (P-2 Invited) */}
-          <g
-            transform="translate(84, 28)"
-            onClick={() => handlePetCat('p2')}
-            style={{ cursor: interactive ? 'pointer' : 'default' }}
-          >
-            <CatAvatarSvg
-              breed={p2Breed}
-              accessory={p2Accessory}
-              size={72}
-              animateIdle={true}
-              isPetting={p2PetActive && p2Reaction.emotion === 'happy'}
-              isAngryPet={p2PetActive && p2Reaction.emotion === 'angry'}
-            />
-            {p2PetActive && (
-              <PetReactionOverlaySvg
-                cx={36}
-                cy={-2}
-                phrase={p2Reaction.phrase}
-                emotion={p2Reaction.emotion}
-              />
-            )}
-          </g>
-
           {/* Cozy Hugging Paws Meeting in the Middle */}
           <ellipse
             cx="84"
@@ -1068,15 +973,18 @@ export function CoupleCatsSceneSvg({
 
           {/* Role Indicator Pills Below Each Cat: Host & Invited */}
           {showRoleLabels && (
-            <>
-              <g transform="translate(54, 113)">
+            [
+              { x: 54, bg: '#FF6B9A', txt: `${p1Name.slice(0, 8)} • Host` },
+              { x: 126, bg: '#38BDF8', txt: `${p2Name.slice(0, 8)} • Invited` },
+            ].map(({ x, bg, txt }) => (
+              <g key={x} transform={`translate(${x}, 113)`}>
                 <rect
                   x="-36"
                   y="-9"
                   width="72"
                   height="17"
                   rx="8.5"
-                  fill="#FF6B9A"
+                  fill={bg}
                   stroke="#5B2A4E"
                   strokeWidth="1.8"
                 />
@@ -1091,35 +999,10 @@ export function CoupleCatsSceneSvg({
                     fontWeight: 800,
                   }}
                 >
-                  {p1Name.slice(0, 8)} • Host
+                  {txt}
                 </text>
               </g>
-              <g transform="translate(126, 113)">
-                <rect
-                  x="-36"
-                  y="-9"
-                  width="72"
-                  height="17"
-                  rx="8.5"
-                  fill="#38BDF8"
-                  stroke="#5B2A4E"
-                  strokeWidth="1.8"
-                />
-                <text
-                  x="0"
-                  y="2.5"
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  style={{
-                    fontSize: '7.4px',
-                    fontFamily: "var(--font-display, 'Baloo 2', sans-serif)",
-                    fontWeight: 800,
-                  }}
-                >
-                  {p2Name.slice(0, 8)} • Invited
-                </text>
-              </g>
-            </>
+            ))
           )}
         </>
       )}

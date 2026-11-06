@@ -22,6 +22,7 @@ import {
   SnakeLadderIcon,
   SoundIcon,
   SparkleIcon,
+  UnoCardsIcon,
 } from './ArcadeIcons';
 import { SnakesMaxTile } from '../engines/snakesEngine';
 
@@ -46,6 +47,35 @@ interface CatCustomizerModalProps {
 }
 
 type SettingsTabId = 'profile' | 'match' | 'rules';
+
+function RuleRow({
+  color,
+  icon,
+  title,
+  desc,
+}: {
+  color: string;
+  icon: any;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="rule-item-row">
+      <span className={`rule-icon-badge ${color}`}>{icon}</span>
+      <div className="rule-item-text">
+        <strong>{title}</strong>
+        <p>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+const POWERUP_CHIPS = [
+  ['boost', 'Catnip Zoomies', '(+4 Tiles)'],
+  ['shield_gain', 'Bubble Shield', '(Blocks Snake)'],
+  ['extra_roll', 'Lucky Paw', '(Extra Roll)'],
+  ['swap', 'Switcheroo', '(Swap Places)'],
+] as const;
 
 export function CatCustomizerModal({
   isOpen,
@@ -312,6 +342,16 @@ export function CatCustomizerModal({
                     <button
                       type="button"
                       className={`match-mode-card ${
+                        currentMode === 'uno' ? 'active' : ''
+                      }`}
+                      onClick={() => onHostSwitchGame('uno')}
+                    >
+                      <UnoCardsIcon size={20} />
+                      <span>Cat Uno</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`match-mode-card ${
                         currentMode === 'snakes' && snakesMaxTile === 100
                           ? 'active'
                           : ''
@@ -401,58 +441,30 @@ export function CatCustomizerModal({
                 </div>
 
                 <div className="rules-items-list">
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge pink">
-                      <PawIcon size={16} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>Diagonal Step &amp; Mirrored POV</strong>
-                      <p>
-                        Your cat pieces always start at the bottom of your
-                        screen. Normal cats (<em>Tao</em>) step 1 tile
-                        diagonally forward.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge coral">
-                      <SparkleIcon size={16} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>Forward &amp; Backward Pounce</strong>
-                      <p>
-                        Normal cats can jump over rival cats both forward AND
-                        backward diagonally to eat them!
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge amber">
-                      <CrownIcon size={16} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>Mayor Mandatory Max Combo</strong>
-                      <p>
-                        Captures are mandatory! If multiple capture paths exist,
-                        you must pick the path that eats the most pieces.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge gold">
-                      <CrownIcon size={16} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>Ascended Winged Dama King</strong>
-                      <p>
-                        Reach the top back row to evolve into a Royal Winged
-                        Dama that slides and jumps any distance diagonally!
-                      </p>
-                    </div>
-                  </div>
+                  <RuleRow
+                    color="pink"
+                    icon={<PawIcon size={16} />}
+                    title="Diagonal Step & Mirrored POV"
+                    desc="Your cat pieces always start at the bottom of your screen. Normal cats (Tao) step 1 tile diagonally forward."
+                  />
+                  <RuleRow
+                    color="coral"
+                    icon={<SparkleIcon size={16} />}
+                    title="Forward & Backward Pounce"
+                    desc="Normal cats can jump over rival cats both forward AND backward diagonally to eat them!"
+                  />
+                  <RuleRow
+                    color="amber"
+                    icon={<CrownIcon size={16} />}
+                    title="Mayor Mandatory Max Combo"
+                    desc="Captures are mandatory! If multiple capture paths exist, you must pick the path that eats the most pieces."
+                  />
+                  <RuleRow
+                    color="gold"
+                    icon={<CrownIcon size={16} />}
+                    title="Ascended Winged Dama King"
+                    desc="Reach the top back row to evolve into a Royal Winged Dama that slides and jumps any distance diagonally!"
+                  />
                 </div>
               </div>
 
@@ -471,72 +483,72 @@ export function CatCustomizerModal({
                 </div>
 
                 <div className="rules-items-list">
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge sky">
-                      <SnakeLadderIcon size={16} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>100-Tile Classic &amp; 150-Tile Marathon</strong>
-                      <p>
-                        Host can pick 100 tiles or 150 tiles (with extra snakes,
-                        ladders, and mystery boxes for longer matches).
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge mint">
-                      <DiceFaceSvg value={6} size={18} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>No Bonus Roll on 6 &amp; Exact Finish</strong>
-                      <p>
-                        Rolling a 6 moves 6 tiles with no free bonus turn.
-                        Overshooting the final crown tile bounces your cat back!
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rule-item-row">
-                    <span className="rule-icon-badge purple">
-                      <DoubleDiceIcon size={18} />
-                    </span>
-                    <div className="rule-item-text">
-                      <strong>New! Twin Paw 2x Dice (2 Turns)</strong>
-                      <p>
-                        Hold 2 dice in your paw and roll both at once on a
-                        single turn for your next 2 turns!
-                      </p>
-                    </div>
-                  </div>
+                  <RuleRow
+                    color="sky"
+                    icon={<SnakeLadderIcon size={16} />}
+                    title="100-Tile Classic & 150-Tile Marathon"
+                    desc="Host can pick 100 tiles or 150 tiles (with extra snakes, ladders, and mystery boxes for longer matches)."
+                  />
+                  <RuleRow
+                    color="mint"
+                    icon={<DiceFaceSvg value={6} size={18} />}
+                    title="No Bonus Roll on 6 & Exact Finish"
+                    desc="Rolling a 6 moves 6 tiles with no free bonus turn. Overshooting the final crown tile bounces your cat back!"
+                  />
+                  <RuleRow
+                    color="purple"
+                    icon={<DoubleDiceIcon size={18} />}
+                    title="New! Twin Paw 2x Dice (2 Turns)"
+                    desc="Hold 2 dice in your paw and roll both at once on a single turn for your next 2 turns!"
+                  />
 
                   {/* Mini Powerup Showcase Grid */}
                   <div className="rules-powerup-grid">
-                    <div className="rules-powerup-chip">
-                      <PowerupIllustrationSvg kind="boost" size={26} />
-                      <span>
-                        <strong>Catnip Zoomies</strong> (+4 Tiles)
-                      </span>
-                    </div>
-                    <div className="rules-powerup-chip">
-                      <PowerupIllustrationSvg kind="shield_gain" size={26} />
-                      <span>
-                        <strong>Bubble Shield</strong> (Blocks Snake)
-                      </span>
-                    </div>
-                    <div className="rules-powerup-chip">
-                      <PowerupIllustrationSvg kind="extra_roll" size={26} />
-                      <span>
-                        <strong>Lucky Paw</strong> (Extra Roll)
-                      </span>
-                    </div>
-                    <div className="rules-powerup-chip">
-                      <PowerupIllustrationSvg kind="swap" size={26} />
-                      <span>
-                        <strong>Switcheroo</strong> (Swap Places)
-                      </span>
-                    </div>
+                    {POWERUP_CHIPS.map(([kind, name, desc]) => (
+                      <div key={kind} className="rules-powerup-chip">
+                        <PowerupIllustrationSvg kind={kind as any} size={26} />
+                        <span>
+                          <strong>{name}</strong> {desc}
+                        </span>
+                      </div>
+                    ))}
                   </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: CAT UNO */}
+              <div className="rules-section-box uno-theme">
+                <div className="rules-section-banner">
+                  <UnoCardsIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">
+                      Cat Uno (2-Player + Extra Rules)
+                    </h3>
+                    <span className="rules-section-sub">
+                      Stacking +2/+4 • The "7" Hand Swap • No Jump-In
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <RuleRow
+                    color="coral"
+                    icon={<SparkleIcon size={16} />}
+                    title="Match Color, Number, or Symbol"
+                    desc="Play a matching card from your hand onto the discard pile. Wild cards let you choose any of the 4 colors!"
+                  />
+                  <RuleRow
+                    color="sky"
+                    icon={<UnoCardsIcon size={16} />}
+                    title="Official 2-Player Skip & Reverse"
+                    desc="Skip skips your partner so you play again immediately! Reverse acts as a U-Turn bouncing straight back to you!"
+                  />
+                  <RuleRow
+                    color="gold"
+                    icon={<PawIcon size={16} />}
+                    title="Stacking & The '7' Hand Swap"
+                    desc="Stack +2 on +2 and +4 on +4 to pass higher penalty cards to your partner! Play any 7 to swap your entire hand!"
+                  />
                 </div>
               </div>
 

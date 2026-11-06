@@ -70,6 +70,30 @@ const SNAKES_STEPS: readonly TutorialStep[] = [
   },
 ];
 
+const UNO_STEPS: readonly TutorialStep[] = [
+  {
+    badge: 'Cat Uno • Step 1 of 3',
+    title: 'Match Color, Number or Wild',
+    description:
+      'Match the top card of the discard pile by color or number. Play Wild or Wild 4 anytime to change the active color!',
+    tip: 'If you have no matching card, tap the Draw deck to pull a card.',
+  },
+  {
+    badge: 'Cat Uno • Step 2 of 3',
+    title: '2-Player Combos (Skip & Reverse)',
+    description:
+      'In 2-player UNO, Skip skips your partner so you play again immediately! Reverse acts like a U-Turn bouncing straight back to you!',
+    tip: 'Chain Skips and Reverses together to play multiple cards in a single burst!',
+  },
+  {
+    badge: 'Cat Uno • Step 3 of 3',
+    title: 'Stacking & 7-Hand Swap!',
+    description:
+      'Stack +2 on +2 and +4 on +4 to pass higher penalties back to your partner! Play any 7 to swap your entire hand with your opponent!',
+    tip: 'When you are down to 1 card, hit the UNO! button before playing to win!',
+  },
+];
+
 function TutorialIllustrationSvg({
   gameMode,
   stepIndex,
@@ -96,11 +120,71 @@ function TutorialIllustrationSvg({
         strokeWidth="2"
       />
       {/* Cutesy Minimal Checkerboard Background Tiles */}
-      <rect x="20" y="16" width="28" height="28" rx="6" fill="#fbcfe8" opacity="0.55" />
-      <rect x="76" y="34" width="28" height="28" rx="6" fill="#fbcfe8" opacity="0.55" />
-      <rect x="132" y="16" width="28" height="28" rx="6" fill="#fbcfe8" opacity="0.55" />
+      {[
+        [20, 16],
+        [76, 34],
+        [132, 16],
+      ].map(([x, y], i) => (
+        <rect
+          key={i}
+          x={x}
+          y={y}
+          width="28"
+          height="28"
+          rx="6"
+          fill="#fbcfe8"
+          opacity="0.55"
+        />
+      ))}
 
-      {gameMode === 'snakes' ? (
+      {gameMode === 'uno' ? (
+        <>
+          <rect
+            x="52"
+            y="24"
+            width="34"
+            height="48"
+            rx="6"
+            fill="#38bdf8"
+            stroke="#5b2a4e"
+            strokeWidth="2"
+            transform="rotate(-8 69 48)"
+          />
+          <rect
+            x="94"
+            y="24"
+            width="34"
+            height="48"
+            rx="6"
+            fill="#ff4b72"
+            stroke="#5b2a4e"
+            strokeWidth="2"
+            transform="rotate(8 111 48)"
+          />
+          <text
+            x="69"
+            y="54"
+            textAnchor="middle"
+            fill="#ffffff"
+            fontSize="18"
+            fontWeight="900"
+            transform="rotate(-8 69 48)"
+          >
+            7
+          </text>
+          <text
+            x="111"
+            y="54"
+            textAnchor="middle"
+            fill="#ffffff"
+            fontSize="18"
+            fontWeight="900"
+            transform="rotate(8 111 48)"
+          >
+            +2
+          </text>
+        </>
+      ) : gameMode === 'snakes' ? (
         <>
           <circle cx="48" cy="52" r="16" fill="#fff0f3" stroke="#ff6b8b" strokeWidth="1.5" />
           <MiniCatFace cx={48} cy={52} fur="#ff9ebb" />
@@ -279,7 +363,12 @@ export function DamaTutorialModal({
 
   if (!isOpen) return null;
 
-  const steps = gameMode === 'snakes' ? SNAKES_STEPS : DAMA_STEPS;
+  const steps =
+    gameMode === 'snakes'
+      ? SNAKES_STEPS
+      : gameMode === 'uno'
+      ? UNO_STEPS
+      : DAMA_STEPS;
   const current = steps[step] || steps[0];
 
   return (
@@ -300,6 +389,8 @@ export function DamaTutorialModal({
               <span>
                 {gameMode === 'snakes'
                   ? 'Snakes & Ladders'
+                  : gameMode === 'uno'
+                  ? 'Cat Uno'
                   : 'Cat Dama'}
               </span>
             </h2>

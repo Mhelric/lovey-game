@@ -18,6 +18,7 @@ import {
   PawIcon,
   SettingsGearIcon,
   SnakeLadderIcon,
+  UnoCardsIcon,
 } from './ArcadeIcons';
 import { QuickChatBar } from './QuickChatBar';
 import { normalizeRoomCode } from '../services/supabaseService';
@@ -32,6 +33,7 @@ interface HomeMenuViewProps {
   p2Online: boolean;
   hasSavedDama: boolean;
   hasSavedSnakes: boolean;
+  hasSavedUno?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   onOpenSettings: () => void;
@@ -56,6 +58,7 @@ export function HomeMenuView({
   p2Online,
   hasSavedDama,
   hasSavedSnakes,
+  hasSavedUno = false,
   savedSnakesMaxTile,
   chatMessages,
   onOpenSettings,
@@ -91,6 +94,23 @@ export function HomeMenuView({
   const joinInputRef = useRef<HTMLInputElement | null>(null);
 
   const isHost = mySlot === 'p1';
+  const hasSavedAny = hasSavedDama || hasSavedSnakes || hasSavedUno;
+  const activeSavedMode: GameMode =
+    roomData.current_mode === 'uno' && hasSavedUno
+      ? 'uno'
+      : roomData.current_mode === 'snakes' && hasSavedSnakes
+      ? 'snakes'
+      : hasSavedDama
+      ? 'dama'
+      : hasSavedUno
+      ? 'uno'
+      : 'snakes';
+  const savedGameLabel =
+    activeSavedMode === 'uno'
+      ? 'Cat Uno'
+      : activeSavedMode === 'snakes'
+      ? `Snakes (${savedSnakesMaxTile})`
+      : 'Cat Dama';
 
   const handleExpandJoinBox = () => {
     if (joinExpanded) return;
@@ -524,29 +544,14 @@ export function HomeMenuView({
               </p>
 
               <div className="invited-panel-actions">
-                {(hasSavedDama || hasSavedSnakes) && (
+                {hasSavedAny && (
                   <button
                     type="button"
                     className="rejoin-savestate-btn sticker-press"
-                    onClick={() =>
-                      onRejoinSavedGame(
-                        roomData.current_mode === 'snakes' && hasSavedSnakes
-                          ? 'snakes'
-                          : hasSavedDama
-                          ? 'dama'
-                          : 'snakes'
-                      )
-                    }
+                    onClick={() => onRejoinSavedGame(activeSavedMode)}
                   >
                     <PawIcon size={13} />
-                    <span>
-                      Rejoin Saved{' '}
-                      {roomData.current_mode === 'snakes' && hasSavedSnakes
-                        ? 'Snakes'
-                        : hasSavedDama
-                        ? 'Cat Dama'
-                        : 'Snakes'}
-                    </span>
+                    <span>Rejoin Saved {savedGameLabel}</span>
                   </button>
                 )}
 
@@ -566,29 +571,14 @@ export function HomeMenuView({
           ) : !pickingGame ? (
             /* Host clicks Play Game (or Resume Saved Game if a savestate exists!) */
             <div className="host-play-actions-stack">
-              {(hasSavedDama || hasSavedSnakes) && (
+              {hasSavedAny && (
                 <button
                   type="button"
                   className="rejoin-savestate-btn host-resume sticker-press"
-                  onClick={() =>
-                    onRejoinSavedGame(
-                      roomData.current_mode === 'snakes' && hasSavedSnakes
-                        ? 'snakes'
-                        : hasSavedDama
-                        ? 'dama'
-                        : 'snakes'
-                    )
-                  }
+                  onClick={() => onRejoinSavedGame(activeSavedMode)}
                 >
                   <PawIcon size={14} />
-                  <span>
-                    Resume Saved{' '}
-                    {roomData.current_mode === 'snakes' && hasSavedSnakes
-                      ? `Snakes (${savedSnakesMaxTile})`
-                      : hasSavedDama
-                      ? 'Cat Dama'
-                      : `Snakes (${savedSnakesMaxTile})`}
-                  </span>
+                  <span>Resume Saved {savedGameLabel}</span>
                 </button>
               )}
 
@@ -628,6 +618,19 @@ export function HomeMenuView({
                   <span className="role-main-label">Cat Dama</span>
                   <span className="role-sub-label">
                     {hasSavedDama ? 'Resume Saved Match' : '3D Filipino Checkers'}
+                  </span>
+                </button>
+
+                {/* Cat Uno Card */}
+                <button
+                  type="button"
+                  className="game-pick-btn uno-pick sticker-press"
+                  onClick={() => onHostLaunchGame('uno', !p2Online)}
+                >
+                  <UnoCardsIcon size={26} />
+                  <span className="role-main-label">Cat Uno</span>
+                  <span className="role-sub-label">
+                    {hasSavedUno ? 'Resume Saved Match' : '2P Stacking & 7-Swap'}
                   </span>
                 </button>
 

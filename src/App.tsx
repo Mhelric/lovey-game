@@ -1,3 +1,4 @@
+import { Fragment } from 'preact';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import {
   CatAvatarConfig,
@@ -10,23 +11,27 @@ import {
   QUICK_STICKERS,
   ReactionStickerId,
 } from './types/arcade';
-import { CatAvatarSvg } from './components/CatAvatarSvg';
+import { CatAvatarSvg, CoupleCatsSceneSvg } from './components/CatAvatarSvg';
 import {
+  ConfettiCelebrationOverlay,
   CrownIcon,
+  DoubleHeartIcon,
   PawIcon,
   ReactionStickerSvg,
   SettingsGearIcon,
   SnakeLadderIcon,
   SparkleIcon,
   TrophyIcon,
+  UnoCardsIcon,
 } from './components/ArcadeIcons';
 import { CatCustomizerModal } from './components/CatCustomizerModal';
-import { CoupleScoreboardModal } from './components/CoupleScoreboardModal';
-import { DamaTutorialModal } from './components/DamaTutorialModal';
+
+
 import { HomeMenuView } from './components/HomeMenuView';
 import { QuickChatBar } from './components/QuickChatBar';
 import { DamaBoardView } from './components/DamaBoardView';
 import { SnakesBoardView } from './components/SnakesBoardView';
+import { UnoBoardView } from './components/UnoBoardView';
 import {
   createInitialDamaState,
   DamaGameState,
@@ -36,6 +41,10 @@ import {
   SnakesGameState,
   SnakesMaxTile,
 } from './engines/snakesEngine';
+import {
+  createInitialUnoState,
+  UnoGameState,
+} from './engines/unoEngine';
 import {
   checkCoupleRoomExists,
   CoupleRealtimeChannel,
@@ -159,67 +168,47 @@ function FirstTurnShuffleOverlay({
         </h3>
 
         <div className="shuffle-candidates-row">
-          {/* Player 1 Candidate Box */}
-          <div
-            className={`shuffle-cat-slot p1-theme ${
-              highlightSlot === 'p1' ? 'is-lit' : 'is-dim'
-            } ${
-              phase === 'revealed' && winnerSlot === 'p1' ? 'is-winner' : ''
-            }`}
-          >
-            {highlightSlot === 'p1' && (
-              <div className="shuffle-pointer-badge">
-                {phase === 'revealed' ? (
-                  <CrownIcon size={16} />
-                ) : (
-                  <PawIcon size={14} />
+          {(['p1', 'p2'] as const).map((slot, idx) => {
+            const av = slot === 'p1' ? p1Avatar : p2Avatar;
+            const isLit = highlightSlot === slot;
+            const won = phase === 'revealed' && winnerSlot === slot;
+            return (
+              <Fragment key={slot}>
+                {idx === 1 && (
+                  <div
+                    className={`shuffle-vs-coin ${
+                      phase === 'shuffling' ? 'spinning' : ''
+                    }`}
+                  >
+                    <span>VS</span>
+                  </div>
                 )}
-              </div>
-            )}
-            <CatAvatarSvg
-              breed={p1Avatar.breed}
-              accessory={p1Avatar.accessory}
-              size={54}
-              animateIdle={false}
-              happySquint={phase === 'revealed' && winnerSlot === 'p1'}
-            />
-            <span className="shuffle-cat-name">{p1Avatar.name}</span>
-          </div>
-
-          <div
-            className={`shuffle-vs-coin ${
-              phase === 'shuffling' ? 'spinning' : ''
-            }`}
-          >
-            <span>VS</span>
-          </div>
-
-          {/* Player 2 Candidate Box */}
-          <div
-            className={`shuffle-cat-slot p2-theme ${
-              highlightSlot === 'p2' ? 'is-lit' : 'is-dim'
-            } ${
-              phase === 'revealed' && winnerSlot === 'p2' ? 'is-winner' : ''
-            }`}
-          >
-            {highlightSlot === 'p2' && (
-              <div className="shuffle-pointer-badge">
-                {phase === 'revealed' ? (
-                  <CrownIcon size={16} />
-                ) : (
-                  <PawIcon size={14} />
-                )}
-              </div>
-            )}
-            <CatAvatarSvg
-              breed={p2Avatar.breed}
-              accessory={p2Avatar.accessory}
-              size={54}
-              animateIdle={false}
-              happySquint={phase === 'revealed' && winnerSlot === 'p2'}
-            />
-            <span className="shuffle-cat-name">{p2Avatar.name}</span>
-          </div>
+                <div
+                  className={`shuffle-cat-slot ${slot}-theme ${
+                    isLit ? 'is-lit' : 'is-dim'
+                  } ${won ? 'is-winner' : ''}`}
+                >
+                  {isLit && (
+                    <div className="shuffle-pointer-badge">
+                      {phase === 'revealed' ? (
+                        <CrownIcon size={16} />
+                      ) : (
+                        <PawIcon size={14} />
+                      )}
+                    </div>
+                  )}
+                  <CatAvatarSvg
+                    breed={av.breed}
+                    accessory={av.accessory}
+                    size={54}
+                    animateIdle={false}
+                    happySquint={won}
+                  />
+                  <span className="shuffle-cat-name">{av.name}</span>
+                </div>
+              </Fragment>
+            );
+          })}
         </div>
 
         <span className="shuffle-sub-hint">
@@ -242,68 +231,53 @@ const STORAGE_SESSION_PREFIX = 'lovey_session_v1_';
 
 const VALID_STICKER_IDS = new Set<string>(QUICK_STICKERS.map((s) => s.id));
 
-function saveLocalGameSavestate<T>(
-  roomCode: string,
-  mode: GameMode,
-  state: T
-): void {
+const saveStorageJson = (k: string, v: unknown) => {
   try {
-    const key = `${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(roomCode)}_${mode}`;
-    localStorage.setItem(
-      key,
-      JSON.stringify({ updatedAt: Date.now(), state })
-    );
-  } catch {
-    // Ignore storage quota errors
-  }
-}
-
-function loadLocalGameSavestate<T>(roomCode: string, mode: GameMode): T | null {
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch {}
+};
+const loadStorageJson = <T,>(k: string): T | null => {
   try {
-    const key = `${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(roomCode)}_${mode}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { state?: T };
-    return parsed?.state ?? null;
+    const raw = localStorage.getItem(k);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
+};
+
+function saveLocalGameSavestate<T>(r: string, m: GameMode, state: T): void {
+  saveStorageJson(`${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(r)}_${m}`, {
+    updatedAt: Date.now(),
+    state,
+  });
+}
+
+function loadLocalGameSavestate<T>(r: string, m: GameMode): T | null {
+  return (
+    loadStorageJson<{ state?: T }>(
+      `${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(r)}_${m}`
+    )?.state ?? null
+  );
 }
 
 function saveLocalActiveSession(
-  roomCode: string,
+  r: string,
   screen: 'menu' | 'play',
   mode: GameMode
 ): void {
-  try {
-    const key = `${STORAGE_SESSION_PREFIX}${normalizeRoomCode(roomCode)}`;
-    localStorage.setItem(key, JSON.stringify({ screen, mode }));
-  } catch {
-    // Ignore
-  }
+  saveStorageJson(`${STORAGE_SESSION_PREFIX}${normalizeRoomCode(r)}`, {
+    screen,
+    mode,
+  });
 }
 
 function loadLocalActiveSession(
-  roomCode: string
+  r: string
 ): { screen: 'menu' | 'play'; mode: GameMode } | null {
-  try {
-    const key = `${STORAGE_SESSION_PREFIX}${normalizeRoomCode(roomCode)}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as {
-      screen?: 'menu' | 'play';
-      mode?: GameMode;
-    };
-    if (
-      (parsed.screen === 'menu' || parsed.screen === 'play') &&
-      (parsed.mode === 'dama' || parsed.mode === 'snakes')
-    ) {
-      return { screen: parsed.screen, mode: parsed.mode };
-    }
-  } catch {
-    // Ignore
-  }
-  return null;
+  const p = loadStorageJson<{ screen?: 'menu' | 'play'; mode?: GameMode }>(
+    `${STORAGE_SESSION_PREFIX}${normalizeRoomCode(r)}`
+  );
+  return p && (p.screen === 'menu' || p.screen === 'play') && p.mode ? (p as any) : null;
 }
 
 function isDamaInProgress(s: DamaGameState | null | undefined): boolean {
@@ -320,56 +294,36 @@ function isSnakesInProgress(s: SnakesGameState | null | undefined): boolean {
   );
 }
 
-function damaProgressScore(s: DamaGameState): number {
-  const captured = Math.max(0, 24 - (s.p1Remaining + s.p2Remaining));
-  const hasAction = s.lastAction ? 1 : 0;
-  return captured * 10 + hasAction + (s.winner ? 1000 : 0);
-}
-
-function snakesProgressScore(s: SnakesGameState): number {
-  return (
-    (s.p1Tile - 1) +
-    (s.p2Tile - 1) +
-    (s.lastAnimation ? 1 : 0) +
-    (s.winner ? 1000 : 0)
+function isUnoInProgress(s: UnoGameState | null | undefined): boolean {
+  if (!s || s.winner) return false;
+  return Boolean(
+    s.lastAction ||
+    s.justDrew ||
+    (s.discardPile && s.discardPile.length > 1)
   );
 }
 
-function mergeDamaSavestate(
-  local: DamaGameState,
-  incoming: DamaGameState
-): DamaGameState {
-  if (!incoming || !Array.isArray(incoming.board)) return local;
-  if (
-    (local.matchSeed ?? 0) === (incoming.matchSeed ?? 0) &&
-    (local.matchSeed ?? 0) !== 0
-  ) {
-    return damaProgressScore(incoming) >= damaProgressScore(local)
-      ? incoming
-      : local;
-  }
-  // Different matchSeed: if incoming is an unstarted default board while local has an active savestate, keep local only if incoming has no matchSeed
-  if (!incoming.matchSeed && isDamaInProgress(local)) {
-    return local;
-  }
-  return incoming;
+const damaScore = (s: DamaGameState) => Math.max(0, 24 - (s.p1Remaining + s.p2Remaining)) * 10 + (s.lastAction ? 1 : 0) + (s.winner ? 1000 : 0);
+const snakesScore = (s: SnakesGameState) => (s.p1Tile - 1) + (s.p2Tile - 1) + (s.lastAnimation ? 1 : 0) + (s.winner ? 1000 : 0);
+const unoScore = (s: UnoGameState) => (s.discardPile?.length ?? 0) * 5 + (s.winner ? 1000 : 0);
+
+function mergeDamaSavestate(l: DamaGameState, inc?: DamaGameState): DamaGameState {
+  if (!inc?.board) return l;
+  if ((l.matchSeed ?? 0) === (inc.matchSeed ?? 0) && (l.matchSeed ?? 0) !== 0) return damaScore(inc) >= damaScore(l) ? inc : l;
+  return !inc.matchSeed && isDamaInProgress(l) ? l : inc;
+}
+function mergeSnakesSavestate(l: SnakesGameState, inc?: SnakesGameState): SnakesGameState {
+  if (typeof inc?.boardSeed !== 'number') return l;
+  if (l.boardSeed === inc.boardSeed) return snakesScore(inc) >= snakesScore(l) ? inc : l;
+  return inc.boardSeed === 202610 && isSnakesInProgress(l) ? l : inc;
+}
+function mergeUnoSavestate(l: UnoGameState, inc?: UnoGameState): UnoGameState {
+  if (!inc?.deck) return l;
+  if (l.matchSeed === inc.matchSeed) return unoScore(inc) >= unoScore(l) ? inc : l;
+  return inc.matchSeed === 202611 && isUnoInProgress(l) ? l : inc;
 }
 
-function mergeSnakesSavestate(
-  local: SnakesGameState,
-  incoming: SnakesGameState
-): SnakesGameState {
-  if (!incoming || typeof incoming.boardSeed !== 'number') return local;
-  if (local.boardSeed === incoming.boardSeed) {
-    return snakesProgressScore(incoming) >= snakesProgressScore(local)
-      ? incoming
-      : local;
-  }
-  if (incoming.boardSeed === 202610 && isSnakesInProgress(local)) {
-    return local;
-  }
-  return incoming;
-}
+
 
 function loadSavedMyAvatar(): CatAvatarConfig {
   try {
@@ -431,6 +385,8 @@ export function App() {
       p2_dama_wins: 0,
       p1_snakes_wins: 0,
       p2_snakes_wins: 0,
+      p1_uno_wins: 0,
+      p2_uno_wins: 0,
       current_mode: savedSession?.mode ?? 'dama',
       updated_at: new Date().toISOString(),
     };
@@ -446,6 +402,11 @@ export function App() {
     if (saved && typeof saved.boardSeed === 'number') return saved;
     return createInitialSnakesState(202610, true, 100);
   });
+  const [unoState, setUnoState] = useState<UnoGameState>(() => {
+    const saved = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno');
+    if (saved && Array.isArray(saved.deck)) return saved;
+    return createInitialUnoState(202611, 'p1');
+  });
   const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>(() => {
     const savedSession = loadLocalActiveSession(roomCode);
     if (savedSession?.screen === 'play') {
@@ -454,9 +415,11 @@ export function App() {
         roomCode,
         'snakes'
       );
+      const savedUno = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno');
       if (
         (savedSession.mode === 'dama' && savedDama) ||
-        (savedSession.mode === 'snakes' && savedSnakes)
+        (savedSession.mode === 'snakes' && savedSnakes) ||
+        (savedSession.mode === 'uno' && savedUno)
       ) {
         return 'play';
       }
@@ -475,7 +438,25 @@ export function App() {
   );
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
+  const [ScoreboardModalComp, setScoreboardModalComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (scoreboardOpen && !ScoreboardModalComp) {
+      import('./components/CoupleScoreboardModal').then((m) => {
+        setScoreboardModalComp(() => m.CoupleScoreboardModal);
+      });
+    }
+  }, [scoreboardOpen, ScoreboardModalComp]);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [TutorialModalComp, setTutorialModalComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (tutorialOpen && !TutorialModalComp) {
+      import('./components/DamaTutorialModal').then((m) => {
+        setTutorialModalComp(() => m.DamaTutorialModal);
+      });
+    }
+  }, [tutorialOpen, TutorialModalComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   const channelRef = useRef<CoupleRealtimeChannel | null>(null);
@@ -483,6 +464,8 @@ export function App() {
   damaStateRef.current = damaState;
   const snakesStateRef = useRef<SnakesGameState>(snakesState);
   snakesStateRef.current = snakesState;
+  const unoStateRef = useRef<UnoGameState>(unoState);
+  unoStateRef.current = unoState;
   const activeScreenRef = useRef<'menu' | 'play'>(activeScreen);
   activeScreenRef.current = activeScreen;
   const roomDataRef = useRef<CoupleRoomRow>(roomData);
@@ -496,6 +479,10 @@ export function App() {
   useEffect(() => {
     saveLocalGameSavestate(roomCode, 'snakes', snakesState);
   }, [roomCode, snakesState]);
+
+  useEffect(() => {
+    saveLocalGameSavestate(roomCode, 'uno', unoState);
+  }, [roomCode, unoState]);
 
   useEffect(() => {
     saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode);
@@ -533,6 +520,8 @@ export function App() {
       setBgMusicTrack('menu');
     } else if (roomData.current_mode === 'snakes') {
       setBgMusicTrack('snakes');
+    } else if (roomData.current_mode === 'uno') {
+      setBgMusicTrack('uno');
     } else {
       setBgMusicTrack('dama');
     }
@@ -580,6 +569,10 @@ export function App() {
     if (localSnakes && typeof localSnakes.boardSeed === 'number') {
       setSnakesState((prev) => mergeSnakesSavestate(prev, localSnakes));
     }
+    const localUno = loadLocalGameSavestate<UnoGameState>(targetRoom, 'uno');
+    if (localUno && Array.isArray(localUno.deck)) {
+      setUnoState((prev) => mergeUnoSavestate(prev, localUno));
+    }
 
     const [row, matchRow] = await Promise.all([
       fetchOrCreateCoupleRoom(targetRoom),
@@ -607,6 +600,11 @@ export function App() {
         const maybeSnakes = matchRow.state_json as SnakesGameState;
         if (typeof maybeSnakes.boardSeed === 'number') {
           setSnakesState((prev) => mergeSnakesSavestate(prev, maybeSnakes));
+        }
+      } else if (matchRow.game_mode === 'uno') {
+        const maybeUno = matchRow.state_json as UnoGameState;
+        if (Array.isArray(maybeUno.deck)) {
+          setUnoState((prev) => mergeUnoSavestate(prev, maybeUno));
         }
       }
     }
@@ -646,16 +644,18 @@ export function App() {
             type: 'savestate_snapshot',
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
+            unoState: unoStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             sender: mySlotRef.current,
           });
         } else if (event.type === 'request_savestate') {
-          // Partner reloaded or recovered from slow internet — send our latest savestate for both games!
+          // Partner reloaded or recovered from slow internet — send our latest savestate for all games!
           channelRef.current?.sendBroadcast({
             type: 'savestate_snapshot',
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
+            unoState: unoStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             sender: mySlotRef.current,
@@ -669,7 +669,15 @@ export function App() {
           if (inSnakes && typeof inSnakes.boardSeed === 'number') {
             setSnakesState((prev) => mergeSnakesSavestate(prev, inSnakes));
           }
-          if (event.currentMode === 'dama' || event.currentMode === 'snakes') {
+          const inUno = event.unoState as UnoGameState | undefined;
+          if (inUno && Array.isArray(inUno.deck)) {
+            setUnoState((prev) => mergeUnoSavestate(prev, inUno));
+          }
+          if (
+            event.currentMode === 'dama' ||
+            event.currentMode === 'snakes' ||
+            event.currentMode === 'uno'
+          ) {
             setRoomData((prev) => ({
               ...prev,
               current_mode: event.currentMode,
@@ -697,38 +705,29 @@ export function App() {
             if (incoming && typeof incoming.boardSeed === 'number') {
               setSnakesState(incoming);
             }
+          } else if (event.gameMode === 'uno') {
+            const incoming = event.stateJson as UnoGameState;
+            if (incoming && Array.isArray(incoming.deck)) {
+              setUnoState(incoming);
+            }
           }
           if (event.winner === 'p1' || event.winner === 'p2') {
-            const winSlot = event.winner;
+            const winKey = `${event.winner}_${event.gameMode}_wins` as keyof CoupleRoomRow;
             setRoomData((prev) => ({
               ...prev,
-              p1_dama_wins:
-                event.gameMode === 'dama' && winSlot === 'p1'
-                  ? prev.p1_dama_wins + 1
-                  : prev.p1_dama_wins,
-              p2_dama_wins:
-                event.gameMode === 'dama' && winSlot === 'p2'
-                  ? prev.p2_dama_wins + 1
-                  : prev.p2_dama_wins,
-              p1_snakes_wins:
-                event.gameMode === 'snakes' && winSlot === 'p1'
-                  ? prev.p1_snakes_wins + 1
-                  : prev.p1_snakes_wins,
-              p2_snakes_wins:
-                event.gameMode === 'snakes' && winSlot === 'p2'
-                  ? prev.p2_snakes_wins + 1
-                  : prev.p2_snakes_wins,
+              [winKey]: ((prev[winKey] as number) || 0) + 1,
             }));
             fetchOrCreateCoupleRoom(roomCode).then((r) => {
-              setRoomData((prev) => ({
-                ...r,
-                p1_dama_wins: Math.max(prev.p1_dama_wins, r.p1_dama_wins),
-                p2_dama_wins: Math.max(prev.p2_dama_wins, r.p2_dama_wins),
-                p1_snakes_wins: Math.max(prev.p1_snakes_wins, r.p1_snakes_wins),
-                p2_snakes_wins: Math.max(prev.p2_snakes_wins, r.p2_snakes_wins),
-                p1_avatar: prev.p1_avatar,
-                p2_avatar: prev.p2_avatar,
-              }));
+              setRoomData((prev) => {
+                const next = { ...r, p1_avatar: prev.p1_avatar, p2_avatar: prev.p2_avatar };
+                (['dama', 'snakes', 'uno'] as const).forEach((gm) => {
+                  (['p1', 'p2'] as const).forEach((ps) => {
+                    const k = `${ps}_${gm}_wins` as keyof CoupleRoomRow;
+                    (next as any)[k] = Math.max((prev[k] as number) || 0, (r[k] as number) || 0);
+                  });
+                });
+                return next;
+              });
             });
           }
         }
@@ -893,6 +892,32 @@ export function App() {
     }
   };
 
+  const broadcastAndPersistMatch = async (
+    gameMode: GameMode,
+    turn: PlayerSlot,
+    boardSeed: number,
+    stateJson: unknown,
+    winner: PlayerSlot | 'draw' | null
+  ) => {
+    channelRef.current?.sendBroadcast({
+      type: 'match_sync',
+      gameMode,
+      turn,
+      boardSeed,
+      stateJson,
+      winner,
+      sender: mySlot,
+    });
+    await upsertActiveMatch({
+      room_code: roomCode,
+      game_mode: gameMode,
+      turn,
+      board_seed: boardSeed,
+      state_json: stateJson,
+      winner,
+    });
+  };
+
   const handleHostLaunchGame = async (
     selectedMode: GameMode,
     soloPractice = false,
@@ -908,61 +933,21 @@ export function App() {
     checkAutoOpenTutorial(selectedMode);
 
     if (selectedMode === 'dama') {
-      // Resume saved game if one is already in progress (unless forceNewMatch is true)
-      const shouldResume = !forceNewMatch && isDamaInProgress(damaState);
-      const nextDama = shouldResume
-        ? damaState
-        : createInitialDamaState(pickFairStartingTurn());
+      const nextDama = !forceNewMatch && isDamaInProgress(damaState) ? damaState : createInitialDamaState(pickFairStartingTurn());
       setDamaState(nextDama);
-      channelRef.current?.sendBroadcast({
-        type: 'match_sync',
-        gameMode: 'dama',
-        turn: nextDama.turn,
-        boardSeed: nextDama.matchSeed ?? 0,
-        stateJson: nextDama,
-        winner: nextDama.winner,
-        sender: mySlot,
-      });
-      upsertActiveMatch({
-        room_code: roomCode,
-        game_mode: 'dama',
-        turn: nextDama.turn,
-        board_seed: nextDama.matchSeed ?? 0,
-        state_json: nextDama,
-        winner: nextDama.winner,
-      });
+      broadcastAndPersistMatch('dama', nextDama.turn, nextDama.matchSeed ?? 0, nextDama, nextDama.winner);
     } else if (selectedMode === 'snakes') {
-      const shouldResume =
-        !forceNewMatch &&
-        isSnakesInProgress(snakesState) &&
-        (snakesState.maxTile ?? 100) === snakesMaxTile;
-      const newSeed = Math.floor(100000 + Math.random() * 899999);
-      const nextSnakes = shouldResume
+      const nextSnakes = !forceNewMatch && isSnakesInProgress(snakesState) && (snakesState.maxTile ?? 100) === snakesMaxTile
         ? snakesState
-        : createInitialSnakesState(
-            newSeed,
-            true,
-            snakesMaxTile,
-            pickFairStartingTurn()
-          );
+        : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
       setSnakesState(nextSnakes);
-      channelRef.current?.sendBroadcast({
-        type: 'match_sync',
-        gameMode: 'snakes',
-        turn: nextSnakes.turn,
-        boardSeed: nextSnakes.boardSeed,
-        stateJson: nextSnakes,
-        winner: nextSnakes.winner,
-        sender: mySlot,
-      });
-      upsertActiveMatch({
-        room_code: roomCode,
-        game_mode: 'snakes',
-        turn: nextSnakes.turn,
-        board_seed: nextSnakes.boardSeed,
-        state_json: nextSnakes,
-        winner: nextSnakes.winner,
-      });
+      broadcastAndPersistMatch('snakes', nextSnakes.turn, nextSnakes.boardSeed, nextSnakes, nextSnakes.winner);
+    } else {
+      const nextUno = !forceNewMatch && isUnoInProgress(unoState)
+        ? unoState
+        : createInitialUnoState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+      setUnoState(nextUno);
+      broadcastAndPersistMatch('uno', nextUno.turn, nextUno.matchSeed, nextUno, nextUno.winner);
     }
 
     channelRef.current?.sendBroadcast({
@@ -974,131 +959,82 @@ export function App() {
     updateRoomModeInDb(roomCode, selectedMode);
   };
 
+  const commitGameWin = async (
+    mode: GameMode,
+    winSlot: PlayerSlot,
+    summary: string
+  ) => {
+    const winKey = `${winSlot}_${mode}_wins` as keyof CoupleRoomRow;
+    setRoomData((prev) => ({
+      ...prev,
+      [winKey]: ((prev[winKey] as number) || 0) + 1,
+    }));
+    const updatedRoom = await recordMatchWinInDb(
+      roomData,
+      mode,
+      winSlot,
+      summary
+    );
+    if (updatedRoom) {
+      setRoomData((prev) => ({
+        ...updatedRoom,
+        [winKey]: Math.max(
+          (prev[winKey] as number) || 0,
+          (updatedRoom[winKey] as number) || 0
+        ),
+        p1_avatar: prev.p1_avatar,
+        p2_avatar: prev.p2_avatar,
+      }));
+    }
+  };
+
+
+
   const handleCommitDamaState = async (nextState: DamaGameState) => {
     setDamaState(nextState);
-
-    channelRef.current?.sendBroadcast({
-      type: 'match_sync',
-      gameMode: 'dama',
-      turn: nextState.turn,
-      boardSeed: nextState.matchSeed ?? 0,
-      stateJson: nextState,
-      winner: nextState.winner,
-      sender: mySlot,
-    });
-
-    await upsertActiveMatch({
-      room_code: roomCode,
-      game_mode: 'dama',
-      turn: nextState.turn,
-      board_seed: nextState.matchSeed ?? 0,
-      state_json: nextState,
-      winner: nextState.winner,
-    });
-
-    if (nextState.winner === 'p1' || nextState.winner === 'p2') {
-      const winSlot = nextState.winner;
-      setRoomData((prev) => ({
-        ...prev,
-        p1_dama_wins:
-          winSlot === 'p1' ? prev.p1_dama_wins + 1 : prev.p1_dama_wins,
-        p2_dama_wins:
-          winSlot === 'p2' ? prev.p2_dama_wins + 1 : prev.p2_dama_wins,
-      }));
-      const updatedRoom = await recordMatchWinInDb(
-        roomData,
+    await broadcastAndPersistMatch(
+      'dama',
+      nextState.turn,
+      nextState.matchSeed ?? 0,
+      nextState,
+      nextState.winner
+    );
+    if (nextState.winner && nextState.winner !== 'draw') {
+      await commitGameWin(
         'dama',
-        winSlot,
+        nextState.winner,
         `Cat Dama (${nextState.p1Remaining} - ${nextState.p2Remaining})`
       );
-      if (updatedRoom) {
-        setRoomData((prev) => ({
-          ...updatedRoom,
-          p1_dama_wins: Math.max(prev.p1_dama_wins, updatedRoom.p1_dama_wins),
-          p2_dama_wins: Math.max(prev.p2_dama_wins, updatedRoom.p2_dama_wins),
-          p1_avatar: prev.p1_avatar,
-          p2_avatar: prev.p2_avatar,
-        }));
-      }
     }
   };
 
   const handleResetDamaMatch = async () => {
-    const startTurn = pickFairStartingTurn();
-    const fresh = createInitialDamaState(startTurn);
+    const fresh = createInitialDamaState(pickFairStartingTurn());
     setDamaState(fresh);
-    channelRef.current?.sendBroadcast({
-      type: 'match_sync',
-      gameMode: 'dama',
-      turn: fresh.turn,
-      boardSeed: fresh.matchSeed ?? 0,
-      stateJson: fresh,
-      winner: null,
-      sender: mySlot,
-    });
-    await upsertActiveMatch({
-      room_code: roomCode,
-      game_mode: 'dama',
-      turn: fresh.turn,
-      board_seed: fresh.matchSeed ?? 0,
-      state_json: fresh,
-      winner: null,
-    });
+    await broadcastAndPersistMatch(
+      'dama',
+      fresh.turn,
+      fresh.matchSeed ?? 0,
+      fresh,
+      null
+    );
   };
 
   const handleCommitSnakesState = async (nextState: SnakesGameState) => {
     setSnakesState(nextState);
-
-    channelRef.current?.sendBroadcast({
-      type: 'match_sync',
-      gameMode: 'snakes',
-      turn: nextState.turn,
-      boardSeed: nextState.boardSeed,
-      stateJson: nextState,
-      winner: nextState.winner,
-      sender: mySlot,
-    });
-
-    await upsertActiveMatch({
-      room_code: roomCode,
-      game_mode: 'snakes',
-      turn: nextState.turn,
-      board_seed: nextState.boardSeed,
-      state_json: nextState,
-      winner: nextState.winner,
-    });
-
-    if (nextState.winner === 'p1' || nextState.winner === 'p2') {
-      const winSlot = nextState.winner;
-      setRoomData((prev) => ({
-        ...prev,
-        p1_snakes_wins:
-          winSlot === 'p1' ? prev.p1_snakes_wins + 1 : prev.p1_snakes_wins,
-        p2_snakes_wins:
-          winSlot === 'p2' ? prev.p2_snakes_wins + 1 : prev.p2_snakes_wins,
-      }));
-      const maxT = nextState.maxTile ?? 100;
-      const updatedRoom = await recordMatchWinInDb(
-        roomData,
+    await broadcastAndPersistMatch(
+      'snakes',
+      nextState.turn,
+      nextState.boardSeed,
+      nextState,
+      nextState.winner
+    );
+    if (nextState.winner) {
+      await commitGameWin(
         'snakes',
-        winSlot,
-        `Snakes ${maxT} (Seed #${nextState.boardSeed})`
+        nextState.winner,
+        `Snakes ${nextState.maxTile ?? 100} (Seed #${nextState.boardSeed})`
       );
-      if (updatedRoom) {
-        setRoomData((prev) => ({
-          ...updatedRoom,
-          p1_snakes_wins: Math.max(
-            prev.p1_snakes_wins,
-            updatedRoom.p1_snakes_wins
-          ),
-          p2_snakes_wins: Math.max(
-            prev.p2_snakes_wins,
-            updatedRoom.p2_snakes_wins
-          ),
-          p1_avatar: prev.p1_avatar,
-          p2_avatar: prev.p2_avatar,
-        }));
-      }
     }
   };
 
@@ -1107,31 +1043,51 @@ export function App() {
     maxTile: SnakesMaxTile = snakesState.maxTile ?? 100
   ) => {
     const newSeed = Math.floor(100000 + Math.random() * 899999);
-    const startTurn = pickFairStartingTurn();
     const fresh = createInitialSnakesState(
       newSeed,
       twistsEnabled,
       maxTile,
-      startTurn
+      pickFairStartingTurn()
     );
     setSnakesState(fresh);
-    channelRef.current?.sendBroadcast({
-      type: 'match_sync',
-      gameMode: 'snakes',
-      turn: fresh.turn,
-      boardSeed: fresh.boardSeed,
-      stateJson: fresh,
-      winner: null,
-      sender: mySlot,
-    });
-    await upsertActiveMatch({
-      room_code: roomCode,
-      game_mode: 'snakes',
-      turn: fresh.turn,
-      board_seed: fresh.boardSeed,
-      state_json: fresh,
-      winner: null,
-    });
+    await broadcastAndPersistMatch(
+      'snakes',
+      fresh.turn,
+      fresh.boardSeed,
+      fresh,
+      null
+    );
+  };
+
+  const handleCommitUnoState = async (nextState: UnoGameState) => {
+    setUnoState(nextState);
+    await broadcastAndPersistMatch(
+      'uno',
+      nextState.turn,
+      nextState.matchSeed,
+      nextState,
+      nextState.winner
+    );
+    if (nextState.winner) {
+      await commitGameWin(
+        'uno',
+        nextState.winner,
+        `Cat Uno (Match #${nextState.matchSeed})`
+      );
+    }
+  };
+
+  const handleResetUnoMatch = async () => {
+    const newSeed = Math.floor(100000 + Math.random() * 899999);
+    const fresh = createInitialUnoState(newSeed, pickFairStartingTurn());
+    setUnoState(fresh);
+    await broadcastAndPersistMatch(
+      'uno',
+      fresh.turn,
+      fresh.matchSeed,
+      fresh,
+      null
+    );
   };
 
   const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
@@ -1172,6 +1128,20 @@ export function App() {
           sender: mySlot,
         });
       }
+    } else if (newMode === 'uno') {
+      if (!isUnoInProgress(unoState)) {
+        handleResetUnoMatch();
+      } else {
+        channelRef.current?.sendBroadcast({
+          type: 'match_sync',
+          gameMode: 'uno',
+          turn: unoState.turn,
+          boardSeed: unoState.matchSeed,
+          stateJson: unoState,
+          winner: unoState.winner,
+          sender: mySlot,
+        });
+      }
     } else {
       if (!isDamaInProgress(damaState)) {
         handleResetDamaMatch();
@@ -1200,6 +1170,8 @@ export function App() {
   const handleHostResetCurrentMatch = () => {
     if (roomData.current_mode === 'dama') {
       handleResetDamaMatch();
+    } else if (roomData.current_mode === 'uno') {
+      handleResetUnoMatch();
     } else {
       handleNewSnakesSeedMatch(
         snakesState.twistsEnabled,
@@ -1253,10 +1225,14 @@ export function App() {
   const p1Wins =
     roomData.current_mode === 'dama'
       ? roomData.p1_dama_wins
+      : roomData.current_mode === 'uno'
+      ? roomData.p1_uno_wins || 0
       : roomData.p1_snakes_wins;
   const p2Wins =
     roomData.current_mode === 'dama'
       ? roomData.p2_dama_wins
+      : roomData.current_mode === 'uno'
+      ? roomData.p2_uno_wins || 0
       : roomData.p2_snakes_wins;
 
   // Authoritative avatars (our own slot always uses our device's myAvatar)
@@ -1272,7 +1248,11 @@ export function App() {
       : 'Lovey 2';
 
   const activeTurnSlot: PlayerSlot =
-    roomData.current_mode === 'dama' ? damaState.turn : snakesState.turn;
+    roomData.current_mode === 'dama'
+      ? damaState.turn
+      : roomData.current_mode === 'uno'
+      ? unoState.turn
+      : snakesState.turn;
 
   const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
 
@@ -1287,15 +1267,34 @@ export function App() {
       }, 1800);
       return () => window.clearTimeout(t);
     }
+    if (
+      roomData.current_mode === 'uno' &&
+      unoState.lastAction?.message
+    ) {
+      setTurnBubbleText(unoState.lastAction.message);
+      const t = window.setTimeout(() => {
+        setTurnBubbleText('Your turn!');
+      }, 1800);
+      return () => window.clearTimeout(t);
+    }
     setTurnBubbleText('Your turn!');
   }, [
     roomData.current_mode,
     snakesState.lastAnimation?.id,
     snakesState.lastAnimation?.eventMessage,
+    unoState.lastAction?.id,
+    unoState.lastAction?.message,
   ]);
 
   const p1CapturedCount = Math.max(0, 12 - damaState.p2Remaining);
   const p2CapturedCount = Math.max(0, 12 - damaState.p1Remaining);
+
+  const currentWinner: PlayerSlot | 'draw' | null =
+    roomData.current_mode === 'dama'
+      ? damaState.winner
+      : roomData.current_mode === 'uno'
+      ? unoState.winner
+      : snakesState.winner;
 
   return (
     <main className="arcade-shell">
@@ -1312,6 +1311,7 @@ export function App() {
           p2Online={p2Online}
           hasSavedDama={isDamaInProgress(damaState)}
           hasSavedSnakes={isSnakesInProgress(snakesState)}
+          hasSavedUno={isUnoInProgress(unoState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           chatMessages={chatMessages}
           onOpenSettings={() => setCustomizerOpen(true)}
@@ -1342,6 +1342,11 @@ export function App() {
                   <CrownIcon size={16} />
                   <span>Cat Dama</span>
                 </>
+              ) : roomData.current_mode === 'uno' ? (
+                <>
+                  <UnoCardsIcon size={16} />
+                  <span>Cat Uno</span>
+                </>
               ) : (
                 <>
                   <SnakeLadderIcon size={16} />
@@ -1365,7 +1370,15 @@ export function App() {
                 p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                 passAndPlay={passAndPlay}
                 onCommitState={handleCommitDamaState}
-                onResetMatch={handleResetDamaMatch}
+              />
+            ) : roomData.current_mode === 'uno' ? (
+              <UnoBoardView
+                gameState={unoState}
+                mySlot={mySlot}
+                p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
+                p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+                passAndPlay={passAndPlay}
+                onCommitState={handleCommitUnoState}
               />
             ) : (
               <SnakesBoardView
@@ -1375,7 +1388,6 @@ export function App() {
                 p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                 passAndPlay={passAndPlay}
                 onCommitState={handleCommitSnakesState}
-                onNewSeedMatch={handleNewSnakesSeedMatch}
               />
             )}
 
@@ -1383,6 +1395,8 @@ export function App() {
               matchKey={
                 roomData.current_mode === 'dama'
                   ? `dama-${damaState.matchSeed ?? 1}`
+                  : roomData.current_mode === 'uno'
+                  ? `uno-${unoState.matchSeed}`
                   : `snakes-${snakesState.boardSeed}`
               }
               isFreshMatch={
@@ -1391,6 +1405,12 @@ export function App() {
                     !damaState.winner &&
                     damaState.p1Remaining === 12 &&
                     damaState.p2Remaining === 12
+                  : roomData.current_mode === 'uno'
+                  ? !unoState.lastAction &&
+                    !unoState.winner &&
+                    unoState.p1Hand.length === 7 &&
+                    unoState.p2Hand.length === 7 &&
+                    unoState.discardPile.length === 1
                   : !snakesState.lastAnimation &&
                     !snakesState.winner &&
                     snakesState.p1Tile === 1 &&
@@ -1400,6 +1420,40 @@ export function App() {
               p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
               p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
             />
+
+            {/* Unified Victory Celebration Overlay for All Games! */}
+            {currentWinner && currentWinner !== 'draw' && (
+              <div className="victory-overlay-card">
+                <ConfettiCelebrationOverlay />
+                <CoupleCatsSceneSvg
+                  p1Breed={effectiveP1Avatar.breed}
+                  p2Breed={effectiveP2Avatar.breed}
+                  p1Accessory={effectiveP1Avatar.accessory}
+                  p2Accessory={effectiveP2Avatar.accessory}
+                  showTrophy
+                  size={140}
+                />
+                <div className="victory-title">
+                  <CrownIcon size={20} />
+                  <span>
+                    {currentWinner === 'p1' ? p1DisplayName : p2DisplayName}{' '}
+                    {roomData.current_mode === 'dama'
+                      ? 'Wins Cat Dama!'
+                      : roomData.current_mode === 'uno'
+                      ? 'Wins Cat Uno!'
+                      : `Reached ${snakesState.maxTile ?? 100}!`}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="victory-rematch-btn"
+                  onClick={handleHostResetCurrentMatch}
+                >
+                  <span>Play Rematch</span>
+                  <DoubleHeartIcon size={16} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Bottom Dock: Centered Sticker Scoreboard Bar + Bottom-Right Cat Messenger Bubble */}
@@ -1410,89 +1464,64 @@ export function App() {
               onClick={() => setScoreboardOpen(true)}
               title="Tap to view Match Scoreboard"
             >
-              {/* Player 1 Side */}
-              <div
-                className={`bottom-player-side ${
-                  activeTurnSlot === 'p1' ? 'active-turn' : 'dim-turn'
-                }`}
-              >
-                {activeTurnSlot === 'p1' && (
-                  <span className="turn-speech-bubble">{turnBubbleText}</span>
-                )}
-                <div
-                  className={`cat-badge mini ${
-                    activeTurnSlot === 'p1' ? 'avatar-turn-bounce' : ''
-                  }`}
-                >
-                  <CatAvatarSvg
-                    breed={effectiveP1Avatar.breed}
-                    accessory={effectiveP1Avatar.accessory}
-                    size={28}
-                    animateIdle={false}
-                  />
-                  <span
-                    className={`online-dot ${p1Online ? 'online' : ''}`}
-                  />
-                </div>
-                <div className="bottom-player-meta">
-                  <span className="bottom-player-name">{p1DisplayName}</span>
-                  <span className="bottom-turn-tag">
-                    {roomData.current_mode === 'dama' ? (
-                      <>
-                        <PawIcon size={10} /> {p1CapturedCount} eaten
-                      </>
-                    ) : (
-                      `Tile ${snakesState.p1Tile}/${snakesState.maxTile ?? 100}`
-                    )}
-                  </span>
-                </div>
-              </div>
+              {(['p1', 'p2'] as const).map((slot, idx) => {
+                const isP1 = slot === 'p1';
+                const active = activeTurnSlot === slot;
+                const av = isP1 ? effectiveP1Avatar : effectiveP2Avatar;
+                const name = isP1 ? p1DisplayName : p2DisplayName;
+                const online = isP1 ? p1Online : p2Online;
+                const tag =
+                  roomData.current_mode === 'dama' ? (
+                    <>
+                      <PawIcon size={10} /> {isP1 ? p1CapturedCount : p2CapturedCount} eaten
+                    </>
+                  ) : roomData.current_mode === 'uno' ? (
+                    `${isP1 ? unoState.p1Hand.length : unoState.p2Hand.length} cards`
+                  ) : (
+                    `Tile ${isP1 ? snakesState.p1Tile : snakesState.p2Tile}/${snakesState.maxTile ?? 100}`
+                  );
 
-              {/* Center Score Pill */}
-              <div className="bottom-score-center">
-                <TrophyIcon size={14} />
-                <span className="bottom-score-digits">
-                  {p1Wins} : {p2Wins}
-                </span>
-              </div>
-
-              {/* Player 2 Side */}
-              <div
-                className={`bottom-player-side right ${
-                  activeTurnSlot === 'p2' ? 'active-turn' : 'dim-turn'
-                }`}
-              >
-                {activeTurnSlot === 'p2' && (
-                  <span className="turn-speech-bubble">{turnBubbleText}</span>
-                )}
-                <div
-                  className={`cat-badge mini ${
-                    activeTurnSlot === 'p2' ? 'avatar-turn-bounce' : ''
-                  }`}
-                >
-                  <CatAvatarSvg
-                    breed={effectiveP2Avatar.breed}
-                    accessory={effectiveP2Avatar.accessory}
-                    size={28}
-                    animateIdle={false}
-                  />
-                  <span
-                    className={`online-dot ${p2Online ? 'online' : ''}`}
-                  />
-                </div>
-                <div className="bottom-player-meta">
-                  <span className="bottom-player-name">{p2DisplayName}</span>
-                  <span className="bottom-turn-tag">
-                    {roomData.current_mode === 'dama' ? (
-                      <>
-                        <PawIcon size={10} /> {p2CapturedCount} eaten
-                      </>
-                    ) : (
-                      `Tile ${snakesState.p2Tile}/${snakesState.maxTile ?? 100}`
+                return (
+                  <Fragment key={slot}>
+                    {idx === 1 && (
+                      <div className="bottom-score-center">
+                        <TrophyIcon size={14} />
+                        <span className="bottom-score-digits">
+                          {p1Wins} : {p2Wins}
+                        </span>
+                      </div>
                     )}
-                  </span>
-                </div>
-              </div>
+                    <div
+                      className={`bottom-player-side ${!isP1 ? 'right ' : ''}${
+                        active ? 'active-turn' : 'dim-turn'
+                      }`}
+                    >
+                      {active && (
+                        <span className="turn-speech-bubble">{turnBubbleText}</span>
+                      )}
+                      <div
+                        className={`cat-badge mini ${
+                          active ? 'avatar-turn-bounce' : ''
+                        }`}
+                      >
+                        <CatAvatarSvg
+                          breed={av.breed}
+                          accessory={av.accessory}
+                          size={28}
+                          animateIdle={false}
+                        />
+                        <span
+                          className={`online-dot ${online ? 'online' : ''}`}
+                        />
+                      </div>
+                      <div className="bottom-player-meta">
+                        <span className="bottom-player-name">{name}</span>
+                        <span className="bottom-turn-tag">{tag}</span>
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              })}
             </button>
 
             <QuickChatBar
@@ -1549,22 +1578,26 @@ export function App() {
       />
 
       {/* Minimalist Couple Scoreboard Modal */}
-      <CoupleScoreboardModal
-        isOpen={scoreboardOpen}
-        roomData={{
-          ...roomData,
-          p1_avatar: { ...effectiveP1Avatar, name: p1DisplayName },
-          p2_avatar: { ...effectiveP2Avatar, name: p2DisplayName },
-        }}
-        onClose={() => setScoreboardOpen(false)}
-      />
+      {ScoreboardModalComp && (
+        <ScoreboardModalComp
+          isOpen={scoreboardOpen}
+          roomData={{
+            ...roomData,
+            p1_avatar: { ...effectiveP1Avatar, name: p1DisplayName },
+            p2_avatar: { ...effectiveP2Avatar, name: p2DisplayName },
+          }}
+          onClose={() => setScoreboardOpen(false)}
+        />
+      )}
 
       {/* Auto First-Game & On-Demand Rules Tutorial Modal */}
-      <DamaTutorialModal
-        isOpen={tutorialOpen}
-        gameMode={roomData.current_mode}
-        onClose={() => setTutorialOpen(false)}
-      />
+      {TutorialModalComp && (
+        <TutorialModalComp
+          isOpen={tutorialOpen}
+          gameMode={roomData.current_mode}
+          onClose={() => setTutorialOpen(false)}
+        />
+      )}
     </main>
   );
 }

@@ -8,18 +8,8 @@ import {
   tileToSvgCenter,
 } from '../engines/snakesEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
-import {
-  CatActionAnim,
-  CatAvatarSvg,
-  CoupleCatsSceneSvg,
-} from './CatAvatarSvg';
-import {
-  ConfettiCelebrationOverlay,
-  CrownIcon,
-  DiceFaceSvg,
-  DoubleHeartIcon,
-  PowerupIllustrationSvg,
-} from './ArcadeIcons';
+import { CatActionAnim, CatAvatarSvg } from './CatAvatarSvg';
+import { DiceFaceSvg, PowerupIllustrationSvg } from './ArcadeIcons';
 import {
   playCatPounceCapture,
   playCatStep,
@@ -37,7 +27,6 @@ interface SnakesBoardViewProps {
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
   onCommitState: (nextState: SnakesGameState) => void;
-  onNewSeedMatch: (twistsEnabled: boolean, maxTile?: SnakesMaxTile) => void;
 }
 
 const SNAKE_PALETTE = [
@@ -407,7 +396,6 @@ export function SnakesBoardView({
   p2Avatar,
   passAndPlay,
   onCommitState,
-  onNewSeedMatch,
 }: SnakesBoardViewProps) {
   const maxTile: SnakesMaxTile = gameState.maxTile === 150 ? 150 : 100;
   const totalRows = maxTile === 150 ? 15 : 10;
@@ -960,36 +948,6 @@ export function SnakesBoardView({
               <span className="twist-popup-title">{twistPopup.title}</span>
               <span className="twist-popup-desc">{twistPopup.desc}</span>
             </div>
-          </div>
-        )}
-
-        {/* Victory Celebration Sticker Card with Confetti */}
-        {gameState.winner && (
-          <div className="victory-overlay-card">
-            <ConfettiCelebrationOverlay />
-            <CoupleCatsSceneSvg
-              p1Breed={p1Avatar.breed}
-              p2Breed={p2Avatar.breed}
-              p1Accessory={p1Avatar.accessory}
-              p2Accessory={p2Avatar.accessory}
-              showTrophy
-              size={140}
-            />
-            <div className="victory-title">
-              <CrownIcon size={20} />
-              <span>
-                {gameState.winner === 'p1' ? p1Avatar.name : p2Avatar.name}{' '}
-                Reached {maxTile}!
-              </span>
-            </div>
-            <button
-              type="button"
-              className="victory-rematch-btn"
-              onClick={() => onNewSeedMatch(gameState.twistsEnabled, maxTile)}
-            >
-              <span>Play New Board</span>
-              <DoubleHeartIcon size={16} />
-            </button>
           </div>
         )}
       </div>
