@@ -803,6 +803,118 @@ body,
   }
 }
 
+.turn-speech-bubble.timer-urgent {
+  background: #fff0f3;
+  border-color: #ff3366;
+  color: #ff3366;
+  box-shadow: 0 3px 0 #cc0033;
+}
+
+.turn-speech-bubble.timer-urgent::before {
+  border-top-color: #ff3366;
+}
+
+.turn-speech-bubble.timer-urgent::after {
+  border-top-color: #fff0f3;
+}
+
+.bubble-timer-tag {
+  display: inline-block;
+  margin-left: 5px;
+  font-weight: 800;
+  color: #ff3366;
+}
+
+.ingame-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.ingame-timer-badge.urgent {
+  background: #ffe4ea;
+  border-color: #ff3366;
+  color: #ff3366;
+  box-shadow: 0 4px 0 #cc0033;
+  animation: timerUrgentBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+@keyframes timerUrgentBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.cozy-step-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid #ffccd9;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.cozy-step-btn:active {
+  transform: scale(0.92);
+}
+
+.cozy-step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cozy-timer-chip {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 12px;
+  border: 2px solid #ffccd9;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s ease;
+}
+
+.cozy-timer-chip:active {
+  transform: scale(0.95);
+}
+
+.cozy-timer-chip.active {
+  background: #ff5c8a;
+  border-color: #ff5c8a;
+  color: #ffffff;
+}
+
 .avatar-turn-bounce {
   animation: loaderCatBounce 0.9s infinite ease-in-out;
 }

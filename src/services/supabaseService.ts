@@ -315,6 +315,13 @@ export type RealtimeBroadcastEvent =
       unoState?: unknown;
       currentMode: GameMode;
       isPlaying: boolean;
+      timerConfig?: { enabled: boolean; durationSec: number };
+      sender: PlayerSlot;
+    }
+  | {
+      type: 'timer_config_update';
+      enabled: boolean;
+      durationSec: number;
       sender: PlayerSlot;
     }
   | {

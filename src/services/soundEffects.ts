@@ -238,6 +238,10 @@ export function playTurnBannerPop(): void {
   playTone(783.99, 783.99, 0.09, 'triangle', 0.06, 0.05);
 }
 
+export function playTimerTick(): void {
+  playTone(880, 880, 0.03, 'sine', 0.04, 0);
+}
+
 export function playShuffleTick(stepIndex = 0): void {
   const baseFreq = stepIndex % 2 === 0 ? 587.33 : 698.46;
   playTone(baseFreq, baseFreq * 1.12, 0.055, 'triangle', 0.095, 0);

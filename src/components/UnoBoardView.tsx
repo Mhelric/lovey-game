@@ -58,6 +58,10 @@ export function UnoBoardView({
   const myCalledUno = isP1 ? gameState.p1CalledUno : gameState.p2CalledUno;
   const opponentCalledUno = isP1 ? gameState.p2CalledUno : gameState.p1CalledUno;
 
+  useEffect(() => {
+    setPendingWildCardId(null);
+  }, [gameState.turn]);
+
   // Watch for game state animations/toasts
   useEffect(() => {
     if (gameState.lastAction) {

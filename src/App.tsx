@@ -33,16 +33,25 @@ import { DamaBoardView } from './components/DamaBoardView';
 import { SnakesBoardView } from './components/SnakesBoardView';
 import { UnoBoardView } from './components/UnoBoardView';
 import {
+  applyDamaStep,
   createInitialDamaState,
   DamaGameState,
+  getLegalStepsForState,
 } from './engines/damaEngine';
 import {
+  applySnakesDiceRoll,
   createInitialSnakesState,
   SnakesGameState,
   SnakesMaxTile,
 } from './engines/snakesEngine';
 import {
+  applyCallUno,
+  applyDrawCard,
+  applyPassTurn,
+  applyPlayCard,
+  canPlayCard,
   createInitialUnoState,
+  hasAnyPlayableCard,
   UnoGameState,
 } from './engines/unoEngine';
 import {
@@ -64,6 +73,7 @@ import {
   playReactionChime,
   playShuffleTick,
   playTapPop,
+  playTimerTick,
   setBgMusicTrack,
   setSoundMuted,
 } from './services/soundEffects';
@@ -79,12 +89,14 @@ function FirstTurnShuffleOverlay({
   winnerSlot,
   p1Avatar,
   p2Avatar,
+  onShuffleActiveChange,
 }: {
   matchKey: string;
   isFreshMatch: boolean;
   winnerSlot: PlayerSlot;
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
+  onShuffleActiveChange?: (active: boolean) => void;
 }) {
   const [phase, setPhase] = useState<'idle' | 'shuffling' | 'revealed'>('idle');
   const [highlightSlot, setHighlightSlot] = useState<PlayerSlot>('p1');
@@ -93,12 +105,14 @@ function FirstTurnShuffleOverlay({
   useEffect(() => {
     if (!isFreshMatch) {
       setPhase('idle');
+      onShuffleActiveChange?.(false);
       return;
     }
     if (lastShuffledKeyRef.current === matchKey) return;
     lastShuffledKeyRef.current = matchKey;
 
     setPhase('shuffling');
+    onShuffleActiveChange?.(true);
     const startSlot: PlayerSlot = winnerSlot === 'p1' ? 'p2' : 'p1';
     setHighlightSlot(startSlot);
 
@@ -134,13 +148,15 @@ function FirstTurnShuffleOverlay({
     timers.push(
       window.setTimeout(() => {
         setPhase('idle');
+        onShuffleActiveChange?.(false);
       }, 2800)
     );
 
     return () => {
       timers.forEach((id) => window.clearTimeout(id));
+      onShuffleActiveChange?.(false);
     };
-  }, [matchKey, isFreshMatch, winnerSlot]);
+  }, [matchKey, isFreshMatch, winnerSlot, onShuffleActiveChange]);
 
   if (phase === 'idle') return null;
 
@@ -468,6 +484,23 @@ export function App() {
   }, [tutorialOpen, TutorialModalComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
+  const [timerEnabled, setTimerEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('lovey_timer_enabled') === 'true';
+  });
+  const [timerDurationSec, setTimerDurationSec] = useState<number>(() => {
+    const saved = localStorage.getItem('lovey_timer_duration');
+    return saved ? Math.max(10, Math.min(60, parseInt(saved, 10))) : 20;
+  });
+  const [timeRemaining, setTimeRemaining] = useState<number>(20);
+  const [isShufflingActive, setIsShufflingActive] = useState<boolean>(false);
+  const [autoRollSignal, setAutoRollSignal] = useState<number>(0);
+  const autoMoveExecutingRef = useRef<boolean>(false);
+
+  const timerEnabledRef = useRef<boolean>(timerEnabled);
+  timerEnabledRef.current = timerEnabled;
+  const timerDurationSecRef = useRef<number>(timerDurationSec);
+  timerDurationSecRef.current = timerDurationSec;
+
   const channelRef = useRef<CoupleRealtimeChannel | null>(null);
   const damaStateRef = useRef<DamaGameState>(damaState);
   damaStateRef.current = damaState;
@@ -667,6 +700,10 @@ export function App() {
             unoState: unoStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
+            timerConfig: {
+              enabled: timerEnabledRef.current,
+              durationSec: timerDurationSecRef.current,
+            },
             sender: mySlotRef.current,
           });
         } else if (event.type === 'request_savestate') {
@@ -678,9 +715,32 @@ export function App() {
             unoState: unoStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
+            timerConfig: {
+              enabled: timerEnabledRef.current,
+              durationSec: timerDurationSecRef.current,
+            },
             sender: mySlotRef.current,
           });
+        } else if (event.type === 'timer_config_update') {
+          setTimerEnabled(event.enabled);
+          setTimerDurationSec(event.durationSec);
+          setTimeRemaining(event.durationSec);
+          localStorage.setItem('lovey_timer_enabled', String(event.enabled));
+          localStorage.setItem('lovey_timer_duration', String(event.durationSec));
         } else if (event.type === 'savestate_snapshot') {
+          if (event.timerConfig) {
+            setTimerEnabled(event.timerConfig.enabled);
+            setTimerDurationSec(event.timerConfig.durationSec);
+            setTimeRemaining(event.timerConfig.durationSec);
+            localStorage.setItem(
+              'lovey_timer_enabled',
+              String(event.timerConfig.enabled)
+            );
+            localStorage.setItem(
+              'lovey_timer_duration',
+              String(event.timerConfig.durationSec)
+            );
+          }
           const inDama = event.damaState as DamaGameState | undefined;
           if (inDama && Array.isArray(inDama.board)) {
             setDamaState((prev) => mergeDamaSavestate(prev, inDama));
@@ -1339,6 +1399,181 @@ export function App() {
       ? unoState.winner
       : snakesState.winner;
 
+  const handleToggleTimer = () => {
+    if (mySlot !== 'p1') return;
+    const next = !timerEnabled;
+    setTimerEnabled(next);
+    localStorage.setItem('lovey_timer_enabled', String(next));
+    channelRef.current?.sendBroadcast({
+      type: 'timer_config_update',
+      enabled: next,
+      durationSec: timerDurationSec,
+      sender: 'p1',
+    });
+  };
+
+  const handleChangeTimerDuration = (sec: number) => {
+    if (mySlot !== 'p1') return;
+    const clamped = Math.max(10, Math.min(60, sec));
+    setTimerDurationSec(clamped);
+    setTimeRemaining(clamped);
+    localStorage.setItem('lovey_timer_duration', String(clamped));
+    channelRef.current?.sendBroadcast({
+      type: 'timer_config_update',
+      enabled: timerEnabled,
+      durationSec: clamped,
+      sender: 'p1',
+    });
+  };
+
+  const lastMoveActionKey =
+    roomData.current_mode === 'dama'
+      ? damaState.lastAction?.id ?? ''
+      : roomData.current_mode === 'uno'
+      ? unoState.lastAction?.id ?? ''
+      : snakesState.lastAnimation?.id ?? '';
+
+  useEffect(() => {
+    setTimeRemaining(timerDurationSec);
+    autoMoveExecutingRef.current = false;
+  }, [
+    activeTurnSlot,
+    roomData.current_mode,
+    lastMoveActionKey,
+    timerDurationSec,
+  ]);
+
+  useEffect(() => {
+    if (
+      !timerEnabled ||
+      activeScreen !== 'play' ||
+      currentWinner ||
+      isShufflingActive
+    ) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 4 && prev > 1 && !isSoundMuted()) {
+          playTimerTick();
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [timerEnabled, activeScreen, currentWinner, isShufflingActive]);
+
+  const executeAutoRandomMove = useCallback(() => {
+    const mode = roomData.current_mode;
+    if (mode === 'dama') {
+      const legalSteps = getLegalStepsForState(damaState);
+      if (legalSteps.length > 0) {
+        const chosen = legalSteps[Math.floor(Math.random() * legalSteps.length)];
+        let nextState = applyDamaStep(damaState, chosen.from, chosen.to);
+        while (nextState.chainPos) {
+          const chainSteps = getLegalStepsForState(nextState);
+          if (chainSteps.length === 0) break;
+          const nextHop = chainSteps[Math.floor(Math.random() * chainSteps.length)];
+          nextState = applyDamaStep(nextState, nextHop.from, nextHop.to);
+        }
+        handleCommitDamaState(nextState);
+      }
+    } else if (mode === 'snakes') {
+      if (passAndPlay || mySlot === activeTurnSlot) {
+        setAutoRollSignal((prev) => prev + 1);
+      } else {
+        const d1 = Math.floor(Math.random() * 6) + 1;
+        const doubleTurns =
+          (snakesState.turn === 'p1'
+            ? snakesState.p1DoubleDiceTurns
+            : snakesState.p2DoubleDiceTurns) ?? 0;
+        const d2 =
+          doubleTurns > 0 ? Math.floor(Math.random() * 6) + 1 : undefined;
+        const entropy = Math.floor(Math.random() * 1000000);
+        const nextState = applySnakesDiceRoll(snakesState, d1, d2, entropy);
+        handleCommitSnakesState(nextState);
+      }
+    } else if (mode === 'uno') {
+      const activeSlot = unoState.turn;
+      const hand = activeSlot === 'p1' ? unoState.p1Hand : unoState.p2Hand;
+
+      if (unoState.justDrew) {
+        const next = applyPassTurn(unoState);
+        handleCommitUnoState(next);
+      } else {
+        const playable = hand.filter((c) => canPlayCard(c, unoState));
+        if (playable.length > 0) {
+          const chosen = playable[Math.floor(Math.random() * playable.length)];
+          const wildColor =
+            chosen.color === 'wild'
+              ? (['red', 'blue', 'green', 'yellow'] as const)[
+                  Math.floor(Math.random() * 4)
+                ]
+              : undefined;
+          let next = applyPlayCard(unoState, chosen.id, wildColor);
+          if (hand.length === 2) {
+            next = applyCallUno(next, activeSlot);
+          }
+          handleCommitUnoState(next);
+        } else {
+          let next = applyDrawCard(unoState);
+          const drawnHand = activeSlot === 'p1' ? next.p1Hand : next.p2Hand;
+          if (!hasAnyPlayableCard(drawnHand, next) && next.justDrew) {
+            next = applyPassTurn(next);
+          }
+          handleCommitUnoState(next);
+        }
+      }
+    }
+  }, [
+    roomData.current_mode,
+    damaState,
+    snakesState,
+    unoState,
+    passAndPlay,
+    mySlot,
+    activeTurnSlot,
+  ]);
+
+  useEffect(() => {
+    if (
+      !timerEnabled ||
+      activeScreen !== 'play' ||
+      currentWinner ||
+      isShufflingActive
+    ) {
+      return;
+    }
+
+    const isMyTurn = passAndPlay || mySlot === activeTurnSlot;
+    const shouldActivePlayerMove = isMyTurn && timeRemaining === 0;
+    const shouldFallbackMove = !isMyTurn && timeRemaining <= -2;
+
+    if (
+      (shouldActivePlayerMove || shouldFallbackMove) &&
+      !autoMoveExecutingRef.current
+    ) {
+      autoMoveExecutingRef.current = true;
+      executeAutoRandomMove();
+      const t = window.setTimeout(() => {
+        autoMoveExecutingRef.current = false;
+      }, 1500);
+      return () => window.clearTimeout(t);
+    }
+  }, [
+    timeRemaining,
+    timerEnabled,
+    activeScreen,
+    currentWinner,
+    isShufflingActive,
+    passAndPlay,
+    mySlot,
+    activeTurnSlot,
+    executeAutoRandomMove,
+  ]);
+
   return (
     <main className="arcade-shell">
       {activeScreen === 'menu' ? (
@@ -1401,7 +1636,18 @@ export function App() {
               )}
             </div>
 
-            <div className="menu-top-spacer" aria-hidden="true" />
+            {timerEnabled ? (
+              <div
+                className={`ingame-timer-badge ${timeRemaining <= 5 ? 'urgent' : ''}`}
+                title={`Turn Timer: ${Math.max(0, timeRemaining)}s remaining`}
+                aria-label={`Turn Timer: ${Math.max(0, timeRemaining)} seconds`}
+              >
+                <span className="timer-clock-icon" aria-hidden="true">⏱️</span>
+                <span className="timer-sec-count">{Math.max(0, timeRemaining)}s</span>
+              </div>
+            ) : (
+              <div className="menu-top-spacer" aria-hidden="true" />
+            )}
           </header>
 
           {/* Center Stage: Game Board + Fun First-Turn Shuffle Ceremony */}
@@ -1432,6 +1678,7 @@ export function App() {
                 p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                 passAndPlay={passAndPlay}
                 onCommitState={handleCommitSnakesState}
+                autoRollSignal={autoRollSignal}
               />
             )}
 
@@ -1463,6 +1710,7 @@ export function App() {
               winnerSlot={activeTurnSlot}
               p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
               p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+              onShuffleActiveChange={setIsShufflingActive}
             />
 
             {/* Unified Victory Celebration Overlay for All Games! */}
@@ -1541,7 +1789,20 @@ export function App() {
                       }`}
                     >
                       {active && (
-                        <span className="turn-speech-bubble">{turnBubbleText}</span>
+                        <span
+                          className={`turn-speech-bubble ${
+                            timerEnabled && timeRemaining <= 5
+                              ? 'timer-urgent'
+                              : ''
+                          }`}
+                        >
+                          {turnBubbleText}
+                          {timerEnabled && (
+                            <span className="bubble-timer-tag">
+                              ⏱️ {Math.max(0, timeRemaining)}s
+                            </span>
+                          )}
+                        </span>
                       )}
                       <div
                         className={`cat-badge mini ${
@@ -1611,8 +1872,12 @@ export function App() {
           currentAvatar={myAvatar}
           muted={muted}
           passAndPlay={passAndPlay}
+          timerEnabled={timerEnabled}
+          timerDurationSec={timerDurationSec}
           onToggleMute={handleToggleMute}
           onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
+          onToggleTimer={handleToggleTimer}
+          onChangeTimerDuration={handleChangeTimerDuration}
           onHostSwitchGame={handleHostSwitchMode}
           onHostResetMatch={handleHostResetCurrentMatch}
           onOpenTutorial={() => setTutorialOpen(true)}

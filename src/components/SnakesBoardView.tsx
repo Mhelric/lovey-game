@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   BoardJumpLink,
   SnakesGameState,
@@ -27,6 +27,7 @@ interface SnakesBoardViewProps {
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
   onCommitState: (nextState: SnakesGameState) => void;
+  autoRollSignal?: number;
 }
 
 const SNAKE_PALETTE = [
@@ -396,6 +397,7 @@ export function SnakesBoardView({
   p2Avatar,
   passAndPlay,
   onCommitState,
+  autoRollSignal,
 }: SnakesBoardViewProps) {
   const maxTile: SnakesMaxTile = gameState.maxTile === 150 ? 150 : 100;
   const totalRows = maxTile === 150 ? 15 : 10;
@@ -671,6 +673,16 @@ export function SnakesBoardView({
       onCommitState(nextState);
     }, 600);
   };
+
+  const lastSignalRef = useRef(autoRollSignal ?? 0);
+  useEffect(() => {
+    if (autoRollSignal && autoRollSignal !== lastSignalRef.current) {
+      lastSignalRef.current = autoRollSignal;
+      if (canRoll) {
+        handleRollDice();
+      }
+    }
+  }, [autoRollSignal, canRoll]);
 
   const activeTurnName =
     gameState.turn === 'p1' ? p1Avatar.name : p2Avatar.name;

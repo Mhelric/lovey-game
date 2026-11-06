@@ -35,8 +35,12 @@ interface CatCustomizerModalProps {
   currentAvatar: CatAvatarConfig;
   muted: boolean;
   passAndPlay: boolean;
+  timerEnabled?: boolean;
+  timerDurationSec?: number;
   onToggleMute: () => void;
   onTogglePassAndPlay: () => void;
+  onToggleTimer?: () => void;
+  onChangeTimerDuration?: (sec: number) => void;
   onHostSwitchGame: (mode: GameMode, snakesMaxTile?: SnakesMaxTile) => void;
   onHostResetMatch: () => void;
   onOpenTutorial: () => void;
@@ -89,8 +93,12 @@ export function CatCustomizerModal({
   currentAvatar,
   muted,
   passAndPlay,
+  timerEnabled = false,
+  timerDurationSec = 20,
   onToggleMute,
   onTogglePassAndPlay,
+  onToggleTimer,
+  onChangeTimerDuration,
   onHostSwitchGame,
   onHostResetMatch,
   onExitToMenu,
@@ -330,6 +338,119 @@ export function CatCustomizerModal({
                 </div>
               </div>
 
+              {/* Turn Timer Section (Host Editable) */}
+              {isHost && (
+                <div className="cozy-section">
+                  <div className="cozy-row-between">
+                    <div>
+                      <span className="cozy-label">Turn Timer</span>
+                      <p className="cozy-subtle-note">
+                        Auto-moves randomly if time runs out
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="cozy-chip"
+                      onClick={onToggleTimer}
+                      aria-label="Toggle Turn Timer"
+                    >
+                      <span
+                        className={`chip-dot ${timerEnabled ? 'on' : 'off'}`}
+                        aria-hidden="true"
+                      />
+                      <span>{timerEnabled ? 'ON' : 'OFF'}</span>
+                    </button>
+                  </div>
+
+                  {timerEnabled && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            color: '#4a2828',
+                          }}
+                        >
+                          Duration per Turn:
+                        </span>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="cozy-step-btn"
+                            onClick={() =>
+                              onChangeTimerDuration?.(
+                                Math.max(10, timerDurationSec - 5)
+                              )
+                            }
+                            disabled={timerDurationSec <= 10}
+                            aria-label="Decrease timer duration"
+                          >
+                            -
+                          </button>
+                          <span
+                            style={{
+                              fontWeight: 800,
+                              minWidth: '38px',
+                              textAlign: 'center',
+                              color: '#ff5c8a',
+                              fontSize: '0.92rem',
+                            }}
+                          >
+                            {timerDurationSec}s
+                          </span>
+                          <button
+                            type="button"
+                            className="cozy-step-btn"
+                            onClick={() =>
+                              onChangeTimerDuration?.(
+                                Math.min(60, timerDurationSec + 5)
+                              )
+                            }
+                            disabled={timerDurationSec >= 60}
+                            aria-label="Increase timer duration"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '6px',
+                          marginTop: '6px',
+                        }}
+                      >
+                        {[15, 20, 30, 45].map((sec) => (
+                          <button
+                            key={sec}
+                            type="button"
+                            className={`cozy-timer-chip ${
+                              timerDurationSec === sec ? 'active' : ''
+                            }`}
+                            onClick={() => onChangeTimerDuration?.(sec)}
+                          >
+                            {sec}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Game Mode & Snakes Board Size Selector (Host Only) */}
               {isHost ? (
                 <div className="cozy-section">
@@ -396,22 +517,47 @@ export function CatCustomizerModal({
                   )}
                 </div>
               ) : (
-                <div className="cozy-section">
-                  <p className="cozy-subtle-note">
-                    Connected as Invited. Only the Host can switch games. Your
-                    savestate is automatically preserved!
-                  </p>
-                  <button
-                    type="button"
-                    className="tertiary-text-btn danger"
-                    onClick={() => {
-                      onClose();
-                      onLeaveJoinedRoom();
-                    }}
-                  >
-                    Leave Room
-                  </button>
-                </div>
+                <>
+                  <div className="cozy-section">
+                    <div className="cozy-row-between">
+                      <div>
+                        <span className="cozy-label">Turn Timer</span>
+                        <p className="cozy-subtle-note">
+                          {timerEnabled
+                            ? `${timerDurationSec}s per turn (Host controlled)`
+                            : 'Disabled by Host'}
+                        </p>
+                      </div>
+                      <span
+                        className={`cozy-chip ${timerEnabled ? 'active' : ''}`}
+                        style={{ cursor: 'default' }}
+                      >
+                        <span
+                          className={`chip-dot ${timerEnabled ? 'on' : 'off'}`}
+                          aria-hidden="true"
+                        />
+                        <span>{timerEnabled ? `${timerDurationSec}s` : 'OFF'}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="cozy-section">
+                    <p className="cozy-subtle-note">
+                      Connected as Invited. Only the Host can switch games. Your
+                      savestate is automatically preserved!
+                    </p>
+                    <button
+                      type="button"
+                      className="tertiary-text-btn danger"
+                      onClick={() => {
+                        onClose();
+                        onLeaveJoinedRoom();
+                      }}
+                    >
+                      Leave Room
+                    </button>
+                  </div>
+                </>
               )}
 
               {/* In-Game Actions */}
