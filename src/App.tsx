@@ -1920,12 +1920,19 @@ export function App() {
       {/* Centered Modal: Removed from Room Notification */}
       {kickedModalOpen && (
         <div
-          className="cozy-modal-backdrop"
+          className="modal-backdrop kicked-modal-backdrop"
           role="dialog"
           aria-modal="true"
           aria-labelledby="kicked-title"
+          onClick={() => {
+            playTapPop();
+            setKickedModalOpen(false);
+          }}
         >
-          <div className="kicked-popup-card anim-pop-in">
+          <div
+            className="kicked-popup-card anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="kicked-popup-icon-wrap">
               <CatAvatarSvg
                 breed={myAvatar.breed}
@@ -1945,7 +1952,10 @@ export function App() {
               type="button"
               className="vibrant-play-btn sticker-press"
               style={{ width: '100%', minHeight: '44px' }}
-              onClick={() => setKickedModalOpen(false)}
+              onClick={() => {
+                playTapPop();
+                setKickedModalOpen(false);
+              }}
               autoFocus
             >
               <span>Understood 🐾</span>

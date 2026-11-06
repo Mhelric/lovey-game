@@ -123,12 +123,12 @@ function DamaCatToken({
         {isJustMoved && (
           <circle
             cx="0"
-            cy="0.2"
-            r={isKing ? '5.7' : '5.3'}
+            cy="0"
+            r={isKing ? '5.4' : '5.1'}
             fill="none"
             stroke={isP1 ? '#FF4B72' : '#0284C7'}
-            stroke-width="0.68"
-            stroke-dasharray="1.4 0.9"
+            stroke-width="0.65"
+            stroke-dasharray="1.5 1.0"
             className="last-moved-ring"
           />
         )}
