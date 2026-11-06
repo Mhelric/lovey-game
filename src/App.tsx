@@ -623,12 +623,18 @@ export function App() {
     ]);
 
     // Always keep our device's default character authoritative for our own slot!
-    const mergedRow: CoupleRoomRow = {
-      ...row,
-      p1_avatar: slot === 'p1' ? localAv : row.p1_avatar,
-      p2_avatar: slot === 'p2' ? localAv : row.p2_avatar,
-    };
-    setRoomData(mergedRow);
+    setRoomData((prev) => {
+      const activeMode =
+        (matchRow?.game_mode as GameMode) ||
+        (prev.current_mode ?? row.current_mode) ||
+        row.current_mode;
+      return {
+        ...row,
+        p1_avatar: slot === 'p1' ? localAv : row.p1_avatar,
+        p2_avatar: slot === 'p2' ? localAv : row.p2_avatar,
+        current_mode: activeMode,
+      };
+    });
 
     // Push our device character to the room DB so our partner sees our outfit & name
     updatePlayerAvatarInDb(targetRoom, slot, localAv);
@@ -799,7 +805,12 @@ export function App() {
             }));
             fetchOrCreateCoupleRoom(roomCode).then((r) => {
               setRoomData((prev) => {
-                const next = { ...r, p1_avatar: prev.p1_avatar, p2_avatar: prev.p2_avatar };
+                const next = {
+                  ...r,
+                  p1_avatar: prev.p1_avatar,
+                  p2_avatar: prev.p2_avatar,
+                  current_mode: prev.current_mode || event.gameMode,
+                };
                 (['dama', 'snakes', 'uno'] as const).forEach((gm) => {
                   (['p1', 'p2'] as const).forEach((ps) => {
                     const k = `${ps}_${gm}_wins` as keyof CoupleRoomRow;
@@ -868,11 +879,12 @@ export function App() {
       // Ignore
     }
     const row = await fetchOrCreateCoupleRoom(cleaned);
-    const updatedRow: CoupleRoomRow = {
+    const savedSession = loadLocalActiveSession(cleaned);
+    setRoomData((prev) => ({
       ...row,
       p1_avatar: myAvatarRef.current,
-    };
-    setRoomData(updatedRow);
+      current_mode: savedSession?.mode ?? (prev.current_mode || row.current_mode),
+    }));
     await updatePlayerAvatarInDb(cleaned, 'p1', myAvatarRef.current);
   };
 
@@ -1083,6 +1095,7 @@ export function App() {
         ),
         p1_avatar: prev.p1_avatar,
         p2_avatar: prev.p2_avatar,
+        current_mode: prev.current_mode || mode,
       }));
     }
   };
