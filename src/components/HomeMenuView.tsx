@@ -48,6 +48,7 @@ interface HomeMenuViewProps {
     forceNewMatch?: boolean
   ) => void;
   onSendReaction: (content: string, kind: 'emoji' | 'chat') => void;
+  onHostKickPlayer?: () => void;
 }
 
 export function HomeMenuView({
@@ -68,6 +69,7 @@ export function HomeMenuView({
   onRejoinSavedGame,
   onHostLaunchGame,
   onSendReaction,
+  onHostKickPlayer,
 }: HomeMenuViewProps) {
   const [pickingGame, setPickingGame] = useState(false);
   const [snakesTiles, setSnakesTiles] = useState<SnakesMaxTile>(
@@ -354,6 +356,17 @@ export function HomeMenuView({
                   <span className="host-partner-dot" aria-hidden="true" />
                   <span>{p2Online ? 'Online' : 'In Room'}</span>
                 </span>
+                {onHostKickPlayer && (
+                  <button
+                    type="button"
+                    className="leave-room-mini-btn kick-mini-btn sticker-press"
+                    onClick={onHostKickPlayer}
+                    title={`Kick ${roomData.p2_avatar.name} from room`}
+                    aria-label={`Kick ${roomData.p2_avatar.name} from room`}
+                  >
+                    Kick
+                  </button>
+                )}
               </div>
             ) : (
               <>

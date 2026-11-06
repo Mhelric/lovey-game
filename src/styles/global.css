@@ -3253,6 +3253,7 @@ body,
 }
 
 .leave-room-mini-btn {
+  position: relative;
   height: 24px;
   padding: 0 9px;
   border-radius: 999px;
@@ -3264,6 +3265,20 @@ body,
   font-weight: 800;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.leave-room-mini-btn::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -6px;
+  right: -6px;
+}
+
+.leave-room-mini-btn.kick-mini-btn {
+  background: #FEE2E2;
+  color: #B91C1C;
 }
 
 .invited-panel-actions {

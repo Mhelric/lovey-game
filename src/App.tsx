@@ -24,7 +24,7 @@ import {
   TrophyIcon,
   UnoCardsIcon,
 } from './components/ArcadeIcons';
-import { CatCustomizerModal } from './components/CatCustomizerModal';
+
 
 
 import { HomeMenuView } from './components/HomeMenuView';
@@ -437,6 +437,15 @@ export function App() {
     () => mySlot === 'p2'
   );
   const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [CustomizerModalComp, setCustomizerModalComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (customizerOpen && !CustomizerModalComp) {
+      import('./components/CatCustomizerModal').then((m) => {
+        setCustomizerModalComp(() => m.CatCustomizerModal);
+      });
+    }
+  }, [customizerOpen, CustomizerModalComp]);
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
   const [ScoreboardModalComp, setScoreboardModalComp] = useState<any>(null);
 
@@ -626,6 +635,17 @@ export function App() {
         } else if (event.type === 'partner_left') {
           setPartnerJoinedSession(false);
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: 0 }));
+        } else if (event.type === 'partner_kicked') {
+          if (mySlotRef.current === 'p2') {
+            handleLeaveJoinedRoom();
+            spawnFloatingReaction({
+              id: `kicked-${Date.now()}`,
+              sender: 'p1',
+              kind: 'chat',
+              content: 'You were kicked from the room by the host',
+              createdAt: Date.now(),
+            });
+          }
         } else if (event.type === 'partner_joined') {
           setPartnerJoinedSession(true);
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: Date.now() }));
@@ -869,6 +889,29 @@ export function App() {
     setPartnerJoinedSession(false);
     setOnlineSeen({ p1: Date.now(), p2: 0 });
     setRoomCode(hostRoom);
+  };
+
+  const handleHostKickPlayer = async () => {
+    playTapPop();
+    const partnerName = roomData.p2_avatar.name || 'Invited player';
+    channelRef.current?.sendBroadcast({
+      type: 'partner_kicked',
+      slot: 'p2',
+    });
+    setPartnerJoinedSession(false);
+    setOnlineSeen((prev) => ({ ...prev, p2: 0 }));
+    setRoomData((prev) => ({
+      ...prev,
+      p2_avatar: DEFAULT_P2_AVATAR,
+    }));
+    await updatePlayerAvatarInDb(roomCode, 'p2', DEFAULT_P2_AVATAR);
+    spawnFloatingReaction({
+      id: `kick-notice-${Date.now()}`,
+      sender: 'p1',
+      kind: 'chat',
+      content: `${partnerName} was removed from the room`,
+      createdAt: Date.now(),
+    });
   };
 
   const handleRejoinSavedGame = (targetMode?: GameMode) => {
@@ -1321,6 +1364,7 @@ export function App() {
           onRejoinSavedGame={handleRejoinSavedGame}
           onHostLaunchGame={handleHostLaunchGame}
           onSendReaction={handleSendReaction}
+          onHostKickPlayer={handleHostKickPlayer}
         />
       ) : (
         <div className="ingame-screen-layout">
@@ -1557,25 +1601,30 @@ export function App() {
       </div>
 
       {/* Unified 3-Tab Settings & Cat Customizer Modal */}
-      <CatCustomizerModal
-        isOpen={customizerOpen}
-        isInGame={activeScreen === 'play'}
-        mySlot={mySlot}
-        currentMode={roomData.current_mode}
-        snakesMaxTile={snakesState.maxTile ?? 100}
-        currentAvatar={myAvatar}
-        muted={muted}
-        passAndPlay={passAndPlay}
-        onToggleMute={handleToggleMute}
-        onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
-        onHostSwitchGame={handleHostSwitchMode}
-        onHostResetMatch={handleHostResetCurrentMatch}
-        onOpenTutorial={() => setTutorialOpen(true)}
-        onExitToMenu={() => setActiveScreen('menu')}
-        onLeaveJoinedRoom={handleLeaveJoinedRoom}
-        onSave={handleSaveProfile}
-        onClose={() => setCustomizerOpen(false)}
-      />
+      {CustomizerModalComp && (
+        <CustomizerModalComp
+          isOpen={customizerOpen}
+          isInGame={activeScreen === 'play'}
+          mySlot={mySlot}
+          currentMode={roomData.current_mode}
+          snakesMaxTile={snakesState.maxTile ?? 100}
+          currentAvatar={myAvatar}
+          muted={muted}
+          passAndPlay={passAndPlay}
+          onToggleMute={handleToggleMute}
+          onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
+          onHostSwitchGame={handleHostSwitchMode}
+          onHostResetMatch={handleHostResetCurrentMatch}
+          onOpenTutorial={() => setTutorialOpen(true)}
+          onExitToMenu={() => setActiveScreen('menu')}
+          onLeaveJoinedRoom={handleLeaveJoinedRoom}
+          isPartnerInRoom={isJoinedWithPartner}
+          partnerName={roomData.p2_avatar.name}
+          onHostKickPlayer={handleHostKickPlayer}
+          onSave={handleSaveProfile}
+          onClose={() => setCustomizerOpen(false)}
+        />
+      )}
 
       {/* Minimalist Couple Scoreboard Modal */}
       {ScoreboardModalComp && (

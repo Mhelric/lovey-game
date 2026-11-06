@@ -42,6 +42,9 @@ interface CatCustomizerModalProps {
   onOpenTutorial: () => void;
   onExitToMenu: () => void;
   onLeaveJoinedRoom: () => void;
+  isPartnerInRoom?: boolean;
+  partnerName?: string;
+  onHostKickPlayer?: () => void;
   onSave: (newAvatar: CatAvatarConfig) => void;
   onClose: () => void;
 }
@@ -92,6 +95,9 @@ export function CatCustomizerModal({
   onHostResetMatch,
   onExitToMenu,
   onLeaveJoinedRoom,
+  isPartnerInRoom = false,
+  partnerName,
+  onHostKickPlayer,
   onSave,
   onClose,
 }: CatCustomizerModalProps) {
@@ -374,6 +380,20 @@ export function CatCustomizerModal({
                       <span>Snakes (150)</span>
                     </button>
                   </div>
+
+                  {isPartnerInRoom && onHostKickPlayer && (
+                    <button
+                      type="button"
+                      className="tertiary-text-btn danger"
+                      style={{ marginTop: '8px' }}
+                      onClick={() => {
+                        onClose();
+                        onHostKickPlayer();
+                      }}
+                    >
+                      Kick {partnerName || 'Partner'} from Room
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="cozy-section">

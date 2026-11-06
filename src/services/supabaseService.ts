@@ -305,6 +305,7 @@ export type RealtimeBroadcastEvent =
     }
   | { type: 'partner_joined'; slot: PlayerSlot; avatar: CatAvatarConfig }
   | { type: 'partner_left'; slot: PlayerSlot }
+  | { type: 'partner_kicked'; slot: PlayerSlot }
   | { type: 'presence_ping'; slot: PlayerSlot; timestamp: number }
   | { type: 'request_savestate'; slot: PlayerSlot }
   | {
