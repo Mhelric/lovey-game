@@ -119,6 +119,20 @@ function DamaCatToken({
           />
         )}
 
+        {/* Last Moved Piece Highlight Ring */}
+        {isJustMoved && (
+          <circle
+            cx="0"
+            cy="0.2"
+            r={isKing ? '5.7' : '5.3'}
+            fill="none"
+            stroke={isP1 ? '#FF4B72' : '#0284C7'}
+            stroke-width="0.68"
+            stroke-dasharray="1.4 0.9"
+            className="last-moved-ring"
+          />
+        )}
+
         {isKing ? (
           /* DAMA KING: Double-Decker Golden Royal Pedestal */
           <>
@@ -231,6 +245,34 @@ function DamaCatToken({
               stroke-width="0.28"
               stroke-linejoin="round"
             />
+          </g>
+        )}
+
+        {/* Persistent Cute Paw Marker Badge on the Piece That Just Moved */}
+        {isJustMoved && (
+          <g
+            transform={isKing ? 'translate(-3.3, -3.4)' : 'translate(3.3, -3.4)'}
+            className="last-moved-badge-group"
+          >
+            <circle
+              cx="0"
+              cy="0"
+              r="2.05"
+              fill="#FFFFFF"
+              stroke="#5B2A4E"
+              stroke-width="0.42"
+            />
+            <circle
+              cx="0"
+              cy="0"
+              r="1.48"
+              fill={isP1 ? '#FF4B72' : '#0284C7'}
+            />
+            {/* Cute White Paw Silhouette */}
+            <ellipse cx="0" cy="0.32" rx="0.55" ry="0.42" fill="#FFFFFF" />
+            <circle cx="-0.45" cy="-0.28" r="0.2" fill="#FFFFFF" />
+            <circle cx="0" cy="-0.5" r="0.2" fill="#FFFFFF" />
+            <circle cx="0.45" cy="-0.28" r="0.2" fill="#FFFFFF" />
           </g>
         )}
       </g>
@@ -532,6 +574,8 @@ export function DamaBoardView({
 
   const hasMandatoryCapture = mandatoryOrigins.size > 0;
   const ghostCapturedSet = new Set(gameState.capturedInChain);
+  const lastMoverName =
+    gameState.lastAction?.mover === 'p1' ? p1Avatar.name : p2Avatar.name;
 
   // Mirrored POV: P1 sees White/Pearl pieces at bottom & Dark/Plum pieces at top;
   // P2 sees Dark/Plum pieces at bottom & White/Pearl pieces at top!
@@ -539,12 +583,20 @@ export function DamaBoardView({
 
   return (
     <div className="dama-stage-container">
-      {hasMandatoryCapture && !gameState.winner && (
+      {hasMandatoryCapture && !gameState.winner ? (
         <div className="mayor-floating-alert">
           <SparkleIcon size={14} />
           <span>Mayor Rule! Jump with the glowing cat for max capture</span>
         </div>
-      )}
+      ) : gameState.lastAction && !gameState.winner ? (
+        <div className="dama-last-move-chip">
+          <span className="last-move-paw" aria-hidden="true">🐾</span>
+          <span>
+            <strong>{lastMoverName}</strong> moved tao
+            {gameState.lastAction.captured ? ' (captured!)' : ''}
+          </span>
+        </div>
+      ) : null}
 
       {/* Clean 8x8 Filipino Dama Board Frame (No horizontal lines!) */}
       <div className="board-stage sticker-board-frame dama-3d-board">
@@ -616,6 +668,29 @@ export function DamaBoardView({
                       fill={innerPadFill}
                       pointer-events="none"
                     />
+                  )}
+
+                  {/* Subtle Paw Footprint Marking the Square Moved From */}
+                  {isLastFrom && (
+                    <g
+                      transform={`translate(${sx + 6.25}, ${sy + 6.25})`}
+                      opacity="0.45"
+                      pointerEvents="none"
+                    >
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="3.2"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="0.45"
+                        strokeDasharray="1.2 0.8"
+                      />
+                      <ellipse cx="0" cy="0.4" rx="0.8" ry="0.6" fill="#5B2A4E" />
+                      <circle cx="-0.65" cy="-0.4" r="0.28" fill="#5B2A4E" />
+                      <circle cx="0" cy="-0.75" r="0.28" fill="#5B2A4E" />
+                      <circle cx="0.65" cy="-0.4" r="0.28" fill="#5B2A4E" />
+                    </g>
                   )}
                 </g>
               );

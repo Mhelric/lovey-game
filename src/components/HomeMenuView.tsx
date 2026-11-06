@@ -96,7 +96,8 @@ export function HomeMenuView({
   const joinInputRef = useRef<HTMLInputElement | null>(null);
 
   const isHost = mySlot === 'p1';
-  const hasSavedAny = hasSavedDama || hasSavedSnakes || hasSavedUno;
+  // Only have the resume button when the player is in a room where the host has a past game saved
+  const hasSavedAny = isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno);
   const activeSavedMode: GameMode =
     roomData.current_mode === 'uno' && hasSavedUno
       ? 'uno'
@@ -630,7 +631,7 @@ export function HomeMenuView({
                   <CrownIcon size={26} />
                   <span className="role-main-label">Cat Dama</span>
                   <span className="role-sub-label">
-                    {hasSavedDama ? 'Resume Saved Match' : '3D Filipino Checkers'}
+                    {hasSavedDama && isJoined ? 'Resume Saved Match' : '3D Filipino Checkers'}
                   </span>
                 </button>
 
@@ -643,7 +644,7 @@ export function HomeMenuView({
                   <UnoCardsIcon size={26} />
                   <span className="role-main-label">Cat Uno</span>
                   <span className="role-sub-label">
-                    {hasSavedUno ? 'Resume Saved Match' : '2P Stacking & 7-Swap'}
+                    {hasSavedUno && isJoined ? 'Resume Saved Match' : '2P Stacking & 7-Swap'}
                   </span>
                 </button>
 
@@ -658,7 +659,7 @@ export function HomeMenuView({
                   >
                     <SnakeLadderIcon size={24} />
                     <span className="role-main-label">Snakes &amp; Ladders</span>
-                    {hasSavedSnakes && savedSnakesMaxTile === snakesTiles && (
+                    {hasSavedSnakes && isJoined && savedSnakesMaxTile === snakesTiles && (
                       <span className="role-sub-label">Resume Saved Match</span>
                     )}
                   </button>
@@ -696,9 +697,22 @@ export function HomeMenuView({
       {/* Bottom Bar with Real Chat Inbox Button on Homescreen */}
       <footer className="menu-bottom-bar">
         <span className="menu-bottom-caption">
-          {isJoined
-            ? `${roomData.p1_avatar.name} • ${roomData.p2_avatar.name}`
-            : 'Made with love for two'}
+          {roomData.p2_avatar.name && roomData.p2_avatar.name !== 'Lovey 2' ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <span>{roomData.p1_avatar.name || 'Lovey 1'}</span>
+              <span>•</span>
+              <span>{roomData.p2_avatar.name}</span>
+              <span
+                className={`online-dot mini ${p2Online ? 'online' : ''}`}
+                style={{ width: '7px', height: '7px', position: 'static', display: 'inline-block' }}
+                title={p2Online ? 'Online' : 'Offline'}
+              />
+            </span>
+          ) : isJoined ? (
+            `${roomData.p1_avatar.name} • ${roomData.p2_avatar.name}`
+          ) : (
+            'Made with love for two'
+          )}
         </span>
         <QuickChatBar
           messages={chatMessages}

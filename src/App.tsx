@@ -495,6 +495,7 @@ export function App() {
   const [isShufflingActive, setIsShufflingActive] = useState<boolean>(false);
   const [autoRollSignal, setAutoRollSignal] = useState<number>(0);
   const autoMoveExecutingRef = useRef<boolean>(false);
+  const [kickedModalOpen, setKickedModalOpen] = useState<boolean>(false);
 
   const timerEnabledRef = useRef<boolean>(timerEnabled);
   timerEnabledRef.current = timerEnabled;
@@ -649,6 +650,11 @@ export function App() {
           setUnoState((prev) => mergeUnoSavestate(prev, maybeUno));
         }
       }
+    } else if (!localDama && !localSnakes && !localUno) {
+      // If targetRoom has no local savestate and no database match, reset to fresh initial state
+      setDamaState(createInitialDamaState('p1'));
+      setSnakesState(createInitialSnakesState());
+      setUnoState(createInitialUnoState());
     }
   }, []);
 
@@ -670,14 +676,8 @@ export function App() {
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: 0 }));
         } else if (event.type === 'partner_kicked') {
           if (mySlotRef.current === 'p2') {
+            setKickedModalOpen(true);
             handleLeaveJoinedRoom();
-            spawnFloatingReaction({
-              id: `kicked-${Date.now()}`,
-              sender: 'p1',
-              kind: 'chat',
-              content: 'You were kicked from the room by the host',
-              createdAt: Date.now(),
-            });
           }
         } else if (event.type === 'partner_joined') {
           setPartnerJoinedSession(true);
@@ -960,11 +960,7 @@ export function App() {
     });
     setPartnerJoinedSession(false);
     setOnlineSeen((prev) => ({ ...prev, p2: 0 }));
-    setRoomData((prev) => ({
-      ...prev,
-      p2_avatar: DEFAULT_P2_AVATAR,
-    }));
-    await updatePlayerAvatarInDb(roomCode, 'p2', DEFAULT_P2_AVATAR);
+    // Keep roomData.p2_avatar so their name remains on the P-2 spot in the bottom screen!
     spawnFloatingReaction({
       id: `kick-notice-${Date.now()}`,
       sender: 'p1',
@@ -1587,9 +1583,9 @@ export function App() {
           myAvatar={myAvatar}
           isJoined={isJoinedWithPartner}
           p2Online={p2Online}
-          hasSavedDama={isDamaInProgress(damaState)}
-          hasSavedSnakes={isSnakesInProgress(snakesState)}
-          hasSavedUno={isUnoInProgress(unoState)}
+          hasSavedDama={isJoinedWithPartner && isDamaInProgress(damaState)}
+          hasSavedSnakes={isJoinedWithPartner && isSnakesInProgress(snakesState)}
+          hasSavedUno={isJoinedWithPartner && isUnoInProgress(unoState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           chatMessages={chatMessages}
           onOpenSettings={() => setCustomizerOpen(true)}
@@ -1762,10 +1758,18 @@ export function App() {
                 const av = isP1 ? effectiveP1Avatar : effectiveP2Avatar;
                 const name = isP1 ? p1DisplayName : p2DisplayName;
                 const online = isP1 ? p1Online : p2Online;
+                const isLastMover =
+                  roomData.current_mode === 'dama' &&
+                  damaState.lastAction?.mover === slot;
                 const tag =
                   roomData.current_mode === 'dama' ? (
                     <>
                       <PawIcon size={10} /> {isP1 ? p1CapturedCount : p2CapturedCount} eaten
+                      {isLastMover && (
+                        <span style={{ color: '#ff3366', fontWeight: 800 }}>
+                          {' '}• Moved
+                        </span>
+                      )}
                     </>
                   ) : roomData.current_mode === 'uno' ? (
                     `${isP1 ? unoState.p1Hand.length : unoState.p2Hand.length} cards`
@@ -1911,6 +1915,43 @@ export function App() {
           gameMode={roomData.current_mode}
           onClose={() => setTutorialOpen(false)}
         />
+      )}
+
+      {/* Centered Modal: Removed from Room Notification */}
+      {kickedModalOpen && (
+        <div
+          className="cozy-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="kicked-title"
+        >
+          <div className="kicked-popup-card anim-pop-in">
+            <div className="kicked-popup-icon-wrap">
+              <CatAvatarSvg
+                breed={myAvatar.breed}
+                accessory={myAvatar.accessory}
+                size={56}
+                dizzy
+              />
+            </div>
+            <h3 id="kicked-title" className="kicked-popup-title">
+              Removed from Room
+            </h3>
+            <p className="kicked-popup-desc">
+              You were removed from the room by the host. You can re-enter the
+              room code anytime to rejoin and continue the match!
+            </p>
+            <button
+              type="button"
+              className="vibrant-play-btn sticker-press"
+              style={{ width: '100%', minHeight: '44px' }}
+              onClick={() => setKickedModalOpen(false)}
+              autoFocus
+            >
+              <span>Understood 🐾</span>
+            </button>
+          </div>
+        </div>
       )}
     </main>
   );
