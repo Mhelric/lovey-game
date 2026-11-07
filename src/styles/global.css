@@ -1830,12 +1830,13 @@ body,
 }
 
 .cozy-chip-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 8px;
+  width: 100%;
 }
 
 .cozy-chip {
+  flex: 1;
   min-height: 42px;
   background: #FFEAF0;
   border: none;

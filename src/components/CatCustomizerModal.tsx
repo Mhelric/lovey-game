@@ -42,11 +42,9 @@ interface CatCustomizerModalProps {
   snakesMaxTile: SnakesMaxTile;
   currentAvatar: CatAvatarConfig;
   muted: boolean;
-  passAndPlay: boolean;
   timerEnabled?: boolean;
   timerDurationSec?: number;
   onToggleMute: () => void;
-  onTogglePassAndPlay: () => void;
   onToggleTimer?: () => void;
   onChangeTimerDuration?: (sec: number) => void;
   onHostSwitchGame: (mode: GameMode, snakesMaxTile?: SnakesMaxTile) => void;
@@ -100,11 +98,9 @@ export function CatCustomizerModal({
   snakesMaxTile,
   currentAvatar,
   muted,
-  passAndPlay,
   timerEnabled = false,
   timerDurationSec = 20,
   onToggleMute,
-  onTogglePassAndPlay,
   onToggleTimer,
   onChangeTimerDuration,
   onHostSwitchGame,
@@ -355,7 +351,7 @@ export function CatCustomizerModal({
                 </div>
               </div>
 
-              {/* Preferences (Sound + Volume Slider + Pass-and-Play) */}
+              {/* Preferences (Sound + Volume Slider) */}
               <div className="cozy-section">
                 <span className="cozy-label">Preferences</span>
                 <div className="cozy-chip-row">
@@ -366,18 +362,6 @@ export function CatCustomizerModal({
                   >
                     <SoundIcon muted={muted} size={16} />
                     <span>Sound {muted ? 'Off' : 'On'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="cozy-chip"
-                    onClick={onTogglePassAndPlay}
-                  >
-                    <span
-                      className={`chip-dot ${passAndPlay ? 'on' : 'off'}`}
-                      aria-hidden="true"
-                    />
-                    <span>{passAndPlay ? '1-Phone Mode' : '2-Phone Live'}</span>
                   </button>
                 </div>
 

@@ -2457,11 +2457,9 @@ export function App() {
           snakesMaxTile={snakesState.maxTile ?? 100}
           currentAvatar={myAvatar}
           muted={muted}
-          passAndPlay={passAndPlay}
           timerEnabled={timerEnabled}
           timerDurationSec={timerDurationSec}
           onToggleMute={handleToggleMute}
-          onTogglePassAndPlay={handleTogglePassAndPlay}
           onToggleTimer={handleToggleTimer}
           onChangeTimerDuration={handleChangeTimerDuration}
           onHostSwitchGame={handleHostSwitchMode}
