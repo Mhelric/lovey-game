@@ -795,114 +795,144 @@ export function DoodleBoardView({
             </div>
           )}
         </div>
-
-        {/* 1-Phone Mode Privacy Handover Curtain before Word Selection (hidden while shuffle roulette is active) */}
-        {passAndPlay && prePickHandoverActive && !isShuffling && (
-          <div className="modal-backdrop doodle-handover-modal-backdrop">
-            <div className="doodle-handover-card anim-fade-scale" style={{ maxWidth: '300px' }}>
-              <div className="doodle-handover-avatar">
-                <CatAvatarSvg
-                  breed={drawerAvatar.breed}
-                  accessory={drawerAvatar.accessory}
-                  size={56}
-                />
-              </div>
-              <h3 className="doodle-handover-title">
-                Pass Phone to {drawerName}!
-              </h3>
-              <p className="doodle-handover-desc">
-                {drawerName} is picking the secret word for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
-              </p>
-              <div className="popup-btn-row stacked">
-                <button
-                  type="button"
-                  className="popup-btn-primary"
-                  onClick={() => {
-                    playTapPop();
-                    setPrePickHandoverActive(false);
-                  }}
-                  autoFocus
-                >
-                  <span>I am {drawerName} — Pick Secret Word</span>
-                  <PencilIcon size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Dedicated Word Selection Popup Modal (waits for shuffle roulette to finish!) */}
-        {gameState.phase === 'word_selection' && !prePickHandoverActive && isDrawer && !isShuffling && (
-          <div className="modal-backdrop doodle-word-modal-backdrop">
-            <div className="doodle-word-picker-modal anim-fade-scale">
-              <div className="doodle-modal-cat-ring">
-                <CatAvatarSvg
-                  breed={drawerAvatar.breed}
-                  accessory={drawerAvatar.accessory}
-                  size={50}
-                />
-              </div>
-              <div className="doodle-modal-heading">
-                <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
-                  Round {gameState.round}: {diffInfo.label} Stage
-                </span>
-                <h3 className="doodle-modal-title">Pick a Secret Word!</h3>
-                <p className="doodle-modal-desc">
-                  You get 60s to draw it before {guesserName} gets 3 guesses.
-                </p>
-              </div>
-
-              <div className="doodle-word-choices-modal-grid">
-                {gameState.wordChoices.map((opt) => (
-                  <button
-                    key={opt.word}
-                    type="button"
-                    className="doodle-word-choice-card sticker-press"
-                    onClick={() => handleWordSelect(opt)}
-                  >
-                    <span className="doodle-word-cat-badge">{opt.category}</span>
-                    <span className="doodle-word-text">{opt.word}</span>
-                    <span className="doodle-word-hint-text">{opt.hint}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 1-Phone Mode Handover Overlay for Guesser when 60s drawing timer finishes */}
-        {passAndPlay && guesserHandoverModal && (
-          <div className="doodle-handover-modal-backdrop">
-            <div className="doodle-handover-card anim-fade-scale">
-              <div className="doodle-handover-avatar alarm">
-                <CatAvatarSvg breed={guesserAvatar.breed} accessory={guesserAvatar.accessory} size={56} />
-              </div>
-              <div className="doodle-times-up-pill">
-                <TimerClockIcon size={14} />
-                <span>TIME&apos;S UP! 60s ALARM</span>
-              </div>
-              <h3 className="doodle-handover-title">Hand phone to {guesserName}!</h3>
-              <p className="doodle-handover-desc">
-                Drawing phase is finished! {guesserName} has <strong>3 tries</strong> to guess what was drawn!
-              </p>
-              <div className="popup-btn-row stacked">
-                <button
-                  type="button"
-                  className="popup-btn-primary"
-                  onClick={() => {
-                    playTapPop();
-                    setGuesserHandoverModal(false);
-                  }}
-                  autoFocus
-                >
-                  <span>I am {guesserName} — Ready to Guess</span>
-                  <SparkleIcon size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Full-Screen Modals (placed outside table-stage so they cover the entire viewport & block background clicks) */}
+
+      {/* 1-Phone Mode Privacy Handover Curtain before Word Selection (hidden while shuffle roulette is active) */}
+      {passAndPlay && prePickHandoverActive && !isShuffling && (
+        <div
+          className="modal-backdrop doodle-handover-modal-backdrop"
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <div
+            className="doodle-handover-card anim-fade-scale"
+            style={{ maxWidth: '300px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="doodle-handover-avatar">
+              <CatAvatarSvg
+                breed={drawerAvatar.breed}
+                accessory={drawerAvatar.accessory}
+                size={56}
+              />
+            </div>
+            <h3 className="doodle-handover-title">
+              Pass Phone to {drawerName}!
+            </h3>
+            <p className="doodle-handover-desc">
+              {drawerName} is picking the secret word for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
+            </p>
+            <div className="popup-btn-row stacked">
+              <button
+                type="button"
+                className="popup-btn-primary"
+                onClick={() => {
+                  playTapPop();
+                  setPrePickHandoverActive(false);
+                }}
+                autoFocus
+              >
+                <span>I am {drawerName} — Pick Secret Word</span>
+                <PencilIcon size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dedicated Word Selection Popup Modal (waits for shuffle roulette to finish!) */}
+      {gameState.phase === 'word_selection' && !prePickHandoverActive && isDrawer && !isShuffling && (
+        <div
+          className="modal-backdrop doodle-word-modal-backdrop"
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <div
+            className="doodle-word-picker-modal anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="doodle-modal-cat-ring">
+              <CatAvatarSvg
+                breed={drawerAvatar.breed}
+                accessory={drawerAvatar.accessory}
+                size={50}
+              />
+            </div>
+            <div className="doodle-modal-heading">
+              <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
+                Round {gameState.round}: {diffInfo.label} Stage
+              </span>
+              <h3 className="doodle-modal-title">Pick a Secret Word!</h3>
+              <p className="doodle-modal-desc">
+                You get 60s to draw it before {guesserName} gets 3 guesses.
+              </p>
+            </div>
+
+            <div className="doodle-word-choices-modal-grid">
+              {gameState.wordChoices.map((opt) => (
+                <button
+                  key={opt.word}
+                  type="button"
+                  className="doodle-word-choice-card sticker-press"
+                  onClick={() => handleWordSelect(opt)}
+                >
+                  <span className="doodle-word-cat-badge">{opt.category}</span>
+                  <span className="doodle-word-text">{opt.word}</span>
+                  <span className="doodle-word-hint-text">{opt.hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1-Phone Mode Handover Overlay for Guesser when 60s drawing timer finishes */}
+      {passAndPlay && guesserHandoverModal && (
+        <div
+          className="modal-backdrop doodle-handover-modal-backdrop"
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <div
+            className="doodle-handover-card anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="doodle-handover-avatar alarm">
+              <CatAvatarSvg breed={guesserAvatar.breed} accessory={guesserAvatar.accessory} size={56} />
+            </div>
+            <div className="doodle-times-up-pill">
+              <TimerClockIcon size={14} />
+              <span>TIME&apos;S UP! 60s ALARM</span>
+            </div>
+            <h3 className="doodle-handover-title">Hand phone to {guesserName}!</h3>
+            <p className="doodle-handover-desc">
+              Drawing phase is finished! {guesserName} has <strong>3 tries</strong> to guess what was drawn!
+            </p>
+            <div className="popup-btn-row stacked">
+              <button
+                type="button"
+                className="popup-btn-primary"
+                onClick={() => {
+                  playTapPop();
+                  setGuesserHandoverModal(false);
+                }}
+                autoFocus
+              >
+                <span>I am {guesserName} — Ready to Guess</span>
+                <SparkleIcon size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

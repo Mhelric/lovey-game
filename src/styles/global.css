@@ -4796,7 +4796,21 @@ body,
 
 /* Dedicated Word Selection Popup Modal */
 .doodle-word-modal-backdrop {
-  z-index: 120;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  background: rgba(30, 15, 28, 0.78) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 150 !important;
+  padding: 16px !important;
+  border-radius: 0 !important;
+  pointer-events: all !important;
+  touch-action: none;
+  user-select: none;
+  animation: fadeIn 0.18s ease-out;
 }
 
 .doodle-word-picker-modal {
@@ -5140,15 +5154,21 @@ body,
 
 /* 1-Phone Doodle Handover Overlays */
 .doodle-handover-modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(91, 42, 78, 0.72);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  padding: 14px;
-  border-radius: 20px;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  background: rgba(30, 15, 28, 0.78) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 150 !important;
+  padding: 16px !important;
+  border-radius: 0 !important;
+  pointer-events: all !important;
+  touch-action: none;
+  user-select: none;
+  animation: fadeIn 0.18s ease-out;
 }
 
 .doodle-handover-card {
