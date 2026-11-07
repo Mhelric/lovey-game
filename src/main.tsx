@@ -42,6 +42,38 @@ options.vnode = (vnode) => {
   if (prevVNodeHook) prevVNodeHook(vnode);
 };
 
+let lastViewportW = 0;
+let stableViewportH = 0;
+
+const syncViewportVars = () => {
+  const w = window.innerWidth || document.documentElement.clientWidth || 360;
+  const innerH = window.innerHeight || document.documentElement.clientHeight || 640;
+  const vvH = window.visualViewport ? Math.round(window.visualViewport.height) : innerH;
+  const rawH = Math.min(innerH, vvH);
+  const activeTag = document.activeElement?.tagName;
+  const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+
+  if (w !== lastViewportW) {
+    lastViewportW = w;
+    stableViewportH = rawH;
+  } else if (!isTyping || rawH > stableViewportH) {
+    stableViewportH = rawH;
+  }
+
+  const h = stableViewportH || rawH;
+  const boardSize = Math.max(200, Math.min(w - 20, h - 196, 440));
+  const docStyle = document.documentElement.style;
+  docStyle.setProperty('--app-height', `${h}px`);
+  docStyle.setProperty('--board-size', `${boardSize}px`);
+};
+
+syncViewportVars();
+window.addEventListener('resize', syncViewportVars);
+window.addEventListener('orientationchange', syncViewportVars);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncViewportVars);
+}
+
 const root = document.getElementById('app');
 if (root) {
   render(<App />, root);

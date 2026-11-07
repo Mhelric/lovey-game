@@ -15,6 +15,7 @@
   --font-body: 'Quicksand', system-ui, -apple-system, sans-serif;
   --safe-top: 0px;
   --safe-bottom: 0px;
+  --app-height: 100%;
   --board-size: calc(100vw - 20px);
 }
 
@@ -29,16 +30,7 @@
   :root {
     --board-size: min(
       calc(100vw - 20px),
-      calc(100vh - var(--safe-top) - var(--safe-bottom) - 160px)
-    );
-  }
-}
-
-@supports (height: 100dvh) {
-  :root {
-    --board-size: min(
-      calc(100vw - 20px),
-      calc(100dvh - var(--safe-top) - var(--safe-bottom) - 160px)
+      calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 196px)
     );
   }
 }
@@ -54,21 +46,32 @@
 }
 
 html,
-body,
-#app {
+body {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  height: 100vh;
-  height: 100dvh;
+  height: var(--app-height, 100%);
   max-height: 100%;
-  max-height: 100vh;
-  max-height: 100dvh;
+  max-height: var(--app-height, 100%);
   overflow: hidden;
   background-color: var(--cream);
   color: var(--ink);
   font-family: var(--font-body);
   touch-action: manipulation;
   -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  height: var(--app-height, 100%);
+  max-height: 100%;
+  max-height: var(--app-height, 100%);
+  overflow: hidden;
 }
 
 /* Single-Screen Shell with Subtle 6% Polka-Dot Pattern & Sky-to-Pink Gradient */
@@ -80,13 +83,11 @@ body,
   align-items: center;
   width: 100%;
   height: 100%;
-  height: 100vh;
-  height: 100dvh;
+  height: var(--app-height, 100%);
   max-height: 100%;
-  max-height: 100vh;
-  max-height: 100dvh;
-  padding-top: 8px;
-  padding-top: calc(var(--safe-top) + 8px);
+  max-height: var(--app-height, 100%);
+  padding-top: 6px;
+  padding-top: calc(var(--safe-top) + 6px);
   padding-bottom: 8px;
   padding-bottom: calc(var(--safe-bottom) + 8px);
   padding-left: 10px;
@@ -536,6 +537,7 @@ body,
   margin-right: auto;
   flex: 1;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -576,7 +578,7 @@ body,
   flex: 1;
   min-height: 0;
   width: 100%;
-  height: 100%;
+  max-height: calc(var(--app-height, 100%) - var(--safe-top) - var(--safe-bottom) - 118px);
 }
 
 .dama-stage-container {
@@ -769,12 +771,15 @@ body,
    ========================================================================== */
 .ingame-bottom-dock {
   width: 100%;
-  height: 58px;
+  height: 54px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 20;
 }
 
 .bottom-scoreboard-bar {
@@ -1055,9 +1060,14 @@ body,
 
 .modal-backdrop.kicked-modal-backdrop {
   position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
-  width: 100vw;
-  height: 100dvh;
+  width: 100%;
+  height: 100%;
+  height: var(--app-height, 100%);
   background: rgba(46, 29, 39, 0.65);
   display: flex;
   align-items: center;
@@ -5359,10 +5369,8 @@ body,
 .doodle-stage-container {
   width: 100%;
   max-width: 480px;
-  height: calc(100vh - 126px);
-  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 126px);
-  max-height: calc(100vh - 126px);
-  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 126px);
+  height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 126px);
+  max-height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 126px);
   flex: 1;
   min-height: 0;
   position: relative;
@@ -5707,11 +5715,9 @@ body,
 .doodle-canvas-frame {
   flex: 1;
   width: 100%;
-  height: calc(100vh - 268px);
-  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 268px);
-  max-height: calc(100vh - 268px);
-  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 268px);
-  min-height: 140px;
+  height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 270px);
+  max-height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 270px);
+  min-height: 130px;
   position: relative;
   border-radius: 14px;
   border: 2.5px solid var(--ink);
