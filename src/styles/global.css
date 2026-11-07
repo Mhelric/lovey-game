@@ -4456,53 +4456,94 @@ body,
   box-shadow: 0 2px 0 var(--ink);
 }
 
-.one-phone-p2-card {
-  max-width: 324px;
-  width: 90%;
-  padding: 14px 12px 12px;
-  text-align: center;
+.modal-backdrop.p2-setup-backdrop {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
 }
 
+.one-phone-p2-card {
+  width: min(calc(100vw - 16px), 344px);
+  max-width: 344px;
+  max-height: calc(100dvh - 20px);
+  background: #ffffff;
+  border: 3.5px solid var(--ink);
+  border-radius: 24px;
+  box-shadow: 0 6px 0 var(--ink);
+  padding: 12px 10px 10px;
+  text-align: center;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .p2-setup-hero-ring {
-  width: 72px;
-  height: 72px;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   background: #FFF0F5;
   border: 2.5px solid var(--ink);
   box-shadow: 0 3px 0 var(--ink);
-  margin: 2px auto 8px;
+  margin: 2px auto 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .p2-setup-input-wrap {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
 }
 
 .p2-name-input {
   text-align: center;
   font-size: 13px;
-  padding: 6px 10px;
+  padding: 5px 10px;
+  width: 100%;
+  max-width: 200px;
+  box-sizing: border-box;
 }
 
 .p2-setup-section {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 6px;
   text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.p2-setup-section .cozy-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: #7A556B;
+  letter-spacing: 0.2px;
+  padding-left: 2px;
+  margin: 0;
 }
 
 .p2-breed-mini-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .p2-breed-mini-tile {
-  min-height: 44px;
+  min-height: 42px;
   background: #ffffff;
   border: 1.5px solid #F6EDF2;
   border-radius: 12px;
@@ -4510,10 +4551,14 @@ body,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 3px 2px;
+  gap: 1px;
+  padding: 3px 1px;
   cursor: pointer;
   transition: transform 0.12s ease;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .p2-breed-mini-tile:active {
@@ -4527,18 +4572,59 @@ body,
 
 .p2-mini-label {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   color: #5a3a3a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  display: block;
+  text-align: center;
+  line-height: 1.1;
+  padding: 0 1px;
+  box-sizing: border-box;
+}
+
+.one-phone-p2-card .cozy-acc-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.one-phone-p2-card .cozy-acc-tile {
+  min-height: 42px;
+  padding: 4px 1px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.one-phone-p2-card .cozy-acc-label {
+  font-size: 8.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.1;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .p2-confirm-btn {
   width: 100%;
   margin-top: 4px;
+  box-sizing: border-box;
+  min-height: 40px;
+  font-size: 14px;
 }
 
 /* ==========================================================================

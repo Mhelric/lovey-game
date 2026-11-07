@@ -39,14 +39,14 @@ export function Player2SetupModal({
 
   return (
     <div
-      className="modal-backdrop kicked-modal-backdrop"
+      className="modal-backdrop kicked-modal-backdrop p2-setup-backdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="p2-setup-title"
       onClick={onClose}
     >
       <div
-        className="kicked-popup-card one-phone-p2-card anim-fade-scale"
+        className="one-phone-p2-card anim-fade-scale"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header compact">
