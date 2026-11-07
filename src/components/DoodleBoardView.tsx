@@ -38,6 +38,7 @@ import {
   playDoodleStrokePop,
   playDoodleWrongGuess,
   playTapPop,
+  playTimesUpAlarm,
 } from '../services/soundEffects';
 
 interface DoodleBoardViewProps {
@@ -106,9 +107,43 @@ export function DoodleBoardView({
   const diffInfo = getDoodleDifficultyInfo(gameState.round);
   const guessesLeft = gameState.guessesLeft ?? DOODLE_MAX_GUESSES;
 
+  // 1-Phone Handover Pause & Alarm states
+  const [drawerHandoverLeft, setDrawerHandoverLeft] = useState<number | null>(null);
+  const [guesserHandoverModal, setGuesserHandoverModal] = useState<boolean>(false);
+  const prevPhaseRef = useRef(gameState.phase);
+
+  // Trigger 10s handover countdown for Drawer when entering 'drawing' in 1-Phone Pass & Play
+  useEffect(() => {
+    if (passAndPlay && gameState.phase === 'drawing' && prevPhaseRef.current !== 'drawing') {
+      setDrawerHandoverLeft(10);
+    }
+  }, [passAndPlay, gameState.phase]);
+
+  // Decrement 10s handover countdown
+  useEffect(() => {
+    if (drawerHandoverLeft === null || drawerHandoverLeft <= 0) return;
+    const t = window.setInterval(() => {
+      setDrawerHandoverLeft((prev) => (prev !== null && prev > 1 ? prev - 1 : null));
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [drawerHandoverLeft]);
+
+  // Alarm sound & Guesser handover modal when drawing ends and guessing begins
+  useEffect(() => {
+    if (prevPhaseRef.current === 'drawing' && gameState.phase === 'guessing') {
+      playTimesUpAlarm();
+      if (passAndPlay) {
+        setGuesserHandoverModal(true);
+      }
+    }
+    prevPhaseRef.current = gameState.phase;
+  }, [gameState.phase, passAndPlay]);
+
   // 60s Drawing Timer tick effect: Drawer ticks the timer (or P1 in passAndPlay)
+  // Only ticks when not in the 10s handover pause
   useEffect(() => {
     if (gameState.phase !== 'drawing') return;
+    if (passAndPlay && drawerHandoverLeft !== null && drawerHandoverLeft > 0) return;
     const isMasterTick = passAndPlay ? mySlot === 'p1' : mySlot === gameState.drawerSlot;
     if (!isMasterTick) return;
 
@@ -117,7 +152,7 @@ export function DoodleBoardView({
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [gameState, mySlot, passAndPlay, onCommitState]);
+  }, [gameState, mySlot, passAndPlay, drawerHandoverLeft, onCommitState]);
 
   // Clear active touch state if phase leaves 'drawing'
   useEffect(() => {
@@ -746,6 +781,62 @@ export function DoodleBoardView({
             </div>
           )}
         </div>
+
+        {/* 1-Phone Mode 10s Handover Overlay for Drawer */}
+        {passAndPlay && drawerHandoverLeft !== null && drawerHandoverLeft > 0 && (
+          <div className="doodle-handover-modal-backdrop">
+            <div className="doodle-handover-card anim-fade-scale">
+              <div className="doodle-handover-avatar">
+                <CatAvatarSvg breed={drawerAvatar.breed} accessory={drawerAvatar.accessory} size={56} />
+              </div>
+              <h3 className="doodle-handover-title">Hand phone to {drawerName}!</h3>
+              <p className="doodle-handover-desc">
+                Drawer gets ready to sketch in secret! Starting in <strong>{drawerHandoverLeft}s</strong>...
+              </p>
+              <button
+                type="button"
+                className="vibrant-play-btn sticker-press"
+                onClick={() => {
+                  playTapPop();
+                  setDrawerHandoverLeft(null);
+                }}
+              >
+                <span>I Have the Phone • Start Drawing</span>
+                <PencilIcon size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 1-Phone Mode Handover Overlay for Guesser when 60s drawing timer finishes */}
+        {passAndPlay && guesserHandoverModal && (
+          <div className="doodle-handover-modal-backdrop">
+            <div className="doodle-handover-card anim-fade-scale">
+              <div className="doodle-handover-avatar alarm">
+                <CatAvatarSvg breed={guesserAvatar.breed} accessory={guesserAvatar.accessory} size={56} />
+              </div>
+              <div className="doodle-times-up-pill">
+                <TimerClockIcon size={14} />
+                <span>TIME&apos;S UP! 60s ALARM</span>
+              </div>
+              <h3 className="doodle-handover-title">Hand phone to {guesserName}!</h3>
+              <p className="doodle-handover-desc">
+                Drawing phase is finished! {guesserName} has <strong>3 tries</strong> to guess what was drawn!
+              </p>
+              <button
+                type="button"
+                className="vibrant-play-btn sticker-press"
+                onClick={() => {
+                  playTapPop();
+                  setGuesserHandoverModal(false);
+                }}
+              >
+                <span>I Have the Phone • Guess Now!</span>
+                <SparkleIcon size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

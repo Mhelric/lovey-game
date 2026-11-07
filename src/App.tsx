@@ -427,28 +427,35 @@ export function App() {
     if (saved && typeof saved.matchSeed === 'number') return saved;
     return createInitialDoodleState(202612, 'p1');
   });
-  const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>(() => {
+  // Reload always on the menu as requested
+  const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>('menu');
+  const activeScreenRef = useRef<'menu' | 'play'>('menu');
+  activeScreenRef.current = activeScreen;
+
+  // Accidental leave / reload rejoin prompt for players who were previously in a match
+  const [rejoinPromptOpen, setRejoinPromptOpen] = useState<boolean>(() => {
     const savedSession = loadLocalActiveSession(roomCode);
     if (savedSession?.screen === 'play') {
       const savedDama = loadLocalGameSavestate<DamaGameState>(roomCode, 'dama');
-      const savedSnakes = loadLocalGameSavestate<SnakesGameState>(
-        roomCode,
-        'snakes'
+      const savedSnakes = loadLocalGameSavestate<SnakesGameState>(roomCode, 'snakes');
+      const savedDoodle = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle');
+      return Boolean(
+        (savedSession.mode === 'dama' && savedDama && isDamaInProgress(savedDama)) ||
+        (savedSession.mode === 'snakes' && savedSnakes && isSnakesInProgress(savedSnakes)) ||
+        (savedSession.mode === 'doodle' && savedDoodle && isDoodleInProgress(savedDoodle))
       );
-      const savedDoodle = loadLocalGameSavestate<DoodleGameState>(
-        roomCode,
-        'doodle'
-      );
-      if (
-        (savedSession.mode === 'dama' && savedDama) ||
-        (savedSession.mode === 'snakes' && savedSnakes) ||
-        (savedSession.mode === 'doodle' && savedDoodle)
-      ) {
-        return 'play';
-      }
     }
-    return 'menu';
+    return false;
   });
+
+  const [partnerLeftModalOpen, setPartnerLeftModalOpen] = useState<boolean>(false);
+  const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
+  const [externalRollingSignal, setExternalRollingSignal] = useState<{
+    roller: PlayerSlot;
+    hasDouble: boolean;
+    timestamp: number;
+  } | null>(null);
+
   const [passAndPlay, setPassAndPlay] = useState<boolean>(false);
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
   const [chatMessages, setChatMessages] = useState<FloatingReaction[]>([]);
@@ -506,9 +513,8 @@ export function App() {
   }, [roomData.current_mode, SnakesBoardComp, DoodleBoardComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
-  const [timerEnabled, setTimerEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('lovey_timer_enabled') === 'true';
-  });
+  // Turn timer is turned OFF by default as requested
+  const [timerEnabled, setTimerEnabled] = useState<boolean>(false);
   const [timerDurationSec, setTimerDurationSec] = useState<number>(() => {
     const saved = localStorage.getItem('lovey_timer_duration');
     return saved ? Math.max(10, Math.min(60, parseInt(saved, 10))) : 20;
@@ -531,8 +537,6 @@ export function App() {
   snakesStateRef.current = snakesState;
   const doodleStateRef = useRef<DoodleGameState>(doodleState);
   doodleStateRef.current = doodleState;
-  const activeScreenRef = useRef<'menu' | 'play'>(activeScreen);
-  activeScreenRef.current = activeScreen;
   const roomDataRef = useRef<CoupleRoomRow>(roomData);
   roomDataRef.current = roomData;
 
@@ -702,6 +706,15 @@ export function App() {
         } else if (event.type === 'partner_left') {
           setPartnerJoinedSession(false);
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: 0 }));
+          if (event.slot !== mySlotRef.current && activeScreenRef.current === 'play') {
+            setPartnerLeftModalOpen(true);
+          }
+        } else if (event.type === 'snakes_dice_rolling') {
+          setExternalRollingSignal({
+            roller: event.roller,
+            hasDouble: event.hasDouble,
+            timestamp: Date.now(),
+          });
         } else if (event.type === 'partner_kicked') {
           if (mySlotRef.current === 'p2') {
             setKickedModalOpen(true);
@@ -709,6 +722,7 @@ export function App() {
           }
         } else if (event.type === 'partner_joined') {
           setPartnerJoinedSession(true);
+          setPartnerLeftModalOpen(false);
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: Date.now() }));
           setRoomData((prev) =>
             event.slot === 'p1'
@@ -791,10 +805,6 @@ export function App() {
               current_mode: event.currentMode,
             }));
           }
-          // If we are Invited (p2) and Host is actively playing, auto-rejoin the active board!
-          if (mySlotRef.current === 'p2' && event.isPlaying) {
-            setActiveScreen('play');
-          }
         } else if (
           event.type === 'mode_switch' ||
           event.type === 'start_match'
@@ -853,6 +863,13 @@ export function App() {
           }
         } else if (event.type === 'doodle_clear') {
           setDoodleState((prev) => ({ ...prev, strokes: [] }));
+        } else if (event.type === 'auto_move_notice') {
+          const notice = `${event.moverName} was inactive - Auto-moved!`;
+          setAutoMoveNotice(notice);
+          setTurnBubbleText(notice);
+          window.setTimeout(() => {
+            setAutoMoveNotice((prev) => (prev === notice ? null : prev));
+          }, 3500);
         }
       },
       onPartnerOnlineChange: (seenMap) => {
@@ -876,8 +893,17 @@ export function App() {
       }
     };
 
+    const handleBeforeUnload = () => {
+      channelRef.current?.sendBroadcast({
+        type: 'partner_left',
+        slot: mySlotRef.current,
+      });
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityOrOnline);
     window.addEventListener('online', handleVisibilityOrOnline);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
 
     return () => {
       document.removeEventListener(
@@ -885,6 +911,8 @@ export function App() {
         handleVisibilityOrOnline
       );
       window.removeEventListener('online', handleVisibilityOrOnline);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
       channel.destroy();
       channelRef.current = null;
     };
@@ -1508,6 +1536,19 @@ export function App() {
 
   const executeAutoRandomMove = useCallback(() => {
     const mode = roomData.current_mode;
+    const moverName = activeTurnSlot === 'p1' ? p1DisplayName : p2DisplayName;
+    const notice = `${moverName} was inactive — Auto-moved!`;
+    setAutoMoveNotice(notice);
+    setTurnBubbleText(notice);
+    channelRef.current?.sendBroadcast({
+      type: 'auto_move_notice',
+      moverName,
+      sender: mySlotRef.current,
+    });
+    window.setTimeout(() => {
+      setAutoMoveNotice((prev) => (prev === notice ? null : prev));
+    }, 3500);
+
     if (mode === 'dama') {
       const legalSteps = getLegalStepsForState(damaState);
       if (legalSteps.length > 0) {
@@ -1669,6 +1710,17 @@ export function App() {
 
           {/* Center Stage: Game Board + Fun First-Turn Shuffle Ceremony */}
           <div className="ingame-board-center" style={{ position: 'relative' }}>
+            {autoMoveNotice && (
+              <div
+                className="auto-move-notice-banner anim-fade-scale"
+                role="status"
+                aria-live="polite"
+              >
+                <TimerClockIcon size={13} />
+                <span>{autoMoveNotice}</span>
+              </div>
+            )}
+
             {roomData.current_mode === 'dama' ? (
               <DamaBoardView
                 gameState={damaState}
@@ -1711,6 +1763,15 @@ export function App() {
                 passAndPlay={passAndPlay}
                 onCommitState={handleCommitSnakesState}
                 autoRollSignal={autoRollSignal}
+                onBroadcastDiceRolling={(roller: PlayerSlot, hasDouble: boolean) => {
+                  channelRef.current?.sendBroadcast({
+                    type: 'snakes_dice_rolling',
+                    roller,
+                    hasDouble,
+                    sender: mySlot,
+                  });
+                }}
+                externalRollingSignal={externalRollingSignal}
               />
             ) : null}
 
@@ -1954,6 +2015,168 @@ export function App() {
           gameMode={roomData.current_mode}
           onClose={() => setTutorialOpen(false)}
         />
+      )}
+
+      {/* Centered Modal: Accidental Leave Rejoin Dialog */}
+      {rejoinPromptOpen && (
+        <div
+          className="modal-backdrop kicked-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rejoin-title"
+          onClick={() => {
+            playTapPop();
+            setRejoinPromptOpen(false);
+          }}
+        >
+          <div
+            className="kicked-popup-card anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="kicked-popup-icon-wrap"
+              style={{ background: '#FFF7ED', borderColor: '#FED7AA' }}
+            >
+              <CatAvatarSvg
+                breed={myAvatar.breed}
+                accessory={myAvatar.accessory}
+                size={56}
+              />
+            </div>
+            <h3 id="rejoin-title" className="kicked-popup-title">
+              Accidentally Left Match?
+            </h3>
+            <p className="kicked-popup-desc">
+              You were recently playing in room{' '}
+              <strong style={{ color: 'var(--brand-coral)' }}>{roomCode}</strong>.
+              Rejoin now to continue where you left off!
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                width: '100%',
+              }}
+            >
+              <button
+                type="button"
+                className="vibrant-play-btn sticker-press"
+                style={{ width: '100%', minHeight: '44px' }}
+                onClick={() => {
+                  playTapPop();
+                  setRejoinPromptOpen(false);
+                  setActiveScreen('play');
+                }}
+                autoFocus
+              >
+                <span>Rejoin Match</span>
+                <PawIcon size={15} />
+              </button>
+              <button
+                type="button"
+                className="room-btn-secondary sticker-press"
+                style={{
+                  width: '100%',
+                  minHeight: '40px',
+                  fontSize: '13px',
+                }}
+                onClick={() => {
+                  playTapPop();
+                  setRejoinPromptOpen(false);
+                  saveLocalActiveSession(roomCode, 'menu', roomData.current_mode);
+                }}
+              >
+                <span>Stay on Menu</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Centered Modal: Partner Disconnected / Left Room */}
+      {partnerLeftModalOpen && (
+        <div
+          className="modal-backdrop kicked-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="partner-left-title"
+          onClick={() => {
+            playTapPop();
+            setPartnerLeftModalOpen(false);
+          }}
+        >
+          <div
+            className="kicked-popup-card anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="kicked-popup-icon-wrap"
+              style={{ background: '#FEE2E2', borderColor: '#FECACA' }}
+            >
+              <CatAvatarSvg
+                breed={
+                  mySlot === 'p1'
+                    ? effectiveP2Avatar.breed
+                    : effectiveP1Avatar.breed
+                }
+                accessory={
+                  mySlot === 'p1'
+                    ? effectiveP2Avatar.accessory
+                    : effectiveP1Avatar.accessory
+                }
+                size={56}
+                dizzy
+              />
+            </div>
+            <h3 id="partner-left-title" className="kicked-popup-title">
+              Partner Left Match
+            </h3>
+            <p className="kicked-popup-desc">
+              Your partner has disconnected or returned to the home screen. You can
+              wait here for them to reconnect, or return to the menu!
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                width: '100%',
+              }}
+            >
+              <button
+                type="button"
+                className="vibrant-play-btn sticker-press"
+                style={{ width: '100%', minHeight: '44px' }}
+                onClick={() => {
+                  playTapPop();
+                  setPartnerLeftModalOpen(false);
+                }}
+                autoFocus
+              >
+                <span>Wait in Match</span>
+                <PawIcon size={15} />
+              </button>
+              <button
+                type="button"
+                className="room-btn-secondary sticker-press"
+                style={{
+                  width: '100%',
+                  minHeight: '40px',
+                  fontSize: '13px',
+                }}
+                onClick={() => {
+                  playTapPop();
+                  setPartnerLeftModalOpen(false);
+                  setActiveScreen('menu');
+                  saveLocalActiveSession(roomCode, 'menu', roomData.current_mode);
+                }}
+              >
+                <span>Return to Menu</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Centered Modal: Removed from Room Notification */}

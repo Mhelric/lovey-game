@@ -335,7 +335,24 @@ export type RealtimeBroadcastEvent =
     }
   | { type: 'doodle_stroke'; stroke: unknown; sender: PlayerSlot }
   | { type: 'doodle_clear'; sender: PlayerSlot }
-  | { type: 'doodle_guess'; guess: string; sender: PlayerSlot };
+  | { type: 'doodle_guess'; guess: string; sender: PlayerSlot }
+  | {
+      type: 'snakes_dice_rolling';
+      roller: PlayerSlot;
+      hasDouble: boolean;
+      sender: PlayerSlot;
+    }
+  | {
+      type: 'snakes_roulette_start';
+      roller: PlayerSlot;
+      targetKind: string;
+      sender: PlayerSlot;
+    }
+  | {
+      type: 'auto_move_notice';
+      moverName: string;
+      sender: PlayerSlot;
+    };
 
 export interface CoupleChannelHandlers {
   onBroadcast: (event: RealtimeBroadcastEvent) => void;

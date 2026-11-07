@@ -26,6 +26,11 @@ import {
   SparkleIcon,
 } from './ArcadeIcons';
 import { SnakesMaxTile } from '../engines/snakesEngine';
+import {
+  getMasterVolume,
+  playTapPop,
+  setMasterVolume,
+} from '../services/soundEffects';
 
 interface CatCustomizerModalProps {
   isOpen: boolean;
@@ -117,6 +122,42 @@ export function CatCustomizerModal({
     currentAvatar.accessory
   );
   const [showAbout, setShowAbout] = useState(false);
+  const [volume, setVolume] = useState<number>(() => getMasterVolume());
+  const [switchConfirmTarget, setSwitchConfirmTarget] = useState<{
+    mode: GameMode;
+    maxTile?: SnakesMaxTile;
+    label: string;
+  } | null>(null);
+
+  const handleVolumeChange = (newVal: number) => {
+    setMasterVolume(newVal);
+    setVolume(newVal);
+    playTapPop();
+  };
+
+  const handleRequestSwitchGame = (
+    mode: GameMode,
+    targetMaxTile?: SnakesMaxTile,
+    label = mode === 'dama' ? 'Cat Dama' : mode === 'doodle' ? 'Doodle Clash' : `Snakes & Ladders (${targetMaxTile ?? 100})`
+  ) => {
+    playTapPop();
+    if (
+      currentMode === mode &&
+      (mode !== 'snakes' || snakesMaxTile === (targetMaxTile ?? 100))
+    ) {
+      return;
+    }
+    setSwitchConfirmTarget({ mode, maxTile: targetMaxTile, label });
+  };
+
+  const handleConfirmSwitchGame = () => {
+    if (!switchConfirmTarget) return;
+    playTapPop();
+    const { mode, maxTile } = switchConfirmTarget;
+    setSwitchConfirmTarget(null);
+    onHostSwitchGame(mode, maxTile);
+    onClose();
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -312,7 +353,7 @@ export function CatCustomizerModal({
                 </div>
               </div>
 
-              {/* Preferences (No Room Code here — Room Code is on Homescreen!) */}
+              {/* Preferences (Sound + Volume Slider + Pass-and-Play) */}
               <div className="cozy-section">
                 <span className="cozy-label">Preferences</span>
                 <div className="cozy-chip-row">
@@ -337,10 +378,37 @@ export function CatCustomizerModal({
                     <span>{passAndPlay ? '1-Phone Mode' : '2-Phone Live'}</span>
                   </button>
                 </div>
+
+                {!muted && (
+                  <div className="cozy-volume-control" style={{ marginTop: '10px' }}>
+                    <div className="cozy-row-between" style={{ marginBottom: '4px' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#4a2828' }}>
+                        Sound Volume:
+                      </span>
+                      <strong style={{ fontSize: '0.86rem', color: '#ff5c8a', fontWeight: 800 }}>
+                        {Math.round(volume * 100)}%
+                      </strong>
+                    </div>
+                    <input
+                      type="range"
+                      min="20"
+                      max="250"
+                      step="5"
+                      value={Math.round(volume * 100)}
+                      onInput={(e) =>
+                        handleVolumeChange(
+                          parseInt((e.target as HTMLInputElement).value, 10) / 100
+                        )
+                      }
+                      className="cozy-volume-slider"
+                      aria-label="Sound volume slider"
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Turn Timer Section (Host Editable) */}
-              {isHost && (
+              {/* Turn Timer Section: ONLY visible on Dama and Snakes during active game play */}
+              {isInGame && (currentMode === 'dama' || currentMode === 'snakes') && isHost && (
                 <div className="cozy-section">
                   <div className="cozy-row-between">
                     <div>
@@ -452,55 +520,82 @@ export function CatCustomizerModal({
                 </div>
               )}
 
-              {/* Game Mode & Snakes Board Size Selector (Host Only) */}
+              {/* Game Mode Selector (Host Only) - Arranged exactly like Main Menu */}
               {isHost ? (
                 <div className="cozy-section">
                   <span className="cozy-label">Switch Game Mode</span>
-                  <div className="match-mode-grid">
-                    <button
-                      type="button"
-                      className={`match-mode-card ${
-                        currentMode === 'dama' ? 'active' : ''
+                  <div className="game-picker-modal-grid" style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Top Row: Dama and Doodle */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className={`match-mode-card ${
+                          currentMode === 'dama' ? 'active' : ''
+                        }`}
+                        onClick={() => handleRequestSwitchGame('dama', snakesMaxTile, 'Cat Dama')}
+                      >
+                        <CrownIcon size={22} />
+                        <span>Cat Dama</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`match-mode-card ${
+                          currentMode === 'doodle' ? 'active' : ''
+                        }`}
+                        onClick={() => handleRequestSwitchGame('doodle', undefined, 'Doodle Clash')}
+                      >
+                        <DoodleClashIcon size={22} />
+                        <span>Doodle Clash</span>
+                      </button>
+                    </div>
+
+                    {/* Bottom Row: Snakes & Ladders with 100/150 Pills */}
+                    <div
+                      className={`match-mode-card snakes-settings-card ${
+                        currentMode === 'snakes' ? 'active' : ''
                       }`}
-                      onClick={() => onHostSwitchGame('dama', snakesMaxTile)}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '10px 8px',
+                      }}
                     >
-                      <CrownIcon size={20} />
-                      <span>Cat Dama</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`match-mode-card ${
-                        currentMode === 'doodle' ? 'active' : ''
-                      }`}
-                      onClick={() => onHostSwitchGame('doodle')}
-                    >
-                      <DoodleClashIcon size={20} />
-                      <span>Doodle Clash</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`match-mode-card ${
-                        currentMode === 'snakes' && snakesMaxTile === 100
-                          ? 'active'
-                          : ''
-                      }`}
-                      onClick={() => onHostSwitchGame('snakes', 100)}
-                    >
-                      <SnakeLadderIcon size={20} />
-                      <span>Snakes (100)</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`match-mode-card ${
-                        currentMode === 'snakes' && snakesMaxTile === 150
-                          ? 'active'
-                          : ''
-                      }`}
-                      onClick={() => onHostSwitchGame('snakes', 150)}
-                    >
-                      <SnakeLadderIcon size={20} />
-                      <span>Snakes (150)</span>
-                    </button>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                        onClick={() => handleRequestSwitchGame('snakes', snakesMaxTile, `Snakes & Ladders (${snakesMaxTile})`)}
+                      >
+                        <SnakeLadderIcon size={22} />
+                        <span style={{ fontWeight: 800 }}>Snakes &amp; Ladders</span>
+                      </div>
+                      <div className="snakes-mode-pills" style={{ width: '100%', maxWidth: '220px' }}>
+                        <button
+                          type="button"
+                          className={`snakes-size-pill ${
+                            currentMode === 'snakes' && snakesMaxTile === 100 ? 'active' : ''
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRequestSwitchGame('snakes', 100, 'Snakes & Ladders (100 Tiles)');
+                          }}
+                        >
+                          100 Tiles
+                        </button>
+                        <button
+                          type="button"
+                          className={`snakes-size-pill ${
+                            currentMode === 'snakes' && snakesMaxTile === 150 ? 'active' : ''
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRequestSwitchGame('snakes', 150, 'Snakes & Ladders (150 Tiles)');
+                          }}
+                        >
+                          150 Tiles
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {isPartnerInRoom && onHostKickPlayer && (
@@ -519,28 +614,30 @@ export function CatCustomizerModal({
                 </div>
               ) : (
                 <>
-                  <div className="cozy-section">
-                    <div className="cozy-row-between">
-                      <div>
-                        <span className="cozy-label">Turn Timer</span>
-                        <p className="cozy-subtle-note">
-                          {timerEnabled
-                            ? `${timerDurationSec}s per turn (Host controlled)`
-                            : 'Disabled by Host'}
-                        </p>
-                      </div>
-                      <span
-                        className={`cozy-chip ${timerEnabled ? 'active' : ''}`}
-                        style={{ cursor: 'default' }}
-                      >
+                  {isInGame && (currentMode === 'dama' || currentMode === 'snakes') && (
+                    <div className="cozy-section">
+                      <div className="cozy-row-between">
+                        <div>
+                          <span className="cozy-label">Turn Timer</span>
+                          <p className="cozy-subtle-note">
+                            {timerEnabled
+                              ? `${timerDurationSec}s per turn (Host controlled)`
+                              : 'Disabled by Host'}
+                          </p>
+                        </div>
                         <span
-                          className={`chip-dot ${timerEnabled ? 'on' : 'off'}`}
-                          aria-hidden="true"
-                        />
-                        <span>{timerEnabled ? `${timerDurationSec}s` : 'OFF'}</span>
-                      </span>
+                          className={`cozy-chip ${timerEnabled ? 'active' : ''}`}
+                          style={{ cursor: 'default' }}
+                        >
+                          <span
+                            className={`chip-dot ${timerEnabled ? 'on' : 'off'}`}
+                            aria-hidden="true"
+                          />
+                          <span>{timerEnabled ? `${timerDurationSec}s` : 'OFF'}</span>
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="cozy-section">
                     <p className="cozy-subtle-note">
@@ -739,12 +836,74 @@ export function CatCustomizerModal({
           )}
         </div>
 
-        {/* Pinned Primary Action Button */}
-        <div className="cozy-modal-footer">
-          <button type="submit" className="cozy-btn-primary">
-            Save My Cat Profile
-          </button>
-        </div>
+        {/* Pinned Primary Action Button (Hidden on Rules tab so full height is scrollable on small phones) */}
+        {activeTab !== 'rules' && (
+          <div className="cozy-modal-footer">
+            <button type="submit" className="cozy-btn-primary">
+              Save My Cat Profile
+            </button>
+          </div>
+        )}
+
+        {/* Switch Game Confirmation Warning Modal */}
+        {switchConfirmTarget && (
+          <div
+            className="modal-backdrop"
+            style={{ zIndex: 120, background: 'rgba(91, 42, 78, 0.65)' }}
+            onClick={() => setSwitchConfirmTarget(null)}
+          >
+            <div
+              className="modal-card anim-fade-scale"
+              style={{
+                maxWidth: '320px',
+                padding: '18px 16px',
+                textAlign: 'center',
+                gap: '10px',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '50%',
+                  background: '#FEF3C7',
+                  border: '2px solid #5B2A4E',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto',
+                }}
+              >
+                <CrownIcon size={24} />
+              </div>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '15px', color: '#5B2A4E', fontWeight: 800 }}>
+                Switch to {switchConfirmTarget.label}?
+              </h3>
+              <p style={{ margin: 0, fontSize: '11.5px', color: 'rgba(91, 42, 78, 0.8)', fontWeight: 600, lineHeight: 1.35 }}>
+                Switching to a new game starts a new match and your current game will be <strong>reset, not saved</strong>. (Games are only saved if you leave to the menu).
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+                <button
+                  type="button"
+                  className="cozy-btn-secondary"
+                  style={{ height: '38px', borderRadius: '12px', fontSize: '12px' }}
+                  onClick={() => setSwitchConfirmTarget(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="vibrant-play-btn sticker-press"
+                  style={{ height: '38px', borderRadius: '12px', fontSize: '12px' }}
+                  onClick={handleConfirmSwitchGame}
+                >
+                  <span>Switch Game</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );

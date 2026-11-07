@@ -1,4 +1,5 @@
 const STORAGE_MUTE_KEY = 'lovey_arcade_muted';
+const STORAGE_VOLUME_KEY = 'lovey_arcade_volume';
 
 let audioCtx: AudioContext | null = null;
 let mutedState: boolean = (() => {
@@ -8,6 +9,28 @@ let mutedState: boolean = (() => {
     return false;
   }
 })();
+
+let masterVolume: number = (() => {
+  try {
+    const raw = localStorage.getItem(STORAGE_VOLUME_KEY);
+    return raw ? Math.max(0.2, Math.min(2.5, parseFloat(raw))) : 1.2;
+  } catch {
+    return 1.2;
+  }
+})();
+
+export function getMasterVolume(): number {
+  return masterVolume;
+}
+
+export function setMasterVolume(vol: number): void {
+  masterVolume = Math.max(0.2, Math.min(2.5, vol));
+  try {
+    localStorage.setItem(STORAGE_VOLUME_KEY, masterVolume.toFixed(2));
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 function getAudioContext(): AudioContext | null {
   if (mutedState || typeof window === 'undefined') return null;
@@ -179,8 +202,9 @@ function playTone(
       );
     }
 
+    const effectiveGain = Math.min(0.95, gainPeak * masterVolume);
     gain.gain.setValueAtTime(0.001, startTime);
-    gain.gain.linearRampToValueAtTime(gainPeak, startTime + durationSec * 0.18);
+    gain.gain.linearRampToValueAtTime(effectiveGain, startTime + durationSec * 0.18);
     gain.gain.exponentialRampToValueAtTime(0.001, endTime);
 
     osc.connect(gain);
@@ -307,4 +331,17 @@ export function playDoodleWrongGuess(): void {
 
 export function playDoodleClear(): void {
   playTone(640, 320, 0.14, 'sine', 0.1, 0);
+}
+
+export function playRouletteTick(pitchMultiplier = 1): void {
+  const base = 880 * pitchMultiplier;
+  playTone(base, base * 1.08, 0.035, 'square', 0.08, 0);
+}
+
+export function playTimesUpAlarm(): void {
+  // Classic ringing wake-up / turn chime alarm
+  playTone(880, 880, 0.11, 'square', 0.15, 0);
+  playTone(1174, 1174, 0.12, 'square', 0.16, 0.12);
+  playTone(880, 880, 0.11, 'square', 0.15, 0.25);
+  playTone(1174, 1174, 0.18, 'square', 0.17, 0.38);
 }

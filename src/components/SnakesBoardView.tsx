@@ -9,13 +9,14 @@ import {
 } from '../engines/snakesEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import { CatActionAnim, CatAvatarSvg } from './CatAvatarSvg';
-import { DiceFaceSvg, PowerupIllustrationSvg } from './ArcadeIcons';
+import { DiceFaceSvg, PowerupIllustrationSvg, SparkleIcon } from './ArcadeIcons';
 import {
   playCatPounceCapture,
   playCatStep,
   playDiceRattle,
   playDizzySlide,
   playPowerupReveal,
+  playRouletteTick,
   playTurnBannerPop,
   playVictoryFanfare,
 } from '../services/soundEffects';
@@ -28,7 +29,24 @@ interface SnakesBoardViewProps {
   passAndPlay: boolean;
   onCommitState: (nextState: SnakesGameState) => void;
   autoRollSignal?: number;
+  onBroadcastDiceRolling?: (roller: PlayerSlot, hasDouble: boolean) => void;
+  externalRollingSignal?: {
+    roller: PlayerSlot;
+    hasDouble: boolean;
+    timestamp: number;
+  } | null;
 }
+
+const ROULETTE_POWERUP_POOL: readonly {
+  kind: 'double_dice' | 'boost' | 'shield_gain' | 'extra_roll' | 'swap';
+  title: string;
+}[] = [
+  { kind: 'double_dice', title: 'Twin Paw 2x Dice!' },
+  { kind: 'boost', title: 'Catnip Zoomies!' },
+  { kind: 'shield_gain', title: 'Bubble Purr Shield!' },
+  { kind: 'extra_roll', title: 'Lucky Golden Paw!' },
+  { kind: 'swap', title: 'Catnap Switcheroo!' },
+];
 
 const SNAKE_PALETTE = [
   '#6BCB77',
@@ -398,6 +416,8 @@ export function SnakesBoardView({
   passAndPlay,
   onCommitState,
   autoRollSignal,
+  onBroadcastDiceRolling,
+  externalRollingSignal,
 }: SnakesBoardViewProps) {
   const maxTile: SnakesMaxTile = gameState.maxTile === 150 ? 150 : 100;
   const totalRows = maxTile === 150 ? 15 : 10;
@@ -423,6 +443,17 @@ export function SnakesBoardView({
     d2?: number;
     total: number;
   } | null>(null);
+
+  // Pokemon Game Corner Powerup Roulette state
+  const [rouletteActive, setRouletteActive] = useState(false);
+  const [rouletteIdx, setRouletteIdx] = useState(0);
+  const [rouletteStopped, setRouletteStopped] = useState(false);
+  const [rouletteFinalData, setRouletteFinalData] = useState<{
+    kind: any;
+    title: string;
+    desc: string;
+  } | null>(null);
+
   const [twistPopup, setTwistPopup] = useState<{
     id: string;
     kind:
@@ -563,8 +594,8 @@ export function SnakesBoardView({
         anim.eventKind === 'extra_roll' ||
         anim.eventKind === 'swap'
       ) {
-        playPowerupReveal();
         setActionSlotAnim({ slot: anim.roller, anim: 'powerup' });
+        startPokemonRoulette(anim.eventKind, anim.eventMessage);
         timers.push(
           window.setTimeout(() => setActionSlotAnim(null), 1500)
         );
@@ -620,6 +651,68 @@ export function SnakesBoardView({
     };
   }, [gameState.lastAnimation?.id, gameState.p1Tile, gameState.p2Tile]);
 
+  // Pokemon Game Corner Style Powerup Roulette Sequencer
+  const startPokemonRoulette = (targetKind: any, message: string) => {
+    setRouletteActive(true);
+    setRouletteStopped(false);
+    let step = 0;
+    const pool = ROULETTE_POWERUP_POOL;
+    let delay = 65;
+
+    const tick = () => {
+      step++;
+      setRouletteIdx((prev) => (prev + 1) % pool.length);
+      playRouletteTick(1 + (step % 5) * 0.08);
+
+      if (step < 14) {
+        window.setTimeout(tick, delay);
+      } else if (step < 20) {
+        delay += 35;
+        window.setTimeout(tick, delay);
+      } else {
+        const twistTitles: Record<string, string> = {
+          double_dice: 'Twin Paw 2x Dice!',
+          boost: 'Catnip Zoomies!',
+          shield_gain: 'Bubble Purr Shield!',
+          shield_saved: 'Shield Saved You!',
+          extra_roll: 'Lucky Golden Paw!',
+          swap: 'Catnap Switcheroo!',
+        };
+        const title = twistTitles[targetKind] ?? 'Mystery Powerup!';
+        setRouletteFinalData({ kind: targetKind, title, desc: message });
+        setRouletteStopped(true);
+        playPowerupReveal();
+        window.setTimeout(() => {
+          setRouletteActive(false);
+          setRouletteFinalData(null);
+        }, 2200);
+      }
+    };
+    window.setTimeout(tick, delay);
+  };
+
+  // Sync Realtime Remote Dice Rolling Animation across both devices
+  useEffect(() => {
+    if (
+      externalRollingSignal &&
+      externalRollingSignal.roller !== mySlot &&
+      !rolling
+    ) {
+      playDiceRattle();
+      setRolling(true);
+      const cycleInterval = window.setInterval(() => {
+        setPreviewDice1((prev) => (prev % 6) + 1);
+        if (externalRollingSignal.hasDouble) {
+          setPreviewDice2((prev) => ((prev + 2) % 6) + 1);
+        }
+      }, 85);
+      window.setTimeout(() => {
+        window.clearInterval(cycleInterval);
+        setRolling(false);
+      }, 600);
+    }
+  }, [externalRollingSignal?.timestamp]);
+
   const isMyTurn = passAndPlay || gameState.turn === mySlot;
   const canRoll =
     !gameState.winner && !rolling && hoppingSlot === null && isMyTurn;
@@ -634,6 +727,7 @@ export function SnakesBoardView({
     if (!canRoll) return;
     playDiceRattle();
     setRolling(true);
+    onBroadcastDiceRolling?.(gameState.turn, hasDoubleDiceActive);
 
     const rollFairDie = (): number => {
       if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
@@ -949,8 +1043,51 @@ export function SnakesBoardView({
           </div>
         )}
 
-        {/* Center Custom Animated Mystery Powerup Reveal Window */}
-        {twistPopup && (
+        {/* Pokemon Game Corner Style Powerup Roulette Wheel */}
+        {rouletteActive && (
+          <div className="pokemon-roulette-overlay" aria-live="polite">
+            <div className="pokemon-roulette-machine anim-fade-scale">
+              <div className="pokemon-roulette-marquee">
+                <span className="pokemon-roulette-lamp" />
+                <span className="pokemon-roulette-title">
+                  <SparkleIcon size={12} /> GAME CORNER ROULETTE <SparkleIcon size={12} />
+                </span>
+                <span className="pokemon-roulette-lamp red" />
+              </div>
+
+              <div className="pokemon-roulette-reel-frame">
+                <div className="pokemon-roulette-curtain-top" />
+                <div className="pokemon-roulette-target-line" />
+                <div className="pokemon-roulette-curtain-bottom" />
+
+                <div className={`pokemon-roulette-active-item ${rouletteStopped ? 'stopped' : ''}`}>
+                  <PowerupIllustrationSvg
+                    kind={
+                      rouletteStopped && rouletteFinalData
+                        ? rouletteFinalData.kind
+                        : ROULETTE_POWERUP_POOL[rouletteIdx].kind
+                    }
+                    size={48}
+                  />
+                  <span className="pokemon-roulette-item-name">
+                    {rouletteStopped && rouletteFinalData
+                      ? rouletteFinalData.title
+                      : ROULETTE_POWERUP_POOL[rouletteIdx].title}
+                  </span>
+                </div>
+              </div>
+
+              <span className="pokemon-roulette-footer-badge">
+                {rouletteStopped && rouletteFinalData
+                  ? rouletteFinalData.desc
+                  : 'SPINNING FOR LUCKY CAT POWERUP...'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Center Custom Animated Mystery Powerup Reveal Window (Fallback when roulette not active) */}
+        {!rouletteActive && twistPopup && (
           <div className="twist-popup-overlay" aria-live="polite">
             <div key={twistPopup.id} className="twist-popup-card powerup-modal">
               <span className="powerup-kicker-pill">MYSTERY POWERUP!</span>

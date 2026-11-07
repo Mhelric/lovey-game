@@ -13,7 +13,7 @@ import {
 } from '../engines/damaEngine';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import { CatAvatarSvg } from './CatAvatarSvg';
-import { SparkleIcon } from './ArcadeIcons';
+import { PawIcon, SparkleIcon } from './ArcadeIcons';
 import {
   playAscensionChime,
   playCatPounceCapture,
@@ -215,66 +215,68 @@ function DamaCatToken({
           </>
         )}
 
-        {/* 2D Illustrated Player Cat Avatar WITH Outfit Accessory */}
-        <CatAvatarSvg
-          breed={avatar.breed}
-          accessory={avatar.accessory}
-          x={-4.7}
-          y={-5.1}
-          size={9.4}
-          animateIdle={false}
-          happySquint={isKing}
-          actionAnim={isJustPromoted ? 'ascend' : 'none'}
-        />
+        {/* Player Cat Avatar WITH Outfit Accessory (P1 faces upward toward P2, P2 faces downward toward P1) */}
+        <g transform={isP1 ? undefined : 'rotate(180)'}>
+          <CatAvatarSvg
+            breed={avatar.breed}
+            accessory={avatar.accessory}
+            x={-4.7}
+            y={-5.1}
+            size={9.4}
+            animateIdle={false}
+            happySquint={isKing}
+            actionAnim={isJustPromoted ? 'ascend' : 'none'}
+          />
 
-        {/* Promoted Dama King Golden Crown Badge at Top-Right */}
-        {isKing && (
-          <g transform="translate(3.3, -3.4)">
-            <circle
-              cx="0"
-              cy="0"
-              r="2.05"
-              fill="#FFF8F2"
-              stroke="#5B2A4E"
-              stroke-width="0.42"
-            />
-            <path
-              d="M -1.15 0.65 L -1.35 -0.65 L -0.45 0.05 L 0 -0.95 L 0.45 0.05 L 1.35 -0.65 L 1.15 0.65 Z"
-              fill="#FFBE0B"
-              stroke="#5B2A4E"
-              stroke-width="0.28"
-              stroke-linejoin="round"
-            />
-          </g>
-        )}
+          {/* Promoted Dama King Golden Crown Badge at Top-Right */}
+          {isKing && (
+            <g transform="translate(3.3, -3.4)">
+              <circle
+                cx="0"
+                cy="0"
+                r="2.05"
+                fill="#FFF8F2"
+                stroke="#5B2A4E"
+                stroke-width="0.42"
+              />
+              <path
+                d="M -1.15 0.65 L -1.35 -0.65 L -0.45 0.05 L 0 -0.95 L 0.45 0.05 L 1.35 -0.65 L 1.15 0.65 Z"
+                fill="#FFBE0B"
+                stroke="#5B2A4E"
+                stroke-width="0.28"
+                stroke-linejoin="round"
+              />
+            </g>
+          )}
 
-        {/* Persistent Cute Paw Marker Badge on the Piece That Just Moved */}
-        {isJustMoved && (
-          <g
-            transform={isKing ? 'translate(-3.3, -3.4)' : 'translate(3.3, -3.4)'}
-            className="last-moved-badge-group"
-          >
-            <circle
-              cx="0"
-              cy="0"
-              r="2.05"
-              fill="#FFFFFF"
-              stroke="#5B2A4E"
-              stroke-width="0.42"
-            />
-            <circle
-              cx="0"
-              cy="0"
-              r="1.48"
-              fill={isP1 ? '#FF4B72' : '#0284C7'}
-            />
-            {/* Cute White Paw Silhouette */}
-            <ellipse cx="0" cy="0.32" rx="0.55" ry="0.42" fill="#FFFFFF" />
-            <circle cx="-0.45" cy="-0.28" r="0.2" fill="#FFFFFF" />
-            <circle cx="0" cy="-0.5" r="0.2" fill="#FFFFFF" />
-            <circle cx="0.45" cy="-0.28" r="0.2" fill="#FFFFFF" />
-          </g>
-        )}
+          {/* Persistent Cute Paw Marker Badge on the Piece That Just Moved */}
+          {isJustMoved && (
+            <g
+              transform={isKing ? 'translate(-3.3, -3.4)' : 'translate(3.3, -3.4)'}
+              className="last-moved-badge-group"
+            >
+              <circle
+                cx="0"
+                cy="0"
+                r="2.05"
+                fill="#FFFFFF"
+                stroke="#5B2A4E"
+                stroke-width="0.42"
+              />
+              <circle
+                cx="0"
+                cy="0"
+                r="1.48"
+                fill={isP1 ? '#FF4B72' : '#0284C7'}
+              />
+              {/* Cute White Paw Silhouette */}
+              <ellipse cx="0" cy="0.32" rx="0.55" ry="0.42" fill="#FFFFFF" />
+              <circle cx="-0.45" cy="-0.28" r="0.2" fill="#FFFFFF" />
+              <circle cx="0" cy="-0.5" r="0.2" fill="#FFFFFF" />
+              <circle cx="0.45" cy="-0.28" r="0.2" fill="#FFFFFF" />
+            </g>
+          )}
+        </g>
       </g>
     </g>
   );
@@ -577,9 +579,9 @@ export function DamaBoardView({
   const lastMoverName =
     gameState.lastAction?.mover === 'p1' ? p1Avatar.name : p2Avatar.name;
 
-  // Mirrored POV: P1 sees White/Pearl pieces at bottom & Dark/Plum pieces at top;
-  // P2 sees Dark/Plum pieces at bottom & White/Pearl pieces at top!
-  const flip = passAndPlay ? gameState.turn === 'p2' : mySlot === 'p2';
+  // Fixed authentic tabletop perspective: Board never rotates on turn change.
+  // P1 pieces (bottom) face up; P2 pieces (top) face down towards P1.
+  const flip = false;
 
   return (
     <div className="dama-stage-container">
@@ -590,7 +592,9 @@ export function DamaBoardView({
         </div>
       ) : gameState.lastAction && !gameState.winner ? (
         <div className="dama-last-move-chip">
-          <span className="last-move-paw" aria-hidden="true">🐾</span>
+          <span className="last-move-paw" aria-hidden="true">
+            <PawIcon size={11} />
+          </span>
           <span>
             <strong>{lastMoverName}</strong> moved tao
             {gameState.lastAction.captured ? ' (captured!)' : ''}
@@ -799,7 +803,7 @@ export function DamaBoardView({
           <div className="twist-popup-overlay" aria-live="polite">
             <div key={comboPopup.id} className="twist-popup-card combo-modal">
               <span className="combo-badge-pill">
-                🔥 {comboPopup.count}x CAT COMBO!
+                <SparkleIcon size={12} /> {comboPopup.count}x CAT COMBO!
               </span>
               <span className="twist-popup-title">
                 {comboPopup.count >= 3
@@ -821,7 +825,9 @@ export function DamaBoardView({
               key={ascendPopup.id}
               className="twist-popup-card ascend-modal"
             >
-              <span className="ascend-kicker-pill">✨ ROYAL EVOLUTION ✨</span>
+              <span className="ascend-kicker-pill">
+                <SparkleIcon size={12} /> ROYAL EVOLUTION <SparkleIcon size={12} />
+              </span>
               <div className="ascend-avatar-stage">
                 <CatAvatarSvg
                   breed={ascendPopup.avatar.breed}

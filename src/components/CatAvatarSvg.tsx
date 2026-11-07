@@ -619,11 +619,11 @@ const PET_REACTIONS: readonly {
   emotion: 'happy' | 'angry';
 }[] = [
   { phrase: 'Purrr~ ♥', emotion: 'happy' },
-  { phrase: 'Hiss~! 💢', emotion: 'angry' },
+  { phrase: 'Hiss~!', emotion: 'angry' },
   { phrase: 'Nyaa~ ♪', emotion: 'happy' },
   { phrase: 'No touchy!', emotion: 'angry' },
   { phrase: 'Love u! ♥', emotion: 'happy' },
-  { phrase: 'Mrrrow! 💢', emotion: 'angry' },
+  { phrase: 'Mrrrow~!', emotion: 'angry' },
 ] as const;
 
 function PetReactionOverlaySvg({
