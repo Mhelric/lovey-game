@@ -733,6 +733,7 @@ export function App() {
         } else if (event.type === 'partner_joined') {
           setPartnerJoinedSession(true);
           setPartnerLeftModalOpen(false);
+          setPassAndPlay(false);
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: Date.now() }));
           setRoomData((prev) =>
             event.slot === 'p1'
@@ -873,6 +874,10 @@ export function App() {
           }
         } else if (event.type === 'doodle_clear') {
           setDoodleState((prev) => ({ ...prev, strokes: [] }));
+        } else if (event.type === 'pass_and_play_sync') {
+          if (typeof event.passAndPlay === 'boolean') {
+            setPassAndPlay(event.passAndPlay);
+          }
         } else if (event.type === 'auto_move_notice') {
           const notice = `${event.moverName} was inactive - Auto-moved!`;
           setAutoMoveNotice(notice);
@@ -971,6 +976,7 @@ export function App() {
     const myCurrentAv = myAvatarRef.current;
     setMySlot('p2');
     setPartnerJoinedSession(true);
+    setPassAndPlay(false);
     setRoomCode(cleaned);
     setRoomData({
       ...room,
@@ -1106,8 +1112,10 @@ export function App() {
     forceNewMatch = false
   ) => {
     playTapPop();
-    if (soloPractice) {
+    if (soloPractice && !isJoinedWithPartner) {
       setPassAndPlay(true);
+    } else {
+      setPassAndPlay(false);
     }
     setRoomData((prev) => ({ ...prev, current_mode: selectedMode }));
     setActiveScreen('play');
@@ -1502,6 +1510,18 @@ export function App() {
       enabled: timerEnabled,
       durationSec: clamped,
       sender: 'p1',
+    });
+  };
+
+  const handleTogglePassAndPlay = () => {
+    setPassAndPlay((prev) => {
+      const next = !prev;
+      channelRef.current?.sendBroadcast({
+        type: 'pass_and_play_sync',
+        passAndPlay: next,
+        sender: mySlot,
+      });
+      return next;
     });
   };
 
@@ -1990,7 +2010,7 @@ export function App() {
           timerEnabled={timerEnabled}
           timerDurationSec={timerDurationSec}
           onToggleMute={handleToggleMute}
-          onTogglePassAndPlay={() => setPassAndPlay((p) => !p)}
+          onTogglePassAndPlay={handleTogglePassAndPlay}
           onToggleTimer={handleToggleTimer}
           onChangeTimerDuration={handleChangeTimerDuration}
           onHostSwitchGame={handleHostSwitchMode}

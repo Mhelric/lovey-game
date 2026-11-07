@@ -352,6 +352,11 @@ export type RealtimeBroadcastEvent =
       type: 'auto_move_notice';
       moverName: string;
       sender: PlayerSlot;
+    }
+  | {
+      type: 'pass_and_play_sync';
+      passAndPlay: boolean;
+      sender: PlayerSlot;
     };
 
 export interface CoupleChannelHandlers {

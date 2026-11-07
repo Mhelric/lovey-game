@@ -242,7 +242,7 @@ export function HomeMenuView({
           />
           <span className="showcase-sub-pill">
             {isJoined
-              ? `Connected! Tap cats for cute reactions ♥`
+              ? 'Connected! Tap cats for cute reactions!'
               : `${myAvatar.name} is solo • Tap cat to pet!`}
           </span>
         </div>
@@ -665,7 +665,7 @@ export function HomeMenuView({
                 className="game-pick-btn dama-pick sticker-press"
                 onClick={() => {
                   setPickingGame(false);
-                  onHostLaunchGame('dama', !p2Online, 100);
+                  onHostLaunchGame('dama', !isJoined, 100);
                 }}
               >
                 <CrownIcon size={26} />
@@ -683,7 +683,7 @@ export function HomeMenuView({
                 className="game-pick-btn doodle-pick sticker-press"
                 onClick={() => {
                   setPickingGame(false);
-                  onHostLaunchGame('doodle', !p2Online);
+                  onHostLaunchGame('doodle', !isJoined);
                 }}
               >
                 <DoodleClashIcon size={26} />
@@ -702,7 +702,7 @@ export function HomeMenuView({
                   className="snakes-launch-hit sticker-press"
                   onClick={() => {
                     setPickingGame(false);
-                    onHostLaunchGame('snakes', !p2Online, snakesTiles);
+                    onHostLaunchGame('snakes', !isJoined, snakesTiles);
                   }}
                 >
                   <SnakeLadderIcon size={24} />

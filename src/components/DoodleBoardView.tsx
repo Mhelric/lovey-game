@@ -118,6 +118,14 @@ export function DoodleBoardView({
   const prevPhaseRef = useRef(gameState.phase);
   const prevRoundRef = useRef(gameState.round);
 
+  // In 2-Phone Live Mode (!passAndPlay), ensure handover popups never display
+  useEffect(() => {
+    if (!passAndPlay) {
+      setPrePickHandoverActive(false);
+      setGuesserHandoverModal(false);
+    }
+  }, [passAndPlay]);
+
   // Trigger 10s handover privacy curtain for Drawer when starting word_selection in 1-Phone Pass & Play
   useEffect(() => {
     if (
@@ -127,6 +135,8 @@ export function DoodleBoardView({
     ) {
       setPrePickHandoverActive(true);
       setPrePickCountdown(10);
+    } else if (!passAndPlay) {
+      setPrePickHandoverActive(false);
     }
     prevRoundRef.current = gameState.round;
   }, [passAndPlay, gameState.phase, gameState.round]);
@@ -156,6 +166,8 @@ export function DoodleBoardView({
       playTimesUpAlarm();
       if (passAndPlay) {
         setGuesserHandoverModal(true);
+      } else {
+        setGuesserHandoverModal(false);
       }
     }
     prevPhaseRef.current = gameState.phase;
