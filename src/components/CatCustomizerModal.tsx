@@ -47,7 +47,11 @@ interface CatCustomizerModalProps {
   onToggleMute: () => void;
   onToggleTimer?: () => void;
   onChangeTimerDuration?: (sec: number) => void;
-  onHostSwitchGame: (mode: GameMode, snakesMaxTile?: SnakesMaxTile) => void;
+  onHostSwitchGame: (
+    mode: GameMode,
+    snakesMaxTile?: SnakesMaxTile,
+    forceNewMatch?: boolean
+  ) => void;
   onHostResetMatch: () => void;
   onOpenTutorial: () => void;
   onExitToMenu: () => void;
@@ -57,6 +61,11 @@ interface CatCustomizerModalProps {
   onHostKickPlayer?: () => void;
   onSave: (newAvatar: CatAvatarConfig) => void;
   onClose: () => void;
+  hasSavedDama?: boolean;
+  hasSavedSnakes?: boolean;
+  hasSavedUno?: boolean;
+  hasSavedDoodle?: boolean;
+  savedSnakesMaxTile?: SnakesMaxTile;
 }
 
 type SettingsTabId = 'profile' | 'match' | 'rules';
@@ -112,6 +121,11 @@ export function CatCustomizerModal({
   onHostKickPlayer,
   onSave,
   onClose,
+  hasSavedDama = false,
+  hasSavedSnakes = false,
+  hasSavedUno = false,
+  hasSavedDoodle = false,
+  savedSnakesMaxTile = 100,
 }: CatCustomizerModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('profile');
   const [draftName, setDraftName] = useState(currentAvatar.name);
@@ -125,6 +139,7 @@ export function CatCustomizerModal({
     mode: GameMode;
     maxTile?: SnakesMaxTile;
     label: string;
+    hasSaved: boolean;
   } | null>(null);
 
   const handleVolumeChange = (newVal: number) => {
@@ -133,10 +148,24 @@ export function CatCustomizerModal({
     playTapPop();
   };
 
+  const hasSavedTargetMode = (mode: GameMode, tiles?: SnakesMaxTile) => {
+    if (mode === 'dama') return Boolean(hasSavedDama);
+    if (mode === 'uno') return Boolean(hasSavedUno);
+    if (mode === 'doodle') return Boolean(hasSavedDoodle);
+    const tileMatch = (savedSnakesMaxTile ?? 100) === (tiles ?? 100);
+    return Boolean(hasSavedSnakes && tileMatch);
+  };
+
   const handleRequestSwitchGame = (
     mode: GameMode,
     targetMaxTile?: SnakesMaxTile,
-    label = mode === 'dama' ? 'Cat Dama' : mode === 'doodle' ? 'Doodle Clash' : `Snakes & Ladders (${targetMaxTile ?? 100})`
+    label = mode === 'dama'
+      ? 'Cat Dama'
+      : mode === 'uno'
+      ? 'Cat Uno'
+      : mode === 'doodle'
+      ? 'Doodle Clash'
+      : `Snakes & Ladders (${targetMaxTile ?? 100})`
   ) => {
     playTapPop();
     if (
@@ -145,16 +174,8 @@ export function CatCustomizerModal({
     ) {
       return;
     }
-    setSwitchConfirmTarget({ mode, maxTile: targetMaxTile, label });
-  };
-
-  const handleConfirmSwitchGame = () => {
-    if (!switchConfirmTarget) return;
-    playTapPop();
-    const { mode, maxTile } = switchConfirmTarget;
-    setSwitchConfirmTarget(null);
-    onHostSwitchGame(mode, maxTile);
-    onClose();
+    const hasSaved = hasSavedTargetMode(mode, targetMaxTile);
+    setSwitchConfirmTarget({ mode, maxTile: targetMaxTile, label, hasSaved });
   };
 
   useEffect(() => {
@@ -915,27 +936,84 @@ export function CatCustomizerModal({
                 <CrownIcon size={24} />
               </div>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '15px', color: '#5B2A4E', fontWeight: 800 }}>
-                Switch to {switchConfirmTarget.label}?
+                {switchConfirmTarget.hasSaved
+                  ? `Continue Saved ${switchConfirmTarget.label}?`
+                  : `Switch to ${switchConfirmTarget.label}?`}
               </h3>
               <p style={{ margin: 0, fontSize: '11.5px', color: 'rgba(91, 42, 78, 0.8)', fontWeight: 600, lineHeight: 1.35 }}>
-                Switching to a new game starts a new match and your current game will be <strong>reset, not saved</strong>. (Games are only saved if you leave to the menu).
+                {switchConfirmTarget.hasSaved
+                  ? `You have a saved match of ${switchConfirmTarget.label}. Would you like to continue where you left off or start a fresh match?`
+                  : `Switching to ${switchConfirmTarget.label} will start a new game match.`}
               </p>
-              <div className="popup-btn-row">
-                <button
-                  type="button"
-                  className="popup-btn-secondary"
-                  onClick={() => setSwitchConfirmTarget(null)}
-                >
-                  <span>Cancel</span>
-                </button>
-                <button
-                  type="button"
-                  className="popup-btn-primary"
-                  onClick={handleConfirmSwitchGame}
-                >
-                  <span>Switch Game</span>
-                </button>
-              </div>
+              {switchConfirmTarget.hasSaved ? (
+                <div className="popup-btn-row stacked">
+                  <button
+                    type="button"
+                    className="popup-btn-primary sticker-press"
+                    onClick={() => {
+                      playTapPop();
+                      const { mode, maxTile } = switchConfirmTarget;
+                      setSwitchConfirmTarget(null);
+                      onHostSwitchGame(mode, maxTile, false);
+                      onClose();
+                    }}
+                  >
+                    <PawIcon size={14} />
+                    <span>Continue Saved Match</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="popup-btn-secondary sticker-press"
+                    onClick={() => {
+                      playTapPop();
+                      const { mode, maxTile } = switchConfirmTarget;
+                      setSwitchConfirmTarget(null);
+                      onHostSwitchGame(mode, maxTile, true);
+                      onClose();
+                    }}
+                  >
+                    <span>Start New Game</span>
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: 'var(--ink)',
+                      cursor: 'pointer',
+                      marginTop: '2px',
+                    }}
+                    onClick={() => setSwitchConfirmTarget(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="popup-btn-row">
+                  <button
+                    type="button"
+                    className="popup-btn-secondary"
+                    onClick={() => setSwitchConfirmTarget(null)}
+                  >
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="popup-btn-primary"
+                    onClick={() => {
+                      playTapPop();
+                      const { mode, maxTile } = switchConfirmTarget;
+                      setSwitchConfirmTarget(null);
+                      onHostSwitchGame(mode, maxTile, true);
+                      onClose();
+                    }}
+                  >
+                    <span>Start Game</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

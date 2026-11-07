@@ -321,9 +321,34 @@ body {
   font-weight: 700;
   color: #832729;
   text-align: center;
-  margin: 6px 0 0 0;
-  max-width: 260px;
+  margin: 2px 0 0 0;
+  max-width: 240px;
   line-height: 1.35;
+}
+
+.online-solo-waiting-card {
+  width: 100%;
+  max-width: 256px;
+  background: #FFF5F8;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+}
+
+.waiting-pill-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
 }
 
 .flow-step-panel {

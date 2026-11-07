@@ -53,7 +53,6 @@ interface HomeMenuViewProps {
   onChangeMyRoomCode: (newCode: string) => Promise<void>;
   onAttemptJoinAsInvited: (targetCode: string) => Promise<boolean>;
   onLeaveJoinedRoom: () => void;
-  onRejoinSavedGame: (mode?: GameMode, is1Phone?: boolean) => void;
   onHostLaunchGame: (
     mode: GameMode,
     soloPractice?: boolean,
@@ -89,7 +88,6 @@ export function HomeMenuView({
   onChangeMyRoomCode,
   onAttemptJoinAsInvited,
   onLeaveJoinedRoom,
-  onRejoinSavedGame,
   onHostLaunchGame,
   onSendReaction,
   onHostKickPlayer,
@@ -156,75 +154,6 @@ export function HomeMenuView({
       onHostLaunchGame(mode, passAndPlay, tiles, true);
     }
   };
-
-  // Check if current room mode has an ongoing saved match
-  const currentModeHasSaved =
-    roomData.current_mode === 'dama'
-      ? hasSavedDama
-      : roomData.current_mode === 'snakes'
-      ? hasSavedSnakes
-      : roomData.current_mode === 'uno'
-      ? hasSavedUno
-      : hasSavedDoodle;
-
-  // Only have the resume button when the player is in a room where the host has an active or saved match
-  const hasSavedAny =
-    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno || hasSavedDoodle);
-
-  // Strictly prioritize the room's CURRENT mode so rejoining never changes games unexpectedly!
-  const activeSavedMode: GameMode = currentModeHasSaved
-    ? roomData.current_mode
-    : hasSavedSnakes
-    ? 'snakes'
-    : hasSavedUno
-    ? 'uno'
-    : hasSavedDoodle
-    ? 'doodle'
-    : hasSavedDama
-    ? 'dama'
-    : roomData.current_mode;
-
-  const savedGameLabel =
-    activeSavedMode === 'doodle'
-      ? 'Doodle Clash'
-      : activeSavedMode === 'uno'
-      ? 'Cat Uno'
-      : activeSavedMode === 'snakes'
-      ? `Snakes (${savedSnakesMaxTile})`
-      : 'Cat Dama';
-
-  const currentModeHas1PhoneSaved =
-    roomData.current_mode === 'dama'
-      ? hasSaved1PhoneDama
-      : roomData.current_mode === 'snakes'
-      ? hasSaved1PhoneSnakes
-      : roomData.current_mode === 'uno'
-      ? hasSaved1PhoneUno
-      : hasSaved1PhoneDoodle;
-
-  const hasSaved1PhoneAny =
-    hasSaved1PhoneDama || hasSaved1PhoneSnakes || hasSaved1PhoneUno || hasSaved1PhoneDoodle;
-
-  const activeSaved1PhoneMode: GameMode = currentModeHas1PhoneSaved
-    ? roomData.current_mode
-    : hasSaved1PhoneUno
-    ? 'uno'
-    : hasSaved1PhoneDoodle
-    ? 'doodle'
-    : hasSaved1PhoneSnakes
-    ? 'snakes'
-    : hasSaved1PhoneDama
-    ? 'dama'
-    : roomData.current_mode;
-
-  const saved1PhoneLabel =
-    activeSaved1PhoneMode === 'doodle'
-      ? 'Doodle Clash'
-      : activeSaved1PhoneMode === 'uno'
-      ? 'Cat Uno'
-      : activeSaved1PhoneMode === 'snakes'
-      ? `Snakes (${saved1PhoneSnakesMaxTile || 100})`
-      : 'Cat Dama';
 
   const handleExpandJoinBox = () => {
     if (joinExpanded) return;
@@ -650,7 +579,7 @@ export function HomeMenuView({
         {/* Centered Play Game / Game Picker Flow (No Host/Invited Prompt!) */}
         <div className="menu-flow-card">
           {!isHost ? (
-            /* Invited Player automatically waits for Host to pick a game, or can Rejoin Savestate / Leave Room */
+            /* Invited Player automatically waits for Host to pick a game */
             <div className="flow-step-panel invited-waiting-panel anim-fade-scale">
               <div className="status-pill-banner success">
                 <CheckCircleIcon size={14} />
@@ -667,34 +596,9 @@ export function HomeMenuView({
                   <span>.</span>
                 </span>
               </p>
-
-              <div className="invited-panel-actions">
-                {hasSavedAny && (
-                  <button
-                    type="button"
-                    className="rejoin-savestate-btn sticker-press"
-                    onClick={() => onRejoinSavedGame(activeSavedMode)}
-                  >
-                    <PawIcon size={13} />
-                    <span>Rejoin Saved {savedGameLabel}</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  className="invited-leave-full-btn sticker-press"
-                  onClick={() => {
-                    setJoinStatus('idle');
-                    setJoinExpanded(false);
-                    onLeaveJoinedRoom();
-                  }}
-                >
-                  Leave Room
-                </button>
-              </div>
             </div>
           ) : (
-            /* Host clicks Play Game (or Resume Saved Game if a savestate exists!) */
+            /* Host clicks Play Game */
             <div className="host-play-actions-stack">
               {/* 1-Phone Mode Menu Toggle Strip */}
               <div className="home-mode-toggle-strip">
@@ -724,53 +628,28 @@ export function HomeMenuView({
                 </button>
               </div>
 
-              {passAndPlay ? (
-                hasSaved1PhoneAny && (
-                  <button
-                    type="button"
-                    className="rejoin-savestate-btn host-resume sticker-press"
-                    onClick={() => onRejoinSavedGame(activeSaved1PhoneMode, true)}
-                  >
-                    <PawIcon size={14} />
-                    <span>Resume Saved {saved1PhoneLabel} (1-Phone)</span>
-                  </button>
-                )
+              {isOnlineSolo ? (
+                <div className="online-solo-waiting-card anim-fade-scale">
+                  <div className="waiting-pill-header">
+                    <span className="mini-paw-spinner" aria-hidden="true" />
+                    <span>Waiting for partner to join…</span>
+                  </div>
+                  <p className="waiting-partner-note">
+                    Share Room Code <strong>{roomData.room_code}</strong> to connect, or switch to 1-Phone mode above!
+                  </p>
+                </div>
               ) : (
-                hasSavedAny && (
-                  <button
-                    type="button"
-                    className="rejoin-savestate-btn host-resume sticker-press"
-                    onClick={() => onRejoinSavedGame(activeSavedMode, false)}
-                  >
-                    <PawIcon size={14} />
-                    <span>Resume Saved {savedGameLabel}</span>
-                  </button>
-                )
-              )}
-
-              <button
-                type="button"
-                className={`vibrant-play-btn sticker-press ${isOnlineSolo ? 'disabled-play' : ''}`}
-                disabled={isOnlineSolo}
-                onClick={() => {
-                  if (isOnlineSolo) return;
-                  playTapPop();
-                  setPickingGame(true);
-                }}
-              >
-                <span>
-                  {passAndPlay
-                    ? 'Play 1-Phone Game'
-                    : isJoined
-                    ? 'Play Game'
-                    : 'Waiting for Partner to Join...'}
-                </span>
-                <PawIcon size={19} />
-              </button>
-              {isOnlineSolo && (
-                <p className="waiting-partner-note">
-                  Share Room Code <strong>{roomData.room_code}</strong> to connect and play online!
-                </p>
+                <button
+                  type="button"
+                  className="vibrant-play-btn sticker-press"
+                  onClick={() => {
+                    playTapPop();
+                    setPickingGame(true);
+                  }}
+                >
+                  <span>{passAndPlay ? 'Play 1-Phone Game' : 'Play Game'}</span>
+                  <PawIcon size={19} />
+                </button>
               )}
             </div>
           )}
@@ -897,15 +776,7 @@ export function HomeMenuView({
               >
                 <CrownIcon size={26} />
                 <span className="role-main-label">Cat Dama</span>
-                <span className="role-sub-label">
-                  {passAndPlay
-                    ? hasSaved1PhoneDama
-                      ? 'Resume 1-Phone Match'
-                      : '3D Filipino Checkers'
-                    : hasSavedDama && isJoined
-                    ? 'Resume Saved Match'
-                    : '3D Filipino Checkers'}
-                </span>
+                <span className="role-sub-label">3D Filipino Checkers</span>
               </button>
 
               {/* 2. Cat Uno Card */}
@@ -917,15 +788,7 @@ export function HomeMenuView({
               >
                 <UnoCardsIcon size={26} />
                 <span className="role-main-label">Cat Uno</span>
-                <span className="role-sub-label">
-                  {passAndPlay
-                    ? hasSaved1PhoneUno
-                      ? 'Resume 1-Phone Match'
-                      : '2P Stacking & 7-Swap'
-                    : hasSavedUno && isJoined
-                    ? 'Resume Saved Match'
-                    : '2P Stacking & 7-Swap'}
-                </span>
+                <span className="role-sub-label">2P Stacking &amp; 7-Swap</span>
               </button>
 
               {/* 3. Doodle Clash Card */}
@@ -937,15 +800,7 @@ export function HomeMenuView({
               >
                 <DoodleClashIcon size={26} />
                 <span className="role-main-label">Doodle Clash</span>
-                <span className="role-sub-label">
-                  {passAndPlay
-                    ? hasSaved1PhoneDoodle
-                      ? 'Resume 1-Phone Match'
-                      : 'Draw & Guess Duel'
-                    : hasSavedDoodle && isJoined
-                    ? 'Resume Saved Match'
-                    : 'Draw & Guess Duel'}
-                </span>
+                <span className="role-sub-label">Draw &amp; Guess Duel</span>
               </button>
 
               {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
@@ -958,18 +813,7 @@ export function HomeMenuView({
                 >
                   <SnakeLadderIcon size={24} />
                   <span className="role-main-label">Snakes &amp; Ladders</span>
-                  <span className="role-sub-label">
-                    {passAndPlay
-                      ? hasSaved1PhoneSnakes &&
-                        saved1PhoneSnakesMaxTile === snakesTiles
-                        ? 'Resume 1-Phone Match'
-                        : `${snakesTiles} Tiles Mode`
-                      : hasSavedSnakes &&
-                        isJoined &&
-                        savedSnakesMaxTile === snakesTiles
-                      ? 'Resume Saved Match'
-                      : `${snakesTiles} Tiles Mode`}
-                  </span>
+                  <span className="role-sub-label">{snakesTiles} Tiles Mode</span>
                 </button>
                 <div
                   className="snakes-mode-pills"

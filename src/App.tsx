@@ -1302,69 +1302,6 @@ export function App() {
     });
   };
 
-  const handleRejoinSavedGame = (targetMode?: GameMode, is1Phone = passAndPlay) => {
-    playTapPop();
-    const modeToJoin = targetMode ?? roomData.current_mode;
-    setPassAndPlay(is1Phone);
-    setRoomData((prev) => ({ ...prev, current_mode: modeToJoin }));
-
-    if (is1Phone) {
-      if (modeToJoin === 'dama') {
-        const s = loadLocalGameSavestate<DamaGameState>('', 'dama', true);
-        if (s && Array.isArray(s.board)) setDamaState(s);
-      } else if (modeToJoin === 'snakes') {
-        const s = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
-        if (s && typeof s.boardSeed === 'number') setSnakesState(s);
-      } else if (modeToJoin === 'uno') {
-        const s = loadLocalGameSavestate<UnoGameState>('', 'uno', true);
-        if (s && typeof s.matchSeed === 'number') setUnoState(s);
-      } else if (modeToJoin === 'doodle') {
-        const s = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
-        if (s && typeof s.matchSeed === 'number') setDoodleState(s);
-      }
-      setActiveScreen('play');
-      saveLocalActiveSession(roomCode, 'play', modeToJoin, true);
-      return;
-    }
-
-    // 2-Phone Online Rejoin: Ensure latest savestate for modeToJoin is loaded from local storage
-    if (modeToJoin === 'dama') {
-      const s = loadLocalGameSavestate<DamaGameState>(roomCode, 'dama', false);
-      if (s && Array.isArray(s.board)) setDamaState(s);
-    } else if (modeToJoin === 'snakes') {
-      const s = loadLocalGameSavestate<SnakesGameState>(roomCode, 'snakes', false);
-      if (s && typeof s.boardSeed === 'number') setSnakesState(s);
-    } else if (modeToJoin === 'uno') {
-      const s = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno', false);
-      if (s && typeof s.matchSeed === 'number') setUnoState(s);
-    } else if (modeToJoin === 'doodle') {
-      const s = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle', false);
-      if (s && typeof s.matchSeed === 'number') setDoodleState(s);
-    }
-
-    // Reset turn timer on unpause / rejoin so neither player gets auto-moved immediately
-    setTimeRemaining(timerDurationSecRef.current);
-    autoMoveExecutingRef.current = false;
-
-    setActiveScreen('play');
-    saveLocalActiveSession(roomCode, 'play', modeToJoin, false);
-
-    // Announce to partner that we rejoined the game
-    channelRef.current?.sendBroadcast({
-      type: 'partner_joined',
-      slot: mySlot,
-      avatar: myAvatarRef.current,
-    });
-    // Request latest peer savestate in case partner made moves or was waiting live
-    channelRef.current?.sendBroadcast({
-      type: 'request_savestate',
-      slot: mySlot,
-    });
-    if (mySlot === 'p1') {
-      updateRoomModeInDb(roomCode, modeToJoin);
-    }
-  };
-
   const broadcastAndPersistMatch = async (
     gameMode: GameMode,
     turn: PlayerSlot,
@@ -1657,86 +1594,18 @@ export function App() {
 
   const handleHostSwitchMode = (
     newMode: GameMode,
-    snakesMaxTile: SnakesMaxTile = snakesState.maxTile ?? 100
+    snakesMaxTile: SnakesMaxTile = snakesState.maxTile ?? 100,
+    forceNewMatch = false
   ) => {
     if (mySlot !== 'p1') return;
-    playTapPop();
-    setRoomData((prev) => ({ ...prev, current_mode: newMode }));
-    checkAutoOpenTutorial(newMode);
-
-    if (newMode === 'snakes') {
-      if (
-        !isSnakesMatchActive(snakesState) ||
-        (snakesState.maxTile ?? 100) !== snakesMaxTile
-      ) {
-        handleNewSnakesSeedMatch(snakesState.twistsEnabled, snakesMaxTile);
-      } else {
-        channelRef.current?.sendBroadcast({
-          type: 'match_sync',
-          gameMode: 'snakes',
-          turn: snakesState.turn,
-          boardSeed: snakesState.boardSeed,
-          stateJson: snakesState,
-          winner: snakesState.winner,
-          sender: mySlot,
-        });
-      }
-    } else if (newMode === 'uno') {
-      if (!isUnoMatchActive(unoState)) {
-        handleResetUnoMatch();
-      } else {
-        channelRef.current?.sendBroadcast({
-          type: 'match_sync',
-          gameMode: 'uno',
-          turn: unoState.turn,
-          boardSeed: unoState.matchSeed,
-          stateJson: unoState,
-          winner: unoState.winner,
-          sender: mySlot,
-        });
-      }
-    } else if (newMode === 'doodle') {
-      if (!isDoodleMatchActive(doodleState)) {
-        handleResetDoodleMatch();
-      } else {
-        channelRef.current?.sendBroadcast({
-          type: 'match_sync',
-          gameMode: 'doodle',
-          turn: doodleState.turn,
-          boardSeed: doodleState.matchSeed,
-          stateJson: doodleState,
-          winner: doodleState.winner,
-          sender: mySlot,
-        });
-      }
-    } else {
-      if (!isDamaMatchActive(damaState)) {
-        handleResetDamaMatch();
-      } else {
-        channelRef.current?.sendBroadcast({
-          type: 'match_sync',
-          gameMode: 'dama',
-          turn: damaState.turn,
-          boardSeed: damaState.matchSeed ?? 0,
-          stateJson: damaState,
-          winner: damaState.winner,
-          sender: mySlot,
-        });
-      }
-    }
-
-    channelRef.current?.sendBroadcast({
-      type: 'mode_switch',
-      mode: newMode,
-      snakesMaxTile,
-      sender: 'p1',
-    });
-    updateRoomModeInDb(roomCode, newMode);
+    handleHostLaunchGame(newMode, passAndPlay, snakesMaxTile, forceNewMatch);
   };
 
   const handleHostResetCurrentMatch = () => {
     if (roomData.current_mode === 'dama') {
       handleResetDamaMatch();
+    } else if (roomData.current_mode === 'uno') {
+      handleResetUnoMatch();
     } else if (roomData.current_mode === 'doodle') {
       handleResetDoodleMatch();
     } else {
@@ -2115,7 +1984,6 @@ export function App() {
           onChangeMyRoomCode={handleChangeMyRoomCode}
           onAttemptJoinAsInvited={handleAttemptJoinAsInvited}
           onLeaveJoinedRoom={handleLeaveJoinedRoom}
-          onRejoinSavedGame={handleRejoinSavedGame}
           onHostLaunchGame={handleHostLaunchGame}
           onSendReaction={handleSendReaction}
           onHostKickPlayer={handleHostKickPlayer}
@@ -2491,6 +2359,11 @@ export function App() {
           onHostKickPlayer={handleHostKickPlayer}
           onSave={handleSaveProfile}
           onClose={() => setCustomizerOpen(false)}
+          hasSavedDama={passAndPlay ? hasSaved1PhoneDama : (isJoinedWithPartner && isDamaMatchActive(damaState))}
+          hasSavedSnakes={passAndPlay ? hasSaved1PhoneSnakes : (isJoinedWithPartner && isSnakesMatchActive(snakesState))}
+          hasSavedUno={passAndPlay ? hasSaved1PhoneUno : (isJoinedWithPartner && isUnoMatchActive(unoState))}
+          hasSavedDoodle={passAndPlay ? hasSaved1PhoneDoodle : (isJoinedWithPartner && isDoodleMatchActive(doodleState))}
+          savedSnakesMaxTile={passAndPlay ? (saved1PhoneSnakes?.maxTile ?? 100) : (snakesState.maxTile ?? 100)}
         />
       )}
 
