@@ -391,8 +391,8 @@ export function CatCustomizerModal({
                     </div>
                     <input
                       type="range"
-                      min="20"
-                      max="250"
+                      min="0"
+                      max="100"
                       step="5"
                       value={Math.round(volume * 100)}
                       onInput={(e) =>
@@ -520,8 +520,24 @@ export function CatCustomizerModal({
                 </div>
               )}
 
-              {/* Game Mode Selector (Host Only) - Arranged exactly like Main Menu */}
-              {isHost ? (
+              {/* Kick Partner button if connected */}
+              {isHost && isPartnerInRoom && onHostKickPlayer && (
+                <div className="cozy-section" style={{ paddingTop: '2px' }}>
+                  <button
+                    type="button"
+                    className="tertiary-text-btn danger"
+                    onClick={() => {
+                      onClose();
+                      onHostKickPlayer();
+                    }}
+                  >
+                    Kick {partnerName || 'Partner'} from Room
+                  </button>
+                </div>
+              )}
+
+              {/* Game Mode Selector (Host Only & ONLY when in active game) */}
+              {isHost && isInGame && (
                 <div className="cozy-section">
                   <span className="cozy-label">Switch Game Mode</span>
                   <div className="game-picker-modal-grid" style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -597,24 +613,13 @@ export function CatCustomizerModal({
                       </div>
                     </div>
                   </div>
-
-                  {isPartnerInRoom && onHostKickPlayer && (
-                    <button
-                      type="button"
-                      className="tertiary-text-btn danger"
-                      style={{ marginTop: '8px' }}
-                      onClick={() => {
-                        onClose();
-                        onHostKickPlayer();
-                      }}
-                    >
-                      Kick {partnerName || 'Partner'} from Room
-                    </button>
-                  )}
                 </div>
-              ) : (
+              )}
+
+              {/* Invited Player in-game status & Leave Room (ONLY when In-Game) */}
+              {!isHost && isInGame && (
                 <>
-                  {isInGame && (currentMode === 'dama' || currentMode === 'snakes') && (
+                  {(currentMode === 'dama' || currentMode === 'snakes') && (
                     <div className="cozy-section">
                       <div className="cozy-row-between">
                         <div>
@@ -883,19 +888,17 @@ export function CatCustomizerModal({
               <p style={{ margin: 0, fontSize: '11.5px', color: 'rgba(91, 42, 78, 0.8)', fontWeight: 600, lineHeight: 1.35 }}>
                 Switching to a new game starts a new match and your current game will be <strong>reset, not saved</strong>. (Games are only saved if you leave to the menu).
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+              <div className="popup-btn-row">
                 <button
                   type="button"
-                  className="cozy-btn-secondary"
-                  style={{ height: '38px', borderRadius: '12px', fontSize: '12px' }}
+                  className="popup-btn-secondary"
                   onClick={() => setSwitchConfirmTarget(null)}
                 >
-                  Cancel
+                  <span>Cancel</span>
                 </button>
                 <button
                   type="button"
-                  className="vibrant-play-btn sticker-press"
-                  style={{ height: '38px', borderRadius: '12px', fontSize: '12px' }}
+                  className="popup-btn-primary"
                   onClick={handleConfirmSwitchGame}
                 >
                   <span>Switch Game</span>

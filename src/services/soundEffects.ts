@@ -2,6 +2,9 @@ const STORAGE_MUTE_KEY = 'lovey_arcade_muted';
 const STORAGE_VOLUME_KEY = 'lovey_arcade_volume';
 
 let audioCtx: AudioContext | null = null;
+let masterGainNode: GainNode | null = null;
+let compressorNode: DynamicsCompressorNode | null = null;
+
 let mutedState: boolean = (() => {
   try {
     return localStorage.getItem(STORAGE_MUTE_KEY) === '1';
@@ -13,9 +16,9 @@ let mutedState: boolean = (() => {
 let masterVolume: number = (() => {
   try {
     const raw = localStorage.getItem(STORAGE_VOLUME_KEY);
-    return raw ? Math.max(0.2, Math.min(2.5, parseFloat(raw))) : 1.2;
+    return raw ? Math.max(0.0, Math.min(1.0, parseFloat(raw))) : 1.0;
   } catch {
-    return 1.2;
+    return 1.0;
   }
 })();
 
@@ -24,7 +27,7 @@ export function getMasterVolume(): number {
 }
 
 export function setMasterVolume(vol: number): void {
-  masterVolume = Math.max(0.2, Math.min(2.5, vol));
+  masterVolume = Math.max(0.0, Math.min(1.0, vol));
   try {
     localStorage.setItem(STORAGE_VOLUME_KEY, masterVolume.toFixed(2));
   } catch {
@@ -41,6 +44,23 @@ function getAudioContext(): AudioContext | null {
         .webkitAudioContext;
     if (Ctx) {
       audioCtx = new Ctx();
+      // Hardware-tuned compressor + master gain: makes audio loud & clear on phone speakers
+      try {
+        compressorNode = audioCtx.createDynamicsCompressor();
+        compressorNode.threshold.setValueAtTime(-14, audioCtx.currentTime);
+        compressorNode.knee.setValueAtTime(10, audioCtx.currentTime);
+        compressorNode.ratio.setValueAtTime(8, audioCtx.currentTime);
+        compressorNode.attack.setValueAtTime(0.003, audioCtx.currentTime);
+        compressorNode.release.setValueAtTime(0.12, audioCtx.currentTime);
+
+        masterGainNode = audioCtx.createGain();
+        masterGainNode.gain.setValueAtTime(1.45, audioCtx.currentTime);
+
+        masterGainNode.connect(compressorNode);
+        compressorNode.connect(audioCtx.destination);
+      } catch {
+        // Fallback to direct output
+      }
     }
   }
   if (audioCtx && audioCtx.state === 'suspended') {
@@ -115,10 +135,10 @@ const BGM_CONFIGS: Record<
     bVol: number;
   }
 > = {
-  doodle: { stepMs: 185, melody: DOODLE_MELODY, lType: 'triangle', lVol: 0.026, bType: 'sine', bVol: 0.022 },
-  dama: { stepMs: 195, melody: DAMA_MELODY, lType: 'square', lVol: 0.016, bType: 'triangle', bVol: 0.025 },
-  snakes: { stepMs: 210, melody: SNAKES_MELODY, lType: 'triangle', lVol: 0.028, bType: 'sine', bVol: 0.024 },
-  menu: { stepMs: 240, melody: MENU_MELODY, lType: 'triangle', lVol: 0.026, bType: 'sine', bVol: 0.02 },
+  doodle: { stepMs: 185, melody: DOODLE_MELODY, lType: 'triangle', lVol: 0.08, bType: 'sine', bVol: 0.07 },
+  dama: { stepMs: 195, melody: DAMA_MELODY, lType: 'square', lVol: 0.065, bType: 'triangle', bVol: 0.08 },
+  snakes: { stepMs: 210, melody: SNAKES_MELODY, lType: 'triangle', lVol: 0.085, bType: 'sine', bVol: 0.075 },
+  menu: { stepMs: 240, melody: MENU_MELODY, lType: 'triangle', lVol: 0.08, bType: 'sine', bVol: 0.07 },
 };
 
 let bgmTimer: number | null = null;
@@ -180,7 +200,7 @@ function playTone(
   freqEnd: number,
   durationSec: number,
   type: OscillatorType = 'sine',
-  gainPeak = 0.12,
+  gainPeak = 0.35,
   delaySec = 0
 ): void {
   const ctx = getAudioContext();
@@ -202,13 +222,13 @@ function playTone(
       );
     }
 
-    const effectiveGain = Math.min(0.95, gainPeak * masterVolume);
+    const effectiveGain = Math.min(1.0, gainPeak * masterVolume);
     gain.gain.setValueAtTime(0.001, startTime);
     gain.gain.linearRampToValueAtTime(effectiveGain, startTime + durationSec * 0.18);
     gain.gain.exponentialRampToValueAtTime(0.001, endTime);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(masterGainNode || ctx.destination);
 
     osc.start(startTime);
     osc.stop(endTime + 0.01);
@@ -218,78 +238,78 @@ function playTone(
 }
 
 export function playTapPop(): void {
-  playTone(480, 680, 0.055, 'sine', 0.09);
+  playTone(480, 680, 0.055, 'sine', 0.38);
 }
 
 export function playCatStep(): void {
-  playTone(360, 620, 0.085, 'triangle', 0.11);
+  playTone(360, 620, 0.085, 'triangle', 0.48);
 }
 
 export function playCatPounceCapture(): void {
-  playTone(300, 820, 0.11, 'triangle', 0.14, 0);
-  playTone(620, 420, 0.09, 'sine', 0.12, 0.09);
+  playTone(300, 820, 0.11, 'triangle', 0.58, 0);
+  playTone(620, 420, 0.09, 'sine', 0.48, 0.09);
 }
 
 export function playDizzySlide(): void {
-  playTone(740, 220, 0.28, 'sine', 0.12);
+  playTone(740, 220, 0.28, 'sine', 0.48);
 }
 
 export function playDiceRattle(): void {
-  playTone(520, 740, 0.045, 'triangle', 0.08, 0);
-  playTone(620, 840, 0.045, 'triangle', 0.08, 0.065);
-  playTone(480, 790, 0.05, 'triangle', 0.09, 0.13);
+  playTone(520, 740, 0.045, 'triangle', 0.38, 0);
+  playTone(620, 840, 0.045, 'triangle', 0.38, 0.065);
+  playTone(480, 790, 0.05, 'triangle', 0.42, 0.13);
 }
 
 export function playReactionChime(): void {
-  playTone(659.25, 659.25, 0.08, 'sine', 0.09, 0);
-  playTone(880, 880, 0.12, 'sine', 0.1, 0.07);
+  playTone(659.25, 659.25, 0.08, 'sine', 0.42, 0);
+  playTone(880, 880, 0.12, 'sine', 0.45, 0.07);
 }
 
 export function playCatMeow(): void {
   // Playful upward-then-sweet-dip kawaii cat "mew~"
-  playTone(540, 920, 0.14, 'triangle', 0.13, 0);
-  playTone(920, 680, 0.18, 'sine', 0.12, 0.11);
+  playTone(540, 920, 0.14, 'triangle', 0.52, 0);
+  playTone(920, 680, 0.18, 'sine', 0.48, 0.11);
 }
 
 export function playCatAngryMeow(): void {
   // Feisty grumpy cat yowl + mini hiss ("Mrrrow~!")
-  playTone(760, 390, 0.13, 'sawtooth', 0.08, 0);
-  playTone(620, 310, 0.16, 'triangle', 0.11, 0.09);
+  playTone(760, 390, 0.13, 'sawtooth', 0.42, 0);
+  playTone(620, 310, 0.16, 'triangle', 0.48, 0.09);
 }
 
 export function playTurnBannerPop(): void {
-  playTone(523.25, 659.25, 0.07, 'sine', 0.06, 0);
-  playTone(783.99, 783.99, 0.09, 'triangle', 0.06, 0.05);
+  playTone(523.25, 659.25, 0.07, 'sine', 0.42, 0);
+  playTone(783.99, 783.99, 0.09, 'triangle', 0.45, 0.05);
 }
 
 export function playTimerTick(): void {
-  playTone(880, 880, 0.03, 'sine', 0.04, 0);
+  playTone(880, 880, 0.03, 'sine', 0.42, 0);
 }
 
 export function playShuffleTick(stepIndex = 0): void {
   const baseFreq = stepIndex % 2 === 0 ? 587.33 : 698.46;
-  playTone(baseFreq, baseFreq * 1.12, 0.055, 'triangle', 0.095, 0);
+  playTone(baseFreq, baseFreq * 1.12, 0.055, 'triangle', 0.42, 0);
 }
 
 export function playPowerupReveal(): void {
   const notes = [587.33, 739.99, 880, 1174.66];
   notes.forEach((freq, idx) => {
-    playTone(freq, freq * 1.03, 0.13, 'triangle', 0.12, idx * 0.065);
+    playTone(freq, freq * 1.03, 0.13, 'triangle', 0.48, idx * 0.065);
   });
 }
 
 export function playComboFanfare(comboCount: number): void {
   const base = 440 + Math.min(4, comboCount) * 80;
-  playTone(base, base * 1.25, 0.11, 'triangle', 0.14, 0);
-  playTone(base * 1.25, base * 1.5, 0.12, 'triangle', 0.15, 0.08);
-  playTone(base * 1.5, base * 2, 0.18, 'sine', 0.15, 0.16);
+  playTone(base, base * 1.25, 0.11, 'triangle', 0.48, 0);
+  playTone(base * 1.25, base * 1.5, 0.12, 'triangle', 0.50, 0.08);
+  playTone(base * 1.5, base * 2, 0.18, 'sine', 0.52, 0.16);
 }
 
 export function playAscensionChime(): void {
   // Celestial royal evolution arpeggio
   const notes = [523.25, 659.25, 783.99, 987.77, 1046.5, 1318.5];
   notes.forEach((freq, idx) => {
-    playTone(freq, freq * 1.01, 0.18, 'triangle', 0.13, idx * 0.07);
+    playTone(freq, freq * 1.01, 0.18, 'triangle', 0.48, idx * 0.07);
   });
 }
 
@@ -305,43 +325,43 @@ export function playVictoryFanfare(): void {
     [1318.5, 0.32, 0.72],
   ];
   fanfare.forEach(([freq, dur, delay]) => {
-    playTone(freq, freq * 1.015, dur, 'triangle', 0.14, delay);
+    playTone(freq, freq * 1.015, dur, 'triangle', 0.50, delay);
   });
 }
 
 export function playCardPlay(): void {
-  playTone(520, 780, 0.065, 'sine', 0.11, 0);
-  playTone(780, 1040, 0.05, 'triangle', 0.09, 0.04);
+  playTone(520, 780, 0.065, 'sine', 0.45, 0);
+  playTone(780, 1040, 0.05, 'triangle', 0.42, 0.04);
 }
 
 export function playDoodleStrokePop(): void {
-  playTone(480, 580, 0.04, 'triangle', 0.08, 0);
+  playTone(480, 580, 0.04, 'triangle', 0.35, 0);
 }
 
 export function playDoodleCorrectGuess(): void {
-  playTone(523.25, 659.25, 0.08, 'triangle', 0.12, 0);
-  playTone(659.25, 783.99, 0.09, 'sine', 0.13, 0.06);
-  playTone(783.99, 1046.5, 0.16, 'sine', 0.15, 0.13);
+  playTone(523.25, 659.25, 0.08, 'triangle', 0.48, 0);
+  playTone(659.25, 783.99, 0.09, 'sine', 0.50, 0.06);
+  playTone(783.99, 1046.5, 0.16, 'sine', 0.55, 0.13);
   playCatMeow();
 }
 
 export function playDoodleWrongGuess(): void {
-  playTone(340, 260, 0.12, 'sawtooth', 0.08, 0);
+  playTone(340, 260, 0.12, 'sawtooth', 0.45, 0);
 }
 
 export function playDoodleClear(): void {
-  playTone(640, 320, 0.14, 'sine', 0.1, 0);
+  playTone(640, 320, 0.14, 'sine', 0.45, 0);
 }
 
 export function playRouletteTick(pitchMultiplier = 1): void {
   const base = 880 * pitchMultiplier;
-  playTone(base, base * 1.08, 0.035, 'square', 0.08, 0);
+  playTone(base, base * 1.08, 0.035, 'square', 0.45, 0);
 }
 
 export function playTimesUpAlarm(): void {
   // Classic ringing wake-up / turn chime alarm
-  playTone(880, 880, 0.11, 'square', 0.15, 0);
-  playTone(1174, 1174, 0.12, 'square', 0.16, 0.12);
-  playTone(880, 880, 0.11, 'square', 0.15, 0.25);
-  playTone(1174, 1174, 0.18, 'square', 0.17, 0.38);
+  playTone(880, 880, 0.11, 'square', 0.55, 0);
+  playTone(1174, 1174, 0.12, 'square', 0.58, 0.12);
+  playTone(880, 880, 0.11, 'square', 0.55, 0.25);
+  playTone(1174, 1174, 0.18, 'square', 0.60, 0.38);
 }

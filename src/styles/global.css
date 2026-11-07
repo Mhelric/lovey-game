@@ -4216,13 +4216,15 @@ body,
 }
 
 .doodle-stage-container {
-  width: min(100vw - 16px, 100dvh - 188px);
-  height: min(100vw - 16px, 100dvh - 188px);
+  width: min(100vw - 16px, 440px);
+  height: 100%;
+  max-height: min(100dvh - 116px, 520px);
   max-width: 440px;
-  max-height: 440px;
   position: relative;
   user-select: none;
   touch-action: manipulation;
+  flex-shrink: 1;
+  min-height: 0;
 }
 
 .doodle-table-stage {
@@ -4346,9 +4348,11 @@ body,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 6px;
+  padding: 8px 10px;
   width: 100%;
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .doodle-phase-heading {
@@ -4368,7 +4372,7 @@ body,
 }
 
 .doodle-phase-desc {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: rgba(91, 42, 78, 0.7);
   margin: 0;
@@ -4377,24 +4381,26 @@ body,
 .doodle-word-choices-grid {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   width: 100%;
-  max-width: 250px;
+  max-width: 280px;
 }
 
 .doodle-word-choice-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
-  padding: 7px 10px;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 12px;
   background: #ffffff;
   border: 2.5px solid var(--ink);
   border-radius: 14px;
   box-shadow: 0 3px 0 var(--ink);
   cursor: pointer;
   touch-action: manipulation;
-  min-height: 44px;
+  min-height: 46px;
+  box-sizing: border-box;
 }
 
 .doodle-word-cat-badge {
@@ -4404,7 +4410,8 @@ body,
   color: #7C3AED;
   background: #EDE9FE;
   border-radius: 999px;
-  padding: 1px 6px;
+  padding: 1px 7px;
+  line-height: 1.3;
 }
 
 .doodle-word-text {
@@ -4412,6 +4419,7 @@ body,
   font-size: 13.5px;
   font-weight: 800;
   color: var(--ink);
+  letter-spacing: 0.5px;
 }
 
 .doodle-word-hint-text {
@@ -5253,4 +5261,63 @@ body,
   color: #B45309;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* ==========================================================================
+   KAWAII POPUP MODAL BUTTONS (Crisp, High Contrast, Perfectly Aligned)
+   ========================================================================== */
+.popup-btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.popup-btn-row.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popup-btn-primary,
+.popup-btn-secondary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.popup-btn-primary {
+  background: linear-gradient(180deg, #FF7AA5 0%, #FF5C8F 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(91, 42, 78, 0.35);
+}
+
+.popup-btn-secondary {
+  background: #FFF8F2;
+  color: var(--ink);
+}
+
+.popup-btn-primary:active,
+.popup-btn-secondary:active {
+  transform: translate3d(0, 3px, 0);
+  box-shadow: 0 1px 0 var(--ink);
 }

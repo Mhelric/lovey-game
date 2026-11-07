@@ -107,26 +107,46 @@ export function DoodleBoardView({
   const diffInfo = getDoodleDifficultyInfo(gameState.round);
   const guessesLeft = gameState.guessesLeft ?? DOODLE_MAX_GUESSES;
 
-  // 1-Phone Handover Pause & Alarm states
-  const [drawerHandoverLeft, setDrawerHandoverLeft] = useState<number | null>(null);
+  // 1-Phone Handover Pause before Word Selection & Alarm states
+  const [prePickHandoverActive, setPrePickHandoverActive] = useState<boolean>(
+    () => passAndPlay && gameState.phase === 'word_selection'
+  );
+  const [prePickCountdown, setPrePickCountdown] = useState<number>(10);
   const [guesserHandoverModal, setGuesserHandoverModal] = useState<boolean>(false);
   const prevPhaseRef = useRef(gameState.phase);
+  const prevRoundRef = useRef(gameState.round);
 
-  // Trigger 10s handover countdown for Drawer when entering 'drawing' in 1-Phone Pass & Play
+  // Trigger 10s handover privacy curtain for Drawer when starting word_selection in 1-Phone Pass & Play
   useEffect(() => {
-    if (passAndPlay && gameState.phase === 'drawing' && prevPhaseRef.current !== 'drawing') {
-      setDrawerHandoverLeft(10);
+    if (
+      passAndPlay &&
+      gameState.phase === 'word_selection' &&
+      (prevPhaseRef.current !== 'word_selection' || prevRoundRef.current !== gameState.round)
+    ) {
+      setPrePickHandoverActive(true);
+      setPrePickCountdown(10);
     }
-  }, [passAndPlay, gameState.phase]);
+    prevRoundRef.current = gameState.round;
+  }, [passAndPlay, gameState.phase, gameState.round]);
 
-  // Decrement 10s handover countdown
+  // Decrement 10s pre-pick countdown
   useEffect(() => {
-    if (drawerHandoverLeft === null || drawerHandoverLeft <= 0) return;
+    if (!prePickHandoverActive) return;
+    if (prePickCountdown <= 0) {
+      setPrePickHandoverActive(false);
+      return;
+    }
     const t = window.setInterval(() => {
-      setDrawerHandoverLeft((prev) => (prev !== null && prev > 1 ? prev - 1 : null));
+      setPrePickCountdown((prev) => {
+        if (prev <= 1) {
+          setPrePickHandoverActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => window.clearInterval(t);
-  }, [drawerHandoverLeft]);
+  }, [prePickHandoverActive, prePickCountdown]);
 
   // Alarm sound & Guesser handover modal when drawing ends and guessing begins
   useEffect(() => {
@@ -140,10 +160,8 @@ export function DoodleBoardView({
   }, [gameState.phase, passAndPlay]);
 
   // 60s Drawing Timer tick effect: Drawer ticks the timer (or P1 in passAndPlay)
-  // Only ticks when not in the 10s handover pause
   useEffect(() => {
     if (gameState.phase !== 'drawing') return;
-    if (passAndPlay && drawerHandoverLeft !== null && drawerHandoverLeft > 0) return;
     const isMasterTick = passAndPlay ? mySlot === 'p1' : mySlot === gameState.drawerSlot;
     if (!isMasterTick) return;
 
@@ -152,7 +170,7 @@ export function DoodleBoardView({
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [gameState, mySlot, passAndPlay, drawerHandoverLeft, onCommitState]);
+  }, [gameState, mySlot, passAndPlay, onCommitState]);
 
   // Clear active touch state if phase leaves 'drawing'
   useEffect(() => {
@@ -295,7 +313,7 @@ export function DoodleBoardView({
   const guideInnerRadius = Math.max(3.5, effectiveBrushWidth / 2);
 
   return (
-    <div className="dama-stage-container doodle-stage-container">
+    <div className="doodle-stage-container">
       <div className="board-stage sticker-board-frame doodle-table-stage">
         <div className="doodle-table-inner">
           {/* Top Scoreboard & Round Difficulty Header Bar */}
@@ -345,7 +363,37 @@ export function DoodleBoardView({
           {/* Phase 1: Word Selection */}
           {gameState.phase === 'word_selection' ? (
             <div className="doodle-phase-card anim-fade-scale">
-              {isDrawer ? (
+              {passAndPlay && prePickHandoverActive ? (
+                <div className="doodle-handover-card anim-fade-scale" style={{ maxWidth: '300px' }}>
+                  <div className="doodle-handover-avatar">
+                    <CatAvatarSvg
+                      breed={drawerAvatar.breed}
+                      accessory={drawerAvatar.accessory}
+                      size={56}
+                    />
+                  </div>
+                  <h3 className="doodle-handover-title">
+                    Pass Phone to {drawerName}!
+                  </h3>
+                  <p className="doodle-handover-desc">
+                    {drawerName} is picking the secret word for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
+                  </p>
+                  <div className="popup-btn-row stacked">
+                    <button
+                      type="button"
+                      className="popup-btn-primary"
+                      onClick={() => {
+                        playTapPop();
+                        setPrePickHandoverActive(false);
+                      }}
+                      autoFocus
+                    >
+                      <span>I am {drawerName} — Pick Secret Word</span>
+                      <PencilIcon size={16} />
+                    </button>
+                  </div>
+                </div>
+              ) : isDrawer ? (
                 <>
                   <div className="doodle-phase-heading">
                     <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
@@ -782,32 +830,6 @@ export function DoodleBoardView({
           )}
         </div>
 
-        {/* 1-Phone Mode 10s Handover Overlay for Drawer */}
-        {passAndPlay && drawerHandoverLeft !== null && drawerHandoverLeft > 0 && (
-          <div className="doodle-handover-modal-backdrop">
-            <div className="doodle-handover-card anim-fade-scale">
-              <div className="doodle-handover-avatar">
-                <CatAvatarSvg breed={drawerAvatar.breed} accessory={drawerAvatar.accessory} size={56} />
-              </div>
-              <h3 className="doodle-handover-title">Hand phone to {drawerName}!</h3>
-              <p className="doodle-handover-desc">
-                Drawer gets ready to sketch in secret! Starting in <strong>{drawerHandoverLeft}s</strong>...
-              </p>
-              <button
-                type="button"
-                className="vibrant-play-btn sticker-press"
-                onClick={() => {
-                  playTapPop();
-                  setDrawerHandoverLeft(null);
-                }}
-              >
-                <span>I Have the Phone • Start Drawing</span>
-                <PencilIcon size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* 1-Phone Mode Handover Overlay for Guesser when 60s drawing timer finishes */}
         {passAndPlay && guesserHandoverModal && (
           <div className="doodle-handover-modal-backdrop">
@@ -823,17 +845,20 @@ export function DoodleBoardView({
               <p className="doodle-handover-desc">
                 Drawing phase is finished! {guesserName} has <strong>3 tries</strong> to guess what was drawn!
               </p>
-              <button
-                type="button"
-                className="vibrant-play-btn sticker-press"
-                onClick={() => {
-                  playTapPop();
-                  setGuesserHandoverModal(false);
-                }}
-              >
-                <span>I Have the Phone • Guess Now!</span>
-                <SparkleIcon size={16} />
-              </button>
+              <div className="popup-btn-row stacked">
+                <button
+                  type="button"
+                  className="popup-btn-primary"
+                  onClick={() => {
+                    playTapPop();
+                    setGuesserHandoverModal(false);
+                  }}
+                  autoFocus
+                >
+                  <span>I am {guesserName} — Ready to Guess</span>
+                  <SparkleIcon size={16} />
+                </button>
+              </div>
             </div>
           </div>
         )}

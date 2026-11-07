@@ -2051,18 +2051,10 @@ export function App() {
               <strong style={{ color: 'var(--brand-coral)' }}>{roomCode}</strong>.
               Rejoin now to continue where you left off!
             </p>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                width: '100%',
-              }}
-            >
+            <div className="popup-btn-row stacked">
               <button
                 type="button"
-                className="vibrant-play-btn sticker-press"
-                style={{ width: '100%', minHeight: '44px' }}
+                className="popup-btn-primary"
                 onClick={() => {
                   playTapPop();
                   setRejoinPromptOpen(false);
@@ -2075,12 +2067,7 @@ export function App() {
               </button>
               <button
                 type="button"
-                className="room-btn-secondary sticker-press"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '13px',
-                }}
+                className="popup-btn-secondary"
                 onClick={() => {
                   playTapPop();
                   setRejoinPromptOpen(false);
@@ -2136,18 +2123,10 @@ export function App() {
               Your partner has disconnected or returned to the home screen. You can
               wait here for them to reconnect, or return to the menu!
             </p>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                width: '100%',
-              }}
-            >
+            <div className="popup-btn-row stacked">
               <button
                 type="button"
-                className="vibrant-play-btn sticker-press"
-                style={{ width: '100%', minHeight: '44px' }}
+                className="popup-btn-primary"
                 onClick={() => {
                   playTapPop();
                   setPartnerLeftModalOpen(false);
@@ -2159,12 +2138,7 @@ export function App() {
               </button>
               <button
                 type="button"
-                className="room-btn-secondary sticker-press"
-                style={{
-                  width: '100%',
-                  minHeight: '40px',
-                  fontSize: '13px',
-                }}
+                className="popup-btn-secondary"
                 onClick={() => {
                   playTapPop();
                   setPartnerLeftModalOpen(false);
@@ -2210,19 +2184,20 @@ export function App() {
               You were removed from the room by the host. You can re-enter the
               room code anytime to rejoin and continue the match!
             </p>
-            <button
-              type="button"
-              className="vibrant-play-btn sticker-press"
-              style={{ width: '100%', minHeight: '44px' }}
-              onClick={() => {
-                playTapPop();
-                setKickedModalOpen(false);
-              }}
-              autoFocus
-            >
-              <span>Understood</span>
-              <PawIcon size={15} />
-            </button>
+            <div className="popup-btn-row stacked">
+              <button
+                type="button"
+                className="popup-btn-primary"
+                onClick={() => {
+                  playTapPop();
+                  setKickedModalOpen(false);
+                }}
+                autoFocus
+              >
+                <span>Understood</span>
+                <PawIcon size={15} />
+              </button>
+            </div>
           </div>
         </div>
       )}
