@@ -14,7 +14,6 @@ import {
   CopyIcon,
   CrownIcon,
   EditPenIcon,
-  KittyBluffIcon,
   LoveyLogoWordmarkSvg,
   PawIcon,
   SettingsGearIcon,
@@ -36,7 +35,6 @@ interface HomeMenuViewProps {
   hasSavedDama: boolean;
   hasSavedSnakes: boolean;
   hasSavedUno?: boolean;
-  hasSavedBluff?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   onOpenSettings: () => void;
@@ -63,7 +61,6 @@ export function HomeMenuView({
   hasSavedDama,
   hasSavedSnakes,
   hasSavedUno = false,
-  hasSavedBluff = false,
   savedSnakesMaxTile,
   chatMessages,
   onOpenSettings,
@@ -102,25 +99,19 @@ export function HomeMenuView({
   const isHost = mySlot === 'p1';
   // Only have the resume button when the player is in a room where the host has a past game saved
   const hasSavedAny =
-    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno || hasSavedBluff);
+    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno);
   const activeSavedMode: GameMode =
-    roomData.current_mode === 'bluff' && hasSavedBluff
-      ? 'bluff'
-      : roomData.current_mode === 'uno' && hasSavedUno
+    roomData.current_mode === 'uno' && hasSavedUno
       ? 'uno'
       : roomData.current_mode === 'snakes' && hasSavedSnakes
       ? 'snakes'
       : hasSavedDama
       ? 'dama'
-      : hasSavedBluff
-      ? 'bluff'
       : hasSavedUno
       ? 'uno'
       : 'snakes';
   const savedGameLabel =
-    activeSavedMode === 'bluff'
-      ? 'Kitty Bluff'
-      : activeSavedMode === 'uno'
+    activeSavedMode === 'uno'
       ? 'Cat Uno'
       : activeSavedMode === 'snakes'
       ? `Snakes (${savedSnakesMaxTile})`
@@ -704,25 +695,7 @@ export function HomeMenuView({
                 </span>
               </button>
 
-              {/* 3. Kitty Bluff Card */}
-              <button
-                type="button"
-                className="game-pick-btn bluff-pick sticker-press"
-                onClick={() => {
-                  setPickingGame(false);
-                  onHostLaunchGame('bluff', !p2Online);
-                }}
-              >
-                <KittyBluffIcon size={26} />
-                <span className="role-main-label">Kitty Bluff</span>
-                <span className="role-sub-label">
-                  {hasSavedBluff && isJoined
-                    ? 'Resume Saved Match'
-                    : "Playful Liar's Duel"}
-                </span>
-              </button>
-
-              {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
+              {/* 3. Snakes & Ladders Card with 100 / 150 Mode Switch */}
               <div className="game-pick-btn snakes-pick-card">
                 <button
                   type="button"

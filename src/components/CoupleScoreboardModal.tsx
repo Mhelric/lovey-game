@@ -5,7 +5,6 @@ import {
   CloseIcon,
   CrownIcon,
   DoubleHeartIcon,
-  KittyBluffIcon,
   SnakeLadderIcon,
   SparkleIcon,
   TrophyIcon,
@@ -40,13 +39,11 @@ export function CoupleScoreboardModal({
   const p1Total =
     (roomData.p1_dama_wins || 0) +
     (roomData.p1_snakes_wins || 0) +
-    (roomData.p1_uno_wins || 0) +
-    (roomData.p1_bluff_wins || 0);
+    (roomData.p1_uno_wins || 0);
   const p2Total =
     (roomData.p2_dama_wins || 0) +
     (roomData.p2_snakes_wins || 0) +
-    (roomData.p2_uno_wins || 0) +
-    (roomData.p2_bluff_wins || 0);
+    (roomData.p2_uno_wins || 0);
 
   const p1DisplayName = roomData.p1_avatar.name || 'Lovey 1';
   const p2DisplayName =
@@ -115,8 +112,7 @@ export function CoupleScoreboardModal({
             <span className="score-breakdown">
               <CrownIcon size={12} /> {roomData.p1_dama_wins || 0} •{' '}
               <SnakeLadderIcon size={12} /> {roomData.p1_snakes_wins || 0} •{' '}
-              <UnoCardsIcon size={12} /> {roomData.p1_uno_wins || 0} •{' '}
-              <KittyBluffIcon size={12} /> {roomData.p1_bluff_wins || 0}
+              <UnoCardsIcon size={12} /> {roomData.p1_uno_wins || 0}
             </span>
           </div>
 
@@ -143,8 +139,7 @@ export function CoupleScoreboardModal({
             <span className="score-breakdown">
               <CrownIcon size={12} /> {roomData.p2_dama_wins || 0} •{' '}
               <SnakeLadderIcon size={12} /> {roomData.p2_snakes_wins || 0} •{' '}
-              <UnoCardsIcon size={12} /> {roomData.p2_uno_wins || 0} •{' '}
-              <KittyBluffIcon size={12} /> {roomData.p2_bluff_wins || 0}
+              <UnoCardsIcon size={12} /> {roomData.p2_uno_wins || 0}
             </span>
           </div>
         </div>
@@ -172,8 +167,6 @@ export function CoupleScoreboardModal({
                         <CrownIcon size={16} />
                       ) : item.game_mode === 'uno' ? (
                         <UnoCardsIcon size={16} />
-                      ) : item.game_mode === 'bluff' ? (
-                        <KittyBluffIcon size={16} />
                       ) : (
                         <SnakeLadderIcon size={16} />
                       )}

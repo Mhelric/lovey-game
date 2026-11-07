@@ -110,8 +110,6 @@ export async function fetchOrCreateCoupleRoom(roomCode: string): Promise<CoupleR
     p2_snakes_wins: 0,
     p1_uno_wins: 0,
     p2_uno_wins: 0,
-    p1_bluff_wins: 0,
-    p2_bluff_wins: 0,
     current_mode: 'dama',
     updated_at: new Date().toISOString(),
   };
@@ -236,9 +234,6 @@ export async function recordMatchWinInDb(
   } else if (gameMode === 'uno') {
     if (winner === 'p1') patchBody.p1_uno_wins = (room.p1_uno_wins || 0) + 1;
     else patchBody.p2_uno_wins = (room.p2_uno_wins || 0) + 1;
-  } else if (gameMode === 'bluff') {
-    if (winner === 'p1') patchBody.p1_bluff_wins = (room.p1_bluff_wins || 0) + 1;
-    else patchBody.p2_bluff_wins = (room.p2_bluff_wins || 0) + 1;
   }
 
   try {
@@ -318,7 +313,6 @@ export type RealtimeBroadcastEvent =
       damaState: unknown;
       snakesState: unknown;
       unoState?: unknown;
-      bluffState?: unknown;
       currentMode: GameMode;
       isPlaying: boolean;
       timerConfig?: { enabled: boolean; durationSec: number };
