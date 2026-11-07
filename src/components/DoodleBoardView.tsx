@@ -316,7 +316,7 @@ export function DoodleBoardView({
 
   return (
     <div className="doodle-stage-container">
-      <div className="board-stage sticker-board-frame doodle-table-stage">
+      <div className="doodle-table-stage">
         <div className="doodle-table-inner">
           {/* Top Scoreboard & Round Difficulty Header Bar */}
           <div className="doodle-header-bar">
