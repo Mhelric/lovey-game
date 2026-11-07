@@ -38,10 +38,12 @@ export interface DoodleGuessAttempt {
   timestamp: number;
 }
 
+export const DOODLE_TOTAL_ROUNDS = 8;
+
 export interface DoodleGameState {
   matchSeed: number;
-  round: number; // 1 to 4 (Easy -> Medium -> Hard -> Final)
-  totalRounds: number; // 4
+  round: number; // 1 to 8 (2 Easy -> 2 Medium -> 2 Hard -> 2 Final)
+  totalRounds: number; // 8
   difficulty: DoodleDifficulty;
   phase: 'word_selection' | 'drawing' | 'guessing' | 'round_summary' | 'game_over';
   drawerSlot: PlayerSlot;
@@ -92,9 +94,9 @@ export function getDoodleDifficultyInfo(round: number): {
   id: DoodleDifficulty;
   label: string;
 } {
-  if (round === 1) return { id: 'easy', label: 'Easy' };
-  if (round === 2) return { id: 'medium', label: 'Medium' };
-  if (round === 3) return { id: 'hard', label: 'Hard' };
+  if (round <= 2) return { id: 'easy', label: 'Easy' };
+  if (round <= 4) return { id: 'medium', label: 'Medium' };
+  if (round <= 6) return { id: 'hard', label: 'Hard' };
   return { id: 'final', label: 'Final' };
 }
 
@@ -212,7 +214,7 @@ export function createInitialDoodleState(
   return {
     matchSeed: seed,
     round: 1,
-    totalRounds: 4,
+    totalRounds: DOODLE_TOTAL_ROUNDS,
     difficulty,
     phase: 'word_selection',
     drawerSlot: startingDrawer,
@@ -459,7 +461,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
   if (state.phase !== 'round_summary') return state;
 
   if (state.round >= state.totalRounds) {
-    // 4-round match finished! Highest score wins the Cat Doodle Trophy.
+    // 8-round match finished (2 Easy, 2 Medium, 2 Hard, 2 Final)! Highest score wins the Cat Doodle Trophy.
     let winner: PlayerSlot | 'draw' | null = null;
     if (state.p1Score > state.p2Score) winner = 'p1';
     else if (state.p2Score > state.p1Score) winner = 'p2';

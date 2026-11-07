@@ -1903,7 +1903,7 @@ export function App() {
                         active ? 'active-turn' : 'dim-turn'
                       }`}
                     >
-                      {active && (
+                      {active && roomData.current_mode !== 'doodle' && (
                         <span
                           className={`turn-speech-bubble ${
                             timerEnabled && timeRemaining <= 5

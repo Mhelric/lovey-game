@@ -817,7 +817,7 @@ export function CatCustomizerModal({
                     color="gold"
                     icon={<SparkleIcon size={16} />}
                     title="+2 / +1 Point Duel for the Cat Doodle Trophy"
-                    desc="If the Guesser gets it right in 3 tries: Guesser +2 pts, Drawer +1 pt. If all 3 tries miss: Drawer +2 pts! Highest score after 4 rounds wins."
+                    desc="If the Guesser gets it right in 3 tries: Guesser +2 pts, Drawer +1 pt. If all 3 tries miss: Drawer +2 pts! Highest score after 8 rounds (2 Easy, 2 Medium, 2 Hard, 2 Final) wins the trophy."
                   />
                 </div>
               </div>

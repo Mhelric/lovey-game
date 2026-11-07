@@ -90,7 +90,7 @@ const DOODLE_STEPS: readonly TutorialStep[] = [
     title: 'Win the Cat Doodle Trophy',
     description:
       'Correct guess within 3 tries: Guesser gets +2 pts & Drawer gets +1 pt. If all 3 guesses miss: Drawer gets +2 pts!',
-    tip: 'Highest score after all 4 rounds (Easy, Medium, Hard, Final) wins the Cat Doodle Trophy!',
+    tip: 'Highest score after all 8 rounds (2 Easy, 2 Medium, 2 Hard, 2 Final) wins the Cat Doodle Trophy!',
   },
 ];
 
