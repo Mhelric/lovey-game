@@ -55,7 +55,7 @@ interface DoodleBoardViewProps {
 }
 
 const SVG_VIEW_W = 800;
-const SVG_VIEW_H = 1200;
+const SVG_VIEW_H = 1000;
 
 function pointsToSvgPath(points: DoodlePoint[]): string {
   if (points.length === 0) return '';

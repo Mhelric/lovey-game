@@ -494,11 +494,14 @@ body,
   width: min(calc(100vw - 12px), 480px);
   margin-inline: auto;
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   gap: 4px;
+  overflow: hidden;
 }
 
 .ingame-top-bar {
@@ -530,10 +533,11 @@ body,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  max-height: 100%;
   width: 100%;
-  height: 100%;
+  overflow: hidden;
 }
 
 .dama-stage-container {
@@ -5302,13 +5306,15 @@ body,
   width: 100%;
   max-width: 480px;
   height: 100%;
-  flex: 1;
+  max-height: 100%;
+  flex: 1 1 0;
   min-height: 0;
   position: relative;
   user-select: none;
   touch-action: manipulation;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .doodle-table-stage,
@@ -5317,29 +5323,32 @@ body,
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
-  border-radius: 24px;
+  border-radius: 20px;
   border: 3.5px solid var(--ink);
-  box-shadow: 0 6px 0 var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
   background: #FAF5FF;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .doodle-table-inner {
   width: 100%;
   height: 100%;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 6px 8px;
+  padding: 5px 6px;
   box-sizing: border-box;
   position: relative;
-  gap: 4px;
+  gap: 3px;
+  overflow: hidden;
 }
 
 .doodle-header-bar {
@@ -5556,13 +5565,16 @@ body,
 
 /* Phase 2: Drawing & Canvas */
 .doodle-canvas-container {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   width: 100%;
-  gap: 5px;
+  height: 100%;
+  max-height: 100%;
+  gap: 3px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .doodle-word-banner {
@@ -5570,7 +5582,7 @@ body,
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 26px;
+  min-height: 24px;
   flex-shrink: 0;
 }
 
@@ -5579,18 +5591,18 @@ body,
   align-items: center;
   gap: 5px;
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   color: var(--ink);
   background: #EDE9FE;
   border: 1.5px solid var(--ink);
   border-radius: 999px;
-  padding: 2px 10px;
+  padding: 1px 9px;
   box-shadow: 0 1.5px 0 var(--ink);
 }
 
 .doodle-banner-label {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 900;
   color: #7C3AED;
 }
@@ -5601,7 +5613,7 @@ body,
 }
 
 .doodle-banner-cat {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   color: #6D28D9;
 }
@@ -5617,47 +5629,51 @@ body,
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   color: #7C3AED;
 }
 
 .doodle-letter-count {
-  font-size: 9.5px;
+  font-size: 9px;
   color: rgba(91, 42, 78, 0.7);
 }
 
 .doodle-masked-blanks {
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 900;
-  letter-spacing: 3px;
+  letter-spacing: 2.5px;
   color: var(--ink);
   text-shadow: 0 1px 0 #ffffff;
 }
 
 .doodle-canvas-frame {
-  flex: 1;
+  flex: 1 1 0;
   width: 100%;
   height: 100%;
+  min-height: 0;
   position: relative;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 2.5px solid var(--ink);
   background: #FFFDF9;
-  box-shadow: 0 3px 0 var(--ink);
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 0 2.5px 0 var(--ink);
   overflow: hidden;
   touch-action: none;
+  display: block;
+  box-sizing: border-box;
 }
 
 .doodle-drawing-svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   touch-action: none;
   cursor: default;
+  display: block;
 }
 
 .doodle-drawing-svg.can-draw {
@@ -5705,7 +5721,7 @@ body,
 .doodle-drawer-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   flex-shrink: 0;
 }
@@ -5713,13 +5729,13 @@ body,
 .doodle-palette-row {
   display: flex;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   width: 100%;
 }
 
 .doodle-color-btn {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   border: 2px solid var(--ink);
   cursor: pointer;
@@ -5730,7 +5746,7 @@ body,
 }
 
 .doodle-color-btn.active {
-  transform: scale(1.18);
+  transform: scale(1.15);
   box-shadow: 0 1.5px 0 var(--ink), 0 0 0 2px #A78BFA;
 }
 
@@ -5739,7 +5755,7 @@ body,
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 4px;
+  gap: 3px;
 }
 
 .doodle-tool-group {
@@ -5749,9 +5765,9 @@ body,
 }
 
 .doodle-tool-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   border: 2px solid var(--ink);
   background: #ffffff;
   color: var(--ink);
@@ -5778,9 +5794,9 @@ body,
 }
 
 .doodle-size-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   border: 1.5px solid var(--ink);
   background: #ffffff;
   display: flex;
@@ -5806,7 +5822,7 @@ body,
 .doodle-guesser-deck {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
   flex-shrink: 0;
 }
@@ -5822,36 +5838,36 @@ body,
 .doodle-tries-outside-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #DC2626;
   background: #FEE2E2;
   border: 1.5px solid var(--ink);
   border-radius: 999px;
-  padding: 2px 9px;
-  box-shadow: 0 1.5px 0 var(--ink);
+  padding: 1px 7px;
+  box-shadow: 0 1px 0 var(--ink);
 }
 
 .doodle-guesser-form {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
-  min-height: 42px;
+  min-height: 38px;
 }
 
 .doodle-guess-input {
   flex: 1;
   min-width: 0;
-  height: 42px;
-  border-radius: 14px;
+  height: 38px;
+  border-radius: 12px;
   border: 2.5px solid var(--ink);
   background: #ffffff;
-  padding: 0 12px;
+  padding: 0 10px;
   font-family: var(--font-display);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
   box-shadow: 0 2px 0 var(--ink);
@@ -5862,13 +5878,73 @@ body,
 
 .doodle-send-guess-btn {
   flex-shrink: 0;
-  min-width: 80px;
-  height: 42px;
-  padding: 0 16px;
+  min-width: 72px;
+  height: 38px;
+  padding: 0 12px;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
-  border-radius: 14px;
+  border-radius: 12px;
+}
+
+/* Short-Screen Ergonomic Media Query for Samsung Galaxy J2 Pro (360x640) */
+@media (max-height: 680px) {
+  .doodle-table-inner {
+    padding: 3px 5px !important;
+    gap: 2px !important;
+  }
+  .doodle-header-bar {
+    padding: 1px 2px 2px !important;
+  }
+  .doodle-player-name {
+    max-width: 66px !important;
+    font-size: 10px !important;
+  }
+  .doodle-round-title {
+    font-size: 10px !important;
+  }
+  .doodle-timer-pill {
+    font-size: 10.5px !important;
+    padding: 0 5px !important;
+  }
+  .doodle-word-banner {
+    min-height: 22px !important;
+  }
+  .doodle-color-btn {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .doodle-palette-row {
+    gap: 3px !important;
+  }
+  .doodle-tool-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+  }
+  .doodle-size-btn {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .doodle-guesser-form {
+    min-height: 36px !important;
+  }
+  .doodle-guess-input {
+    height: 36px !important;
+    font-size: 12px !important;
+    padding: 0 8px !important;
+  }
+  .doodle-send-guess-btn {
+    height: 36px !important;
+    min-width: 65px !important;
+    font-size: 12px !important;
+    padding: 0 10px !important;
+  }
+  .doodle-phase-status-bar {
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+    min-height: 24px !important;
+  }
 }
 
 /* Dedicated Word Selection Popup Modal */
