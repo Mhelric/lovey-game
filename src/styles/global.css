@@ -13,12 +13,34 @@
   --accent-amber: #FB923C;
   --font-display: 'Baloo 2', system-ui, -apple-system, sans-serif;
   --font-body: 'Quicksand', system-ui, -apple-system, sans-serif;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --board-size: min(
-    calc(100vw - 20px),
-    calc(100dvh - var(--safe-top) - var(--safe-bottom) - 160px)
-  );
+  --safe-top: 0px;
+  --safe-bottom: 0px;
+  --board-size: calc(100vw - 20px);
+}
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@supports (width: min(10px, 20px)) {
+  :root {
+    --board-size: min(
+      calc(100vw - 20px),
+      calc(100vh - var(--safe-top) - var(--safe-bottom) - 160px)
+    );
+  }
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --board-size: min(
+      calc(100vw - 20px),
+      calc(100dvh - var(--safe-top) - var(--safe-bottom) - 160px)
+    );
+  }
 }
 
 *,
@@ -35,7 +57,11 @@ html,
 body,
 #app {
   width: 100%;
+  height: 100%;
+  height: 100vh;
   height: 100dvh;
+  max-height: 100%;
+  max-height: 100vh;
   max-height: 100dvh;
   overflow: hidden;
   background-color: var(--cream);
@@ -53,8 +79,15 @@ body,
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  height: 100%;
+  height: 100vh;
   height: 100dvh;
+  max-height: 100%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  padding-top: 8px;
   padding-top: calc(var(--safe-top) + 8px);
+  padding-bottom: 8px;
   padding-bottom: calc(var(--safe-bottom) + 8px);
   padding-left: 10px;
   padding-right: 10px;
@@ -129,9 +162,14 @@ body,
    HOME & LOBBY SCREEN (STRICTLY CENTERED)
    ========================================================================== */
 .minimal-menu-screen {
+  width: 94vw;
   width: min(94vw, 410px);
-  margin-inline: auto;
+  max-width: 410px;
+  margin-left: auto;
+  margin-right: auto;
+  flex: 1;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -491,17 +529,19 @@ body,
    IN-GAME LAYOUT: TOP BAR + STICKER BOARD + BOTTOM PLAYER DOCK
    ========================================================================== */
 .ingame-screen-layout {
+  width: 100%;
   width: min(calc(100vw - 12px), 480px);
-  margin-inline: auto;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  flex: 1;
   height: 100%;
-  max-height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   gap: 4px;
-  overflow: hidden;
 }
 
 .ingame-top-bar {
@@ -533,11 +573,10 @@ body,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1 1 0;
+  flex: 1;
   min-height: 0;
-  max-height: 100%;
   width: 100%;
-  overflow: hidden;
+  height: 100%;
 }
 
 .dama-stage-container {
@@ -659,6 +698,8 @@ body,
 /* Cohesive Sticker Board Frame with 3.5px Plum Outline */
 .board-stage.sticker-board-frame {
   position: relative;
+  width: calc(100vw - 20px);
+  height: calc(100vw - 20px);
   width: var(--board-size);
   height: var(--board-size);
   max-width: 440px;
@@ -1516,6 +1557,10 @@ body,
    ========================================================================== */
 .modal-backdrop {
   position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   background: rgba(91, 42, 78, 0.55);
   display: flex;
@@ -1532,6 +1577,7 @@ body,
 .modal-card {
   width: 100%;
   max-width: 364px;
+  max-height: calc(100vh - 24px);
   max-height: calc(100dvh - 24px);
   background: #FFF8F4;
   border: 3.5px solid var(--ink);
@@ -1582,6 +1628,7 @@ body,
 .cozy-settings-modal {
   width: 100%;
   max-width: 364px;
+  max-height: calc(100vh - 24px);
   max-height: calc(100dvh - 24px);
   background: #FFF8F4;
   border: 3.5px solid var(--ink);
@@ -4351,7 +4398,10 @@ body,
 }
 
 .game-picker-modal-card {
+  width: calc(100vw - 24px);
   width: min(338px, calc(100vw - 24px));
+  max-width: 338px;
+  max-height: calc(100vh - 36px);
   max-height: calc(100dvh - 36px);
   background: #FFFDF9;
   border: 3px solid var(--ink);
@@ -4570,8 +4620,10 @@ body,
 }
 
 .one-phone-p2-card {
+  width: calc(100vw - 16px);
   width: min(calc(100vw - 16px), 344px);
   max-width: 344px;
+  max-height: calc(100vh - 20px);
   max-height: calc(100dvh - 20px);
   background: #ffffff;
   border: 3.5px solid var(--ink);
@@ -4749,8 +4801,10 @@ body,
 }
 
 .uno-stage-container {
-  width: min(100vw - 16px, 100dvh - 188px);
-  height: min(100vw - 16px, 100dvh - 188px);
+  width: calc(100vw - 16px);
+  height: calc(100vw - 16px);
+  width: var(--board-size);
+  height: var(--board-size);
   max-width: 440px;
   max-height: 440px;
   position: relative;
@@ -5305,9 +5359,11 @@ body,
 .doodle-stage-container {
   width: 100%;
   max-width: 480px;
-  height: 100%;
-  max-height: 100%;
-  flex: 1 1 0;
+  height: calc(100vh - 126px);
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 126px);
+  max-height: calc(100vh - 126px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 126px);
+  flex: 1;
   min-height: 0;
   position: relative;
   user-select: none;
@@ -5323,7 +5379,7 @@ body,
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  flex: 1 1 0;
+  flex: 1;
   min-height: 0;
   border-radius: 20px;
   border: 3.5px solid var(--ink);
@@ -5338,7 +5394,7 @@ body,
 .doodle-table-inner {
   width: 100%;
   height: 100%;
-  flex: 1 1 0;
+  flex: 1;
   min-height: 0;
   max-height: 100%;
   display: flex;
@@ -5565,7 +5621,7 @@ body,
 
 /* Phase 2: Drawing & Canvas */
 .doodle-canvas-container {
-  flex: 1 1 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -5649,10 +5705,13 @@ body,
 }
 
 .doodle-canvas-frame {
-  flex: 1 1 0;
+  flex: 1;
   width: 100%;
-  height: 100%;
-  min-height: 0;
+  height: calc(100vh - 268px);
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 268px);
+  max-height: calc(100vh - 268px);
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 268px);
+  min-height: 140px;
   position: relative;
   border-radius: 14px;
   border: 2.5px solid var(--ink);
@@ -5660,15 +5719,16 @@ body,
   box-shadow: 0 2.5px 0 var(--ink);
   overflow: hidden;
   touch-action: none;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
 }
 
 .doodle-drawing-svg {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
+  max-height: 100%;
   min-width: 0;
   min-height: 0;
   touch-action: none;
@@ -5950,8 +6010,13 @@ body,
 /* Dedicated Word Selection Popup Modal */
 .doodle-word-modal-backdrop {
   position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
   inset: 0 !important;
   width: 100vw !important;
+  height: 100vh !important;
   height: 100dvh !important;
   background: rgba(30, 15, 28, 0.78) !important;
   display: flex !important;
@@ -5981,6 +6046,7 @@ body,
   gap: 12px;
   box-sizing: border-box;
   user-select: none;
+  max-height: calc(100vh - 36px);
   max-height: calc(100dvh - 36px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -6308,8 +6374,13 @@ body,
 /* 1-Phone Doodle Handover Overlays */
 .doodle-handover-modal-backdrop {
   position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
   inset: 0 !important;
   width: 100vw !important;
+  height: 100vh !important;
   height: 100dvh !important;
   background: rgba(30, 15, 28, 0.78) !important;
   display: flex !important;
