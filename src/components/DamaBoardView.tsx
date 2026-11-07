@@ -56,6 +56,7 @@ function DamaCatToken({
   isJustMoved,
   isJustPromoted,
   isGhostCaptured,
+  flip = false,
 }: {
   piece: DamaPiece;
   avatar: CatAvatarConfig;
@@ -64,9 +65,11 @@ function DamaCatToken({
   isJustMoved: boolean;
   isJustPromoted: boolean;
   isGhostCaptured: boolean;
+  flip?: boolean;
 }) {
   const isP1 = piece.owner === 'p1';
   const isKing = piece.kind === 'dama';
+  const facesUp = flip ? !isP1 : isP1;
 
   const baseWallColor = isP1 ? '#FF6B9A' : '#38BDF8';
   const topDiscColor = isKing ? '#FFFBEB' : isP1 ? '#FFF8F2' : '#F4FAFF';
@@ -216,8 +219,8 @@ function DamaCatToken({
           </>
         )}
 
-        {/* Player Cat Avatar WITH Outfit Accessory (P1 faces upward toward P2, P2 faces downward toward P1) */}
-        <g transform={isP1 ? undefined : 'rotate(180)'}>
+        {/* Player Cat Avatar WITH Outfit Accessory (Facing opponent) */}
+        <g transform={facesUp ? undefined : 'rotate(180)'}>
           <CatAvatarSvg
             breed={avatar.breed}
             accessory={avatar.accessory}
@@ -581,9 +584,10 @@ export function DamaBoardView({
   const lastMoverName =
     gameState.lastAction?.mover === 'p1' ? p1Avatar.name : p2Avatar.name;
 
-  // Fixed authentic tabletop perspective: Board never rotates on turn change.
-  // P1 pieces (bottom) face up; P2 pieces (top) face down towards P1.
-  const flip = false;
+  // Mirrored POV: In 2-phone mode, Player 2's board is mirrored so their own pieces start
+  // at the bottom and advance upward toward Player 1.
+  // In 1-phone mode (pass & play), the board stays fixed so both players share the single screen.
+  const flip = !passAndPlay && mySlot === 'p2';
 
   return (
     <div className="dama-stage-container">
@@ -758,6 +762,7 @@ export function DamaBoardView({
                     isJustMoved={isJustMoved}
                     isJustPromoted={isJustPromoted}
                     isGhostCaptured={isGhostCaptured}
+                    flip={flip}
                   />
                 </g>
               );
