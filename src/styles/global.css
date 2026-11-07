@@ -541,7 +541,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 4px;
 }
@@ -574,18 +574,18 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex: 1;
+  justify-content: flex-start;
+  flex: 0 1 auto;
   min-height: 0;
   width: 100%;
-  max-height: calc(var(--app-height, 100%) - var(--safe-top) - var(--safe-bottom) - 118px);
 }
 
 .dama-stage-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  margin-bottom: 24px;
   position: relative;
   flex-shrink: 0;
 }
@@ -4817,6 +4817,7 @@ body {
   height: var(--board-size);
   max-width: 440px;
   max-height: 440px;
+  margin-bottom: 24px;
   position: relative;
   user-select: none;
   touch-action: manipulation;
@@ -5954,7 +5955,56 @@ body {
 }
 
 /* Short-Screen Ergonomic Media Query for Samsung Galaxy J2 Pro (360x640) */
-@media (max-height: 680px) {
+@media (max-height: 700px) {
+  .arcade-shell {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .ingame-top-bar .icon-circle-btn {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+  .ingame-title-pill {
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 12px !important;
+  }
+  .sticker-dice-hero-btn {
+    min-height: 38px !important;
+    font-size: 12.5px !important;
+    padding: 2px 14px 2px 6px !important;
+  }
+  .dama-stage-container {
+    margin-bottom: 22px !important;
+    gap: 4px !important;
+  }
+  .uno-stage-container {
+    margin-bottom: 22px !important;
+  }
+  .doodle-stage-container {
+    height: 334px !important;
+    max-height: 334px !important;
+    flex: 0 0 auto !important;
+  }
+  .doodle-canvas-frame {
+    height: 186px !important;
+    max-height: 186px !important;
+    min-height: 140px !important;
+  }
+  .ingame-bottom-dock {
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+  .bottom-scoreboard-bar {
+    height: 44px !important;
+  }
+  .turn-speech-bubble {
+    font-size: 12px !important;
+    padding: 3px 9px !important;
+    bottom: calc(100% + 5px) !important;
+  }
   .doodle-table-inner {
     padding: 3px 5px !important;
     gap: 2px !important;
@@ -6010,6 +6060,20 @@ body {
     padding: 2px 6px !important;
     font-size: 10px !important;
     min-height: 24px !important;
+  }
+}
+
+@media (min-height: 701px) {
+  .ingame-screen-layout {
+    justify-content: space-between;
+  }
+  .ingame-board-center {
+    flex: 1;
+    justify-content: center;
+  }
+  .dama-stage-container,
+  .uno-stage-container {
+    margin-bottom: 0;
   }
 }
 
