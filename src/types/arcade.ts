@@ -1,4 +1,4 @@
-export type GameMode = 'dama' | 'snakes' | 'uno';
+export type GameMode = 'dama' | 'snakes' | 'uno' | 'bluff';
 
 export type PlayerSlot = 'p1' | 'p2';
 
@@ -32,6 +32,8 @@ export interface CoupleRoomRow {
   p2_snakes_wins: number;
   p1_uno_wins?: number;
   p2_uno_wins?: number;
+  p1_bluff_wins?: number;
+  p2_bluff_wins?: number;
   current_mode: GameMode;
   updated_at: string;
 }

@@ -9,15 +9,17 @@ import {
 import { CoupleCatsSceneSvg } from './CatAvatarSvg';
 import {
   AlertCircleIcon,
-  ArrowBackIcon,
   CheckCircleIcon,
+  CloseIcon,
   CopyIcon,
   CrownIcon,
   EditPenIcon,
+  KittyBluffIcon,
   LoveyLogoWordmarkSvg,
   PawIcon,
   SettingsGearIcon,
   SnakeLadderIcon,
+  SparkleIcon,
   UnoCardsIcon,
 } from './ArcadeIcons';
 import { QuickChatBar } from './QuickChatBar';
@@ -34,6 +36,7 @@ interface HomeMenuViewProps {
   hasSavedDama: boolean;
   hasSavedSnakes: boolean;
   hasSavedUno?: boolean;
+  hasSavedBluff?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   onOpenSettings: () => void;
@@ -60,6 +63,7 @@ export function HomeMenuView({
   hasSavedDama,
   hasSavedSnakes,
   hasSavedUno = false,
+  hasSavedBluff = false,
   savedSnakesMaxTile,
   chatMessages,
   onOpenSettings,
@@ -97,19 +101,26 @@ export function HomeMenuView({
 
   const isHost = mySlot === 'p1';
   // Only have the resume button when the player is in a room where the host has a past game saved
-  const hasSavedAny = isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno);
+  const hasSavedAny =
+    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno || hasSavedBluff);
   const activeSavedMode: GameMode =
-    roomData.current_mode === 'uno' && hasSavedUno
+    roomData.current_mode === 'bluff' && hasSavedBluff
+      ? 'bluff'
+      : roomData.current_mode === 'uno' && hasSavedUno
       ? 'uno'
       : roomData.current_mode === 'snakes' && hasSavedSnakes
       ? 'snakes'
       : hasSavedDama
       ? 'dama'
+      : hasSavedBluff
+      ? 'bluff'
       : hasSavedUno
       ? 'uno'
       : 'snakes';
   const savedGameLabel =
-    activeSavedMode === 'uno'
+    activeSavedMode === 'bluff'
+      ? 'Kitty Bluff'
+      : activeSavedMode === 'uno'
       ? 'Cat Uno'
       : activeSavedMode === 'snakes'
       ? `Snakes (${savedSnakesMaxTile})`
@@ -582,7 +593,7 @@ export function HomeMenuView({
                 </button>
               </div>
             </div>
-          ) : !pickingGame ? (
+          ) : (
             /* Host clicks Play Game (or Resume Saved Game if a savestate exists!) */
             <div className="host-play-actions-stack">
               {hasSavedAny && (
@@ -599,100 +610,165 @@ export function HomeMenuView({
               <button
                 type="button"
                 className="vibrant-play-btn sticker-press"
-                onClick={() => setPickingGame(true)}
+                onClick={() => {
+                  playTapPop();
+                  setPickingGame(true);
+                }}
               >
                 <span>Play Game</span>
                 <PawIcon size={19} />
               </button>
             </div>
-          ) : (
-            /* Host Game Picker Panel (Dama or Snakes 100 / 150 Tiles) */
-            <div className="flow-step-panel anim-fade-scale">
-              <div className="flow-panel-header">
-                <button
-                  type="button"
-                  className="flow-back-btn sticker-press"
-                  onClick={() => setPickingGame(false)}
-                  aria-label="Back"
-                >
-                  <ArrowBackIcon size={16} />
-                </button>
-                <span className="flow-panel-title">Pick a Game • Host</span>
-                <span className="flow-back-spacer" />
-              </div>
-
-              <div className="role-buttons-grid">
-                {/* Cat Dama Card */}
-                <button
-                  type="button"
-                  className="game-pick-btn dama-pick sticker-press"
-                  onClick={() => onHostLaunchGame('dama', !p2Online, 100)}
-                >
-                  <CrownIcon size={26} />
-                  <span className="role-main-label">Cat Dama</span>
-                  <span className="role-sub-label">
-                    {hasSavedDama && isJoined ? 'Resume Saved Match' : '3D Filipino Checkers'}
-                  </span>
-                </button>
-
-                {/* Cat Uno Card */}
-                <button
-                  type="button"
-                  className="game-pick-btn uno-pick sticker-press"
-                  onClick={() => onHostLaunchGame('uno', !p2Online)}
-                >
-                  <UnoCardsIcon size={26} />
-                  <span className="role-main-label">Cat Uno</span>
-                  <span className="role-sub-label">
-                    {hasSavedUno && isJoined ? 'Resume Saved Match' : '2P Stacking & 7-Swap'}
-                  </span>
-                </button>
-
-                {/* Snakes & Ladders Card with 100 / 150 Mode Switch */}
-                <div className="game-pick-btn snakes-pick-card">
-                  <button
-                    type="button"
-                    className="snakes-launch-hit sticker-press"
-                    onClick={() =>
-                      onHostLaunchGame('snakes', !p2Online, snakesTiles)
-                    }
-                  >
-                    <SnakeLadderIcon size={24} />
-                    <span className="role-main-label">Snakes &amp; Ladders</span>
-                    {hasSavedSnakes && isJoined && savedSnakesMaxTile === snakesTiles && (
-                      <span className="role-sub-label">Resume Saved Match</span>
-                    )}
-                  </button>
-                  <div
-                    className="snakes-mode-pills"
-                    role="group"
-                    aria-label="Board Size"
-                  >
-                    <button
-                      type="button"
-                      className={`snakes-size-pill ${
-                        snakesTiles === 100 ? 'active' : ''
-                      }`}
-                      onClick={() => setSnakesTiles(100)}
-                    >
-                      100 Tiles
-                    </button>
-                    <button
-                      type="button"
-                      className={`snakes-size-pill ${
-                        snakesTiles === 150 ? 'active' : ''
-                      }`}
-                      onClick={() => setSnakesTiles(150)}
-                    >
-                      150 Tiles
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
         </div>
       </div>
+
+      {/* Host Game Picker Pop-Up Modal Window */}
+      {isHost && pickingGame && (
+        <div
+          className="modal-backdrop game-picker-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pick a Game"
+          onClick={() => {
+            playTapPop();
+            setPickingGame(false);
+          }}
+        >
+          <div
+            className="modal-card game-picker-modal-card anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <h2
+                  className="modal-title"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <SparkleIcon size={18} />
+                  <span>Pick a Game</span>
+                </h2>
+                <p className="modal-subtitle">
+                  {isJoined
+                    ? `Playing with ${roomData.p2_avatar.name}`
+                    : 'Choose a game to launch'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="cozy-close-btn"
+                onClick={() => {
+                  playTapPop();
+                  setPickingGame(false);
+                }}
+                aria-label="Close game picker"
+              >
+                <CloseIcon size={15} />
+              </button>
+            </div>
+
+            <div className="role-buttons-grid game-picker-modal-grid">
+              {/* 1. Cat Dama Card */}
+              <button
+                type="button"
+                className="game-pick-btn dama-pick sticker-press"
+                onClick={() => {
+                  setPickingGame(false);
+                  onHostLaunchGame('dama', !p2Online, 100);
+                }}
+              >
+                <CrownIcon size={26} />
+                <span className="role-main-label">Cat Dama</span>
+                <span className="role-sub-label">
+                  {hasSavedDama && isJoined
+                    ? 'Resume Saved Match'
+                    : '3D Filipino Checkers'}
+                </span>
+              </button>
+
+              {/* 2. Cat Uno Card */}
+              <button
+                type="button"
+                className="game-pick-btn uno-pick sticker-press"
+                onClick={() => {
+                  setPickingGame(false);
+                  onHostLaunchGame('uno', !p2Online);
+                }}
+              >
+                <UnoCardsIcon size={26} />
+                <span className="role-main-label">Cat Uno</span>
+                <span className="role-sub-label">
+                  {hasSavedUno && isJoined
+                    ? 'Resume Saved Match'
+                    : '2P Stacking & 7-Swap'}
+                </span>
+              </button>
+
+              {/* 3. Kitty Bluff Card */}
+              <button
+                type="button"
+                className="game-pick-btn bluff-pick sticker-press"
+                onClick={() => {
+                  setPickingGame(false);
+                  onHostLaunchGame('bluff', !p2Online);
+                }}
+              >
+                <KittyBluffIcon size={26} />
+                <span className="role-main-label">Kitty Bluff</span>
+                <span className="role-sub-label">
+                  {hasSavedBluff && isJoined
+                    ? 'Resume Saved Match'
+                    : "Playful Liar's Duel"}
+                </span>
+              </button>
+
+              {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
+              <div className="game-pick-btn snakes-pick-card">
+                <button
+                  type="button"
+                  className="snakes-launch-hit sticker-press"
+                  onClick={() => {
+                    setPickingGame(false);
+                    onHostLaunchGame('snakes', !p2Online, snakesTiles);
+                  }}
+                >
+                  <SnakeLadderIcon size={24} />
+                  <span className="role-main-label">Snakes &amp; Ladders</span>
+                  {hasSavedSnakes &&
+                    isJoined &&
+                    savedSnakesMaxTile === snakesTiles && (
+                      <span className="role-sub-label">Resume Saved Match</span>
+                    )}
+                </button>
+                <div
+                  className="snakes-mode-pills"
+                  role="group"
+                  aria-label="Board Size"
+                >
+                  <button
+                    type="button"
+                    className={`snakes-size-pill ${
+                      snakesTiles === 100 ? 'active' : ''
+                    }`}
+                    onClick={() => setSnakesTiles(100)}
+                  >
+                    100 Tiles
+                  </button>
+                  <button
+                    type="button"
+                    className={`snakes-size-pill ${
+                      snakesTiles === 150 ? 'active' : ''
+                    }`}
+                    onClick={() => setSnakesTiles(150)}
+                  >
+                    150 Tiles
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Bar with Real Chat Inbox Button on Homescreen */}
       <footer className="menu-bottom-bar">

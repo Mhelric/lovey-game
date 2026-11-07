@@ -94,6 +94,30 @@ const UNO_STEPS: readonly TutorialStep[] = [
   },
 ];
 
+const BLUFF_STEPS: readonly TutorialStep[] = [
+  {
+    badge: 'Kitty Bluff • Step 1 of 3',
+    title: 'Play Face-Down & Declare',
+    description:
+      'Tap any card in your hand to place it face-down, then declare what role you claim it is: Fresh Tuna (+2), Bandit Paws (Steal 2), Cat Monarch (+3), or Yarn Shield (+1 & Heal).',
+    tip: 'You can tell the truth OR bluff any role you want!',
+  },
+  {
+    badge: 'Kitty Bluff • Step 2 of 3',
+    title: 'Trust or HISS! Call Bluff',
+    description:
+      'Your partner chooses to Trust your claim (allowing its declared effect) or Call Bluff to flip your face-down card!',
+    tip: 'If you hold a Yarn Shield, you can also guard against a Bandit Paws steal!',
+  },
+  {
+    badge: 'Kitty Bluff • Step 3 of 3',
+    title: '10 Fish Treats or Knockout',
+    description:
+      'Catching a lie costs the bluffer 1 Heart and gives the caller +1 Treat. Calling a true claim costs the caller 1 Heart!',
+    tip: 'First cat to reach 10 Fish Treats or reduce their rival to 0 Hearts wins!',
+  },
+];
+
 function TutorialIllustrationSvg({
   gameMode,
   stepIndex,
@@ -137,7 +161,53 @@ function TutorialIllustrationSvg({
         />
       ))}
 
-      {gameMode === 'uno' ? (
+      {gameMode === 'bluff' ? (
+        <>
+          <rect
+            x="44"
+            y="22"
+            width="38"
+            height="50"
+            rx="8"
+            fill="#f3e8ff"
+            stroke="#5b2a4e"
+            strokeWidth="2"
+            transform="rotate(-6 63 47)"
+          />
+          <circle cx="63" cy="46" r="11" fill="#ffb74d" stroke="#5b2a4e" strokeWidth="1.5" />
+          <path d="M54 45 Q63 41 72 45 Q69 50 63 48 Q57 50 54 45 Z" fill="#5b2a4e" />
+          <rect
+            x="92"
+            y="26"
+            width="66"
+            height="42"
+            rx="10"
+            fill="#fff0f3"
+            stroke="#ff6b8b"
+            strokeWidth="1.8"
+          />
+          <text
+            x="125"
+            y="43"
+            textAnchor="middle"
+            fill="#be185d"
+            fontSize="8.2"
+            fontWeight="900"
+          >
+            TRUTH OR BLUFF
+          </text>
+          <text
+            x="125"
+            y="56"
+            textAnchor="middle"
+            fill="#432818"
+            fontSize="7.4"
+            fontWeight="700"
+          >
+            10 Treats to Win
+          </text>
+        </>
+      ) : gameMode === 'uno' ? (
         <>
           <rect
             x="52"
@@ -368,6 +438,8 @@ export function DamaTutorialModal({
       ? SNAKES_STEPS
       : gameMode === 'uno'
       ? UNO_STEPS
+      : gameMode === 'bluff'
+      ? BLUFF_STEPS
       : DAMA_STEPS;
   const current = steps[step] || steps[0];
 
@@ -391,6 +463,8 @@ export function DamaTutorialModal({
                   ? 'Snakes & Ladders'
                   : gameMode === 'uno'
                   ? 'Cat Uno'
+                  : gameMode === 'bluff'
+                  ? 'Kitty Bluff'
                   : 'Cat Dama'}
               </span>
             </h2>

@@ -16,11 +16,15 @@ import {
   ConfettiCelebrationOverlay,
   CrownIcon,
   DoubleHeartIcon,
+  FishTreatIcon,
+  HeartIcon,
+  KittyBluffIcon,
   PawIcon,
   ReactionStickerSvg,
   SettingsGearIcon,
   SnakeLadderIcon,
   SparkleIcon,
+  TimerClockIcon,
   TrophyIcon,
   UnoCardsIcon,
 } from './components/ArcadeIcons';
@@ -30,8 +34,6 @@ import {
 import { HomeMenuView } from './components/HomeMenuView';
 import { QuickChatBar } from './components/QuickChatBar';
 import { DamaBoardView } from './components/DamaBoardView';
-import { SnakesBoardView } from './components/SnakesBoardView';
-import { UnoBoardView } from './components/UnoBoardView';
 import {
   applyDamaStep,
   createInitialDamaState,
@@ -54,6 +56,12 @@ import {
   hasAnyPlayableCard,
   UnoGameState,
 } from './engines/unoEngine';
+import {
+  applyRespondToClaim,
+  applySubmitBluffClaim,
+  BluffGameState,
+  createInitialBluffState,
+} from './engines/bluffEngine';
 import {
   checkCoupleRoomExists,
   CoupleRealtimeChannel,
@@ -230,7 +238,7 @@ function FirstTurnShuffleOverlay({
         <span className="shuffle-sub-hint">
           {phase === 'shuffling'
             ? 'Picking a lucky cat…'
-            : 'Get ready to make your first move! 🐾'}
+            : 'Get ready to make your first move!'}
         </span>
       </div>
     </div>
@@ -319,9 +327,17 @@ function isUnoInProgress(s: UnoGameState | null | undefined): boolean {
   );
 }
 
+function isBluffInProgress(s: BluffGameState | null | undefined): boolean {
+  if (!s || s.winner) return false;
+  return Boolean(
+    s.turnCount > 0 || s.pendingClaim || s.lastResolution
+  );
+}
+
 const damaScore = (s: DamaGameState) => Math.max(0, 24 - (s.p1Remaining + s.p2Remaining)) * 10 + (s.lastAction ? 1 : 0) + (s.winner ? 1000 : 0);
 const snakesScore = (s: SnakesGameState) => (s.p1Tile - 1) + (s.p2Tile - 1) + (s.lastAnimation ? 1 : 0) + (s.winner ? 1000 : 0);
 const unoScore = (s: UnoGameState) => (s.discardPile?.length ?? 0) * 5 + (s.winner ? 1000 : 0);
+const bluffScore = (s: BluffGameState) => (s.turnCount ?? 0) * 10 + (s.pendingClaim ? 5 : 0) + (s.winner ? 1000 : 0);
 
 function mergeDamaSavestate(l: DamaGameState, inc?: DamaGameState): DamaGameState {
   if (!inc?.board) return l;
@@ -337,6 +353,11 @@ function mergeUnoSavestate(l: UnoGameState, inc?: UnoGameState): UnoGameState {
   if (!inc?.deck) return l;
   if (l.matchSeed === inc.matchSeed) return unoScore(inc) >= unoScore(l) ? inc : l;
   return inc.matchSeed === 202611 && isUnoInProgress(l) ? l : inc;
+}
+function mergeBluffSavestate(l: BluffGameState, inc?: BluffGameState): BluffGameState {
+  if (!inc?.p1Hand) return l;
+  if (l.matchSeed === inc.matchSeed) return bluffScore(inc) >= bluffScore(l) ? inc : l;
+  return inc.matchSeed === 202612 && isBluffInProgress(l) ? l : inc;
 }
 
 
@@ -403,6 +424,8 @@ export function App() {
       p2_snakes_wins: 0,
       p1_uno_wins: 0,
       p2_uno_wins: 0,
+      p1_bluff_wins: 0,
+      p2_bluff_wins: 0,
       current_mode: savedSession?.mode ?? 'dama',
       updated_at: new Date().toISOString(),
     };
@@ -423,6 +446,11 @@ export function App() {
     if (saved && Array.isArray(saved.deck)) return saved;
     return createInitialUnoState(202611, 'p1');
   });
+  const [bluffState, setBluffState] = useState<BluffGameState>(() => {
+    const saved = loadLocalGameSavestate<BluffGameState>(roomCode, 'bluff');
+    if (saved && Array.isArray(saved.p1Hand)) return saved;
+    return createInitialBluffState(202612, 'p1');
+  });
   const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>(() => {
     const savedSession = loadLocalActiveSession(roomCode);
     if (savedSession?.screen === 'play') {
@@ -432,10 +460,15 @@ export function App() {
         'snakes'
       );
       const savedUno = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno');
+      const savedBluff = loadLocalGameSavestate<BluffGameState>(
+        roomCode,
+        'bluff'
+      );
       if (
         (savedSession.mode === 'dama' && savedDama) ||
         (savedSession.mode === 'snakes' && savedSnakes) ||
-        (savedSession.mode === 'uno' && savedUno)
+        (savedSession.mode === 'uno' && savedUno) ||
+        (savedSession.mode === 'bluff' && savedBluff)
       ) {
         return 'play';
       }
@@ -482,6 +515,26 @@ export function App() {
       });
     }
   }, [tutorialOpen, TutorialModalComp]);
+
+  const [SnakesBoardComp, setSnakesBoardComp] = useState<any>(null);
+  const [UnoBoardComp, setUnoBoardComp] = useState<any>(null);
+  const [BluffBoardComp, setBluffBoardComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (roomData.current_mode === 'snakes' && !SnakesBoardComp) {
+      import('./components/SnakesBoardView').then((m) => {
+        setSnakesBoardComp(() => m.SnakesBoardView);
+      });
+    } else if (roomData.current_mode === 'uno' && !UnoBoardComp) {
+      import('./components/UnoBoardView').then((m) => {
+        setUnoBoardComp(() => m.UnoBoardView);
+      });
+    } else if (roomData.current_mode === 'bluff' && !BluffBoardComp) {
+      import('./components/BluffBoardView').then((m) => {
+        setBluffBoardComp(() => m.BluffBoardView);
+      });
+    }
+  }, [roomData.current_mode, SnakesBoardComp, UnoBoardComp, BluffBoardComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   const [timerEnabled, setTimerEnabled] = useState<boolean>(() => {
@@ -509,6 +562,8 @@ export function App() {
   snakesStateRef.current = snakesState;
   const unoStateRef = useRef<UnoGameState>(unoState);
   unoStateRef.current = unoState;
+  const bluffStateRef = useRef<BluffGameState>(bluffState);
+  bluffStateRef.current = bluffState;
   const activeScreenRef = useRef<'menu' | 'play'>(activeScreen);
   activeScreenRef.current = activeScreen;
   const roomDataRef = useRef<CoupleRoomRow>(roomData);
@@ -526,6 +581,10 @@ export function App() {
   useEffect(() => {
     saveLocalGameSavestate(roomCode, 'uno', unoState);
   }, [roomCode, unoState]);
+
+  useEffect(() => {
+    saveLocalGameSavestate(roomCode, 'bluff', bluffState);
+  }, [roomCode, bluffState]);
 
   useEffect(() => {
     saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode);
@@ -565,6 +624,8 @@ export function App() {
       setBgMusicTrack('snakes');
     } else if (roomData.current_mode === 'uno') {
       setBgMusicTrack('uno');
+    } else if (roomData.current_mode === 'bluff') {
+      setBgMusicTrack('bluff');
     } else {
       setBgMusicTrack('dama');
     }
@@ -616,6 +677,13 @@ export function App() {
     if (localUno && Array.isArray(localUno.deck)) {
       setUnoState((prev) => mergeUnoSavestate(prev, localUno));
     }
+    const localBluff = loadLocalGameSavestate<BluffGameState>(
+      targetRoom,
+      'bluff'
+    );
+    if (localBluff && Array.isArray(localBluff.p1Hand)) {
+      setBluffState((prev) => mergeBluffSavestate(prev, localBluff));
+    }
 
     const [row, matchRow] = await Promise.all([
       fetchOrCreateCoupleRoom(targetRoom),
@@ -655,12 +723,18 @@ export function App() {
         if (Array.isArray(maybeUno.deck)) {
           setUnoState((prev) => mergeUnoSavestate(prev, maybeUno));
         }
+      } else if (matchRow.game_mode === 'bluff') {
+        const maybeBluff = matchRow.state_json as BluffGameState;
+        if (Array.isArray(maybeBluff.p1Hand)) {
+          setBluffState((prev) => mergeBluffSavestate(prev, maybeBluff));
+        }
       }
-    } else if (!localDama && !localSnakes && !localUno) {
+    } else if (!localDama && !localSnakes && !localUno && !localBluff) {
       // If targetRoom has no local savestate and no database match, reset to fresh initial state
       setDamaState(createInitialDamaState('p1'));
       setSnakesState(createInitialSnakesState());
       setUnoState(createInitialUnoState());
+      setBluffState(createInitialBluffState());
     }
   }, []);
 
@@ -704,6 +778,7 @@ export function App() {
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
             unoState: unoStateRef.current,
+            bluffState: bluffStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -719,6 +794,7 @@ export function App() {
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
             unoState: unoStateRef.current,
+            bluffState: bluffStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -759,10 +835,15 @@ export function App() {
           if (inUno && Array.isArray(inUno.deck)) {
             setUnoState((prev) => mergeUnoSavestate(prev, inUno));
           }
+          const inBluff = event.bluffState as BluffGameState | undefined;
+          if (inBluff && Array.isArray(inBluff.p1Hand)) {
+            setBluffState((prev) => mergeBluffSavestate(prev, inBluff));
+          }
           if (
             event.currentMode === 'dama' ||
             event.currentMode === 'snakes' ||
-            event.currentMode === 'uno'
+            event.currentMode === 'uno' ||
+            event.currentMode === 'bluff'
           ) {
             setRoomData((prev) => ({
               ...prev,
@@ -796,6 +877,11 @@ export function App() {
             if (incoming && Array.isArray(incoming.deck)) {
               setUnoState(incoming);
             }
+          } else if (event.gameMode === 'bluff') {
+            const incoming = event.stateJson as BluffGameState;
+            if (incoming && Array.isArray(incoming.p1Hand)) {
+              setBluffState(incoming);
+            }
           }
           if (event.winner === 'p1' || event.winner === 'p2') {
             const winKey = `${event.winner}_${event.gameMode}_wins` as keyof CoupleRoomRow;
@@ -811,7 +897,7 @@ export function App() {
                   p2_avatar: prev.p2_avatar,
                   current_mode: prev.current_mode || event.gameMode,
                 };
-                (['dama', 'snakes', 'uno'] as const).forEach((gm) => {
+                (['dama', 'snakes', 'uno', 'bluff'] as const).forEach((gm) => {
                   (['p1', 'p2'] as const).forEach((ps) => {
                     const k = `${ps}_${gm}_wins` as keyof CoupleRoomRow;
                     (next as any)[k] = Math.max((prev[k] as number) || 0, (r[k] as number) || 0);
@@ -1053,6 +1139,12 @@ export function App() {
         : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
       setSnakesState(nextSnakes);
       broadcastAndPersistMatch('snakes', nextSnakes.turn, nextSnakes.boardSeed, nextSnakes, nextSnakes.winner);
+    } else if (selectedMode === 'bluff') {
+      const nextBluff = !forceNewMatch && isBluffInProgress(bluffState)
+        ? bluffState
+        : createInitialBluffState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+      setBluffState(nextBluff);
+      broadcastAndPersistMatch('bluff', nextBluff.turn, nextBluff.matchSeed, nextBluff, nextBluff.winner);
     } else {
       const nextUno = !forceNewMatch && isUnoInProgress(unoState)
         ? unoState
@@ -1202,6 +1294,37 @@ export function App() {
     );
   };
 
+  const handleCommitBluffState = async (nextState: BluffGameState) => {
+    setBluffState(nextState);
+    await broadcastAndPersistMatch(
+      'bluff',
+      nextState.turn,
+      nextState.matchSeed,
+      nextState,
+      nextState.winner
+    );
+    if (nextState.winner) {
+      await commitGameWin(
+        'bluff',
+        nextState.winner,
+        `Kitty Bluff (${nextState.p1Treats}-${nextState.p2Treats} Treats)`
+      );
+    }
+  };
+
+  const handleResetBluffMatch = async () => {
+    const newSeed = Math.floor(100000 + Math.random() * 899999);
+    const fresh = createInitialBluffState(newSeed, pickFairStartingTurn());
+    setBluffState(fresh);
+    await broadcastAndPersistMatch(
+      'bluff',
+      fresh.turn,
+      fresh.matchSeed,
+      fresh,
+      null
+    );
+  };
+
   const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
     const reaction: FloatingReaction = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1254,6 +1377,20 @@ export function App() {
           sender: mySlot,
         });
       }
+    } else if (newMode === 'bluff') {
+      if (!isBluffInProgress(bluffState)) {
+        handleResetBluffMatch();
+      } else {
+        channelRef.current?.sendBroadcast({
+          type: 'match_sync',
+          gameMode: 'bluff',
+          turn: bluffState.turn,
+          boardSeed: bluffState.matchSeed,
+          stateJson: bluffState,
+          winner: bluffState.winner,
+          sender: mySlot,
+        });
+      }
     } else {
       if (!isDamaInProgress(damaState)) {
         handleResetDamaMatch();
@@ -1284,6 +1421,8 @@ export function App() {
       handleResetDamaMatch();
     } else if (roomData.current_mode === 'uno') {
       handleResetUnoMatch();
+    } else if (roomData.current_mode === 'bluff') {
+      handleResetBluffMatch();
     } else {
       handleNewSnakesSeedMatch(
         snakesState.twistsEnabled,
@@ -1339,12 +1478,16 @@ export function App() {
       ? roomData.p1_dama_wins
       : roomData.current_mode === 'uno'
       ? roomData.p1_uno_wins || 0
+      : roomData.current_mode === 'bluff'
+      ? roomData.p1_bluff_wins || 0
       : roomData.p1_snakes_wins;
   const p2Wins =
     roomData.current_mode === 'dama'
       ? roomData.p2_dama_wins
       : roomData.current_mode === 'uno'
       ? roomData.p2_uno_wins || 0
+      : roomData.current_mode === 'bluff'
+      ? roomData.p2_bluff_wins || 0
       : roomData.p2_snakes_wins;
 
   // Authoritative avatars (our own slot always uses our device's myAvatar)
@@ -1364,6 +1507,8 @@ export function App() {
       ? damaState.turn
       : roomData.current_mode === 'uno'
       ? unoState.turn
+      : roomData.current_mode === 'bluff'
+      ? bluffState.turn
       : snakesState.turn;
 
   const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
@@ -1389,6 +1534,16 @@ export function App() {
       }, 1800);
       return () => window.clearTimeout(t);
     }
+    if (
+      roomData.current_mode === 'bluff' &&
+      bluffState.lastResolution?.message
+    ) {
+      setTurnBubbleText(bluffState.lastResolution.message);
+      const t = window.setTimeout(() => {
+        setTurnBubbleText('Your turn!');
+      }, 2200);
+      return () => window.clearTimeout(t);
+    }
     setTurnBubbleText('Your turn!');
   }, [
     roomData.current_mode,
@@ -1396,6 +1551,8 @@ export function App() {
     snakesState.lastAnimation?.eventMessage,
     unoState.lastAction?.id,
     unoState.lastAction?.message,
+    bluffState.lastResolution?.id,
+    bluffState.lastResolution?.message,
   ]);
 
   const p1CapturedCount = Math.max(0, 12 - damaState.p2Remaining);
@@ -1406,6 +1563,8 @@ export function App() {
       ? damaState.winner
       : roomData.current_mode === 'uno'
       ? unoState.winner
+      : roomData.current_mode === 'bluff'
+      ? bluffState.winner
       : snakesState.winner;
 
   const handleToggleTimer = () => {
@@ -1440,6 +1599,8 @@ export function App() {
       ? damaState.lastAction?.id ?? ''
       : roomData.current_mode === 'uno'
       ? unoState.lastAction?.id ?? ''
+      : roomData.current_mode === 'bluff'
+      ? `${bluffState.turnCount}-${bluffState.phase}-${bluffState.lastResolution?.id ?? ''}`
       : snakesState.lastAnimation?.id ?? '';
 
   useEffect(() => {
@@ -1504,6 +1665,18 @@ export function App() {
         const nextState = applySnakesDiceRoll(snakesState, d1, d2, entropy);
         handleCommitSnakesState(nextState);
       }
+    } else if (mode === 'bluff') {
+      if (bluffState.phase === 'play') {
+        const hand = bluffState.turn === 'p1' ? bluffState.p1Hand : bluffState.p2Hand;
+        if (hand.length > 0) {
+          const chosen = hand[Math.floor(Math.random() * hand.length)];
+          const next = applySubmitBluffClaim(bluffState, chosen.id, chosen.kind);
+          handleCommitBluffState(next);
+        }
+      } else {
+        const next = applyRespondToClaim(bluffState, 'trust');
+        handleCommitBluffState(next);
+      }
     } else if (mode === 'uno') {
       const activeSlot = unoState.turn;
       const hand = activeSlot === 'p1' ? unoState.p1Hand : unoState.p2Hand;
@@ -1541,6 +1714,7 @@ export function App() {
     damaState,
     snakesState,
     unoState,
+    bluffState,
     passAndPlay,
     mySlot,
     activeTurnSlot,
@@ -1599,6 +1773,7 @@ export function App() {
           hasSavedDama={isJoinedWithPartner && isDamaInProgress(damaState)}
           hasSavedSnakes={isJoinedWithPartner && isSnakesInProgress(snakesState)}
           hasSavedUno={isJoinedWithPartner && isUnoInProgress(unoState)}
+          hasSavedBluff={isJoinedWithPartner && isBluffInProgress(bluffState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           chatMessages={chatMessages}
           onOpenSettings={() => setCustomizerOpen(true)}
@@ -1635,6 +1810,11 @@ export function App() {
                   <UnoCardsIcon size={16} />
                   <span>Cat Uno</span>
                 </>
+              ) : roomData.current_mode === 'bluff' ? (
+                <>
+                  <KittyBluffIcon size={16} />
+                  <span>Kitty Bluff</span>
+                </>
               ) : (
                 <>
                   <SnakeLadderIcon size={16} />
@@ -1651,7 +1831,9 @@ export function App() {
                 title={`Turn Timer: ${Math.max(0, timeRemaining)}s remaining`}
                 aria-label={`Turn Timer: ${Math.max(0, timeRemaining)} seconds`}
               >
-                <span className="timer-clock-icon" aria-hidden="true">⏱️</span>
+                <span className="timer-clock-icon" aria-hidden="true">
+                  <TimerClockIcon size={13} />
+                </span>
                 <span className="timer-sec-count">{Math.max(0, timeRemaining)}s</span>
               </div>
             ) : (
@@ -1671,16 +1853,29 @@ export function App() {
                 onCommitState={handleCommitDamaState}
               />
             ) : roomData.current_mode === 'uno' ? (
-              <UnoBoardView
-                gameState={unoState}
-                mySlot={mySlot}
-                p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
-                p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
-                passAndPlay={passAndPlay}
-                onCommitState={handleCommitUnoState}
-              />
-            ) : (
-              <SnakesBoardView
+              UnoBoardComp ? (
+                <UnoBoardComp
+                  gameState={unoState}
+                  mySlot={mySlot}
+                  p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
+                  p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+                  passAndPlay={passAndPlay}
+                  onCommitState={handleCommitUnoState}
+                />
+              ) : null
+            ) : roomData.current_mode === 'bluff' ? (
+              BluffBoardComp ? (
+                <BluffBoardComp
+                  gameState={bluffState}
+                  mySlot={mySlot}
+                  p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
+                  p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+                  passAndPlay={passAndPlay}
+                  onCommitState={handleCommitBluffState}
+                />
+              ) : null
+            ) : SnakesBoardComp ? (
+              <SnakesBoardComp
                 gameState={snakesState}
                 mySlot={mySlot}
                 p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
@@ -1689,7 +1884,7 @@ export function App() {
                 onCommitState={handleCommitSnakesState}
                 autoRollSignal={autoRollSignal}
               />
-            )}
+            ) : null}
 
             <FirstTurnShuffleOverlay
               matchKey={
@@ -1697,6 +1892,8 @@ export function App() {
                   ? `dama-${damaState.matchSeed ?? 1}`
                   : roomData.current_mode === 'uno'
                   ? `uno-${unoState.matchSeed}`
+                  : roomData.current_mode === 'bluff'
+                  ? `bluff-${bluffState.matchSeed}`
                   : `snakes-${snakesState.boardSeed}`
               }
               isFreshMatch={
@@ -1711,6 +1908,10 @@ export function App() {
                     unoState.p1Hand.length === 7 &&
                     unoState.p2Hand.length === 7 &&
                     unoState.discardPile.length === 1
+                  : roomData.current_mode === 'bluff'
+                  ? bluffState.turnCount === 0 &&
+                    !bluffState.pendingClaim &&
+                    !bluffState.winner
                   : !snakesState.lastAnimation &&
                     !snakesState.winner &&
                     snakesState.p1Tile === 1 &&
@@ -1742,6 +1943,8 @@ export function App() {
                       ? 'Wins Cat Dama!'
                       : roomData.current_mode === 'uno'
                       ? 'Wins Cat Uno!'
+                      : roomData.current_mode === 'bluff'
+                      ? 'Wins Kitty Bluff!'
                       : `Reached ${snakesState.maxTile ?? 100}!`}
                   </span>
                 </div>
@@ -1786,6 +1989,10 @@ export function App() {
                     </>
                   ) : roomData.current_mode === 'uno' ? (
                     `${isP1 ? unoState.p1Hand.length : unoState.p2Hand.length} cards`
+                  ) : roomData.current_mode === 'bluff' ? (
+                    <>
+                      <HeartIcon size={10} /> {isP1 ? bluffState.p1Hearts : bluffState.p2Hearts} • <FishTreatIcon size={10} /> {isP1 ? bluffState.p1Treats : bluffState.p2Treats}/{bluffState.targetTreats}
+                    </>
                   ) : (
                     `Tile ${isP1 ? snakesState.p1Tile : snakesState.p2Tile}/${snakesState.maxTile ?? 100}`
                   );
@@ -1816,7 +2023,7 @@ export function App() {
                           {turnBubbleText}
                           {timerEnabled && (
                             <span className="bubble-timer-tag">
-                              ⏱️ {Math.max(0, timeRemaining)}s
+                              <TimerClockIcon size={11} /> {Math.max(0, timeRemaining)}s
                             </span>
                           )}
                         </span>
@@ -1971,7 +2178,8 @@ export function App() {
               }}
               autoFocus
             >
-              <span>Understood 🐾</span>
+              <span>Understood</span>
+              <PawIcon size={15} />
             </button>
           </div>
         </div>

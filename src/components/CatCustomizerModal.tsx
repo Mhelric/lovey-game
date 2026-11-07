@@ -17,6 +17,9 @@ import {
   CrownIcon,
   DiceFaceSvg,
   DoubleDiceIcon,
+  FishTreatIcon,
+  HeartIcon,
+  KittyBluffIcon,
   PawIcon,
   PowerupIllustrationSvg,
   SnakeLadderIcon,
@@ -479,6 +482,16 @@ export function CatCustomizerModal({
                     <button
                       type="button"
                       className={`match-mode-card ${
+                        currentMode === 'bluff' ? 'active' : ''
+                      }`}
+                      onClick={() => onHostSwitchGame('bluff')}
+                    >
+                      <KittyBluffIcon size={20} />
+                      <span>Kitty Bluff</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`match-mode-card ${
                         currentMode === 'snakes' && snakesMaxTile === 100
                           ? 'active'
                           : ''
@@ -714,6 +727,42 @@ export function CatCustomizerModal({
                     icon={<PawIcon size={16} />}
                     title="Stacking & The '7' Hand Swap"
                     desc="Stack +2 on +2 and +4 on +4 to pass higher penalty cards to your partner! Play any 7 to swap your entire hand!"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 4: KITTY BLUFF */}
+              <div className="rules-section-box bluff-theme">
+                <div className="rules-section-banner">
+                  <KittyBluffIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">
+                      Kitty Bluff (Liar&apos;s Card Duel)
+                    </h3>
+                    <span className="rules-section-sub">
+                      10 Treats or 0 Rival Hearts • Truth vs Bluff
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <RuleRow
+                    color="purple"
+                    icon={<KittyBluffIcon size={16} />}
+                    title="Play Face-Down & Declare Any Role"
+                    desc="Pick any card from your hand to place face-down, then declare it as Fresh Tuna (+2), Bandit Paws (Steal 2), Cat Monarch (+3), or Yarn Shield (+1 & Heal)."
+                  />
+                  <RuleRow
+                    color="coral"
+                    icon={<HeartIcon size={16} />}
+                    title="Trust or HISS! Call Bluff"
+                    desc="Your partner chooses to Trust your claim or Call Bluff. Catching a lie costs the bluffer 1 Heart; calling a true claim costs the caller 1 Heart!"
+                  />
+                  <RuleRow
+                    color="mint"
+                    icon={<FishTreatIcon size={16} />}
+                    title="10 Fish Treats or Knockout"
+                    desc="First cat to collect 10 Fish Treats or reduce their partner to 0 Hearts wins the match!"
                   />
                 </div>
               </div>
