@@ -484,9 +484,6 @@ export function DoodleBoardView({
                       <strong className="doodle-banner-word">
                         {gameState.selectedWord}
                       </strong>
-                      <span className="doodle-banner-cat">
-                        ({gameState.selectedCategory})
-                      </span>
                     </div>
                     <button
                       type="button"
@@ -502,11 +499,8 @@ export function DoodleBoardView({
                   <div className="doodle-guesser-prompt">
                     <div className="doodle-guesser-hint-row">
                       <LightbulbIcon size={14} />
-                      <span className="doodle-banner-cat">
-                        {gameState.selectedCategory}
-                      </span>
                       <span className="doodle-letter-count">
-                        ({gameState.selectedWord?.replace(/ /g, '').length} letters)
+                        {gameState.selectedWord?.replace(/ /g, '').length} letters
                       </span>
                     </div>
                     <div className="doodle-masked-blanks">
@@ -900,9 +894,10 @@ export function DoodleBoardView({
                   className="doodle-word-choice-card sticker-press"
                   onClick={() => handleWordSelect(opt)}
                 >
-                  <span className="doodle-word-cat-badge">{opt.category}</span>
                   <span className="doodle-word-text">{opt.word}</span>
-                  <span className="doodle-word-hint-text">{opt.hint}</span>
+                  <span className="doodle-word-hint-text">
+                    {opt.word.replace(/ /g, '').length} letters
+                  </span>
                 </button>
               ))}
             </div>

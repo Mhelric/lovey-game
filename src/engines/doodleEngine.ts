@@ -25,8 +25,6 @@ export interface DoodleStroke {
 
 export interface DoodleWordOption {
   word: string;
-  hint: string;
-  category: string;
   difficulty: DoodleDifficulty;
 }
 
@@ -51,7 +49,6 @@ export interface DoodleGameState {
   turn: PlayerSlot;
   wordChoices: DoodleWordOption[];
   selectedWord: string | null;
-  selectedCategory: string | null;
   strokes: DoodleStroke[];
   guesses: DoodleGuessAttempt[];
   guessesLeft: number; // 3 guesses per round in 'guessing' phase
@@ -100,89 +97,23 @@ export function getDoodleDifficultyInfo(round: number): {
   return { id: 'final', label: 'Final' };
 }
 
-export const DOODLE_WORDS: readonly DoodleWordOption[] = [
-  // Round 1: EASY (Simple shapes, everyday objects & foods)
-  { word: 'APPLE', hint: 'Crisp fruit with a stem', category: 'Food', difficulty: 'easy' },
-  { word: 'SUN', hint: 'Bright yellow shining star', category: 'Nature', difficulty: 'easy' },
-  { word: 'MOON', hint: 'Nighttime crescent in the sky', category: 'Nature', difficulty: 'easy' },
-  { word: 'STAR', hint: 'Five-pointed glowing night light', category: 'Nature', difficulty: 'easy' },
-  { word: 'TREE', hint: 'Tall trunk with green leaves', category: 'Nature', difficulty: 'easy' },
-  { word: 'EGG', hint: 'Breakfast oval or sunny side up', category: 'Food', difficulty: 'easy' },
-  { word: 'DONUT', hint: 'Sweet ring with glaze', category: 'Food', difficulty: 'easy' },
-  { word: 'PIZZA', hint: 'Cheesy slice with toppings', category: 'Food', difficulty: 'easy' },
-  { word: 'FLOWER', hint: 'Blooming garden petals', category: 'Nature', difficulty: 'easy' },
-  { word: 'CLOUD', hint: 'Puffy white sky shape', category: 'Nature', difficulty: 'easy' },
-  { word: 'HEART', hint: 'Symbol of pure love', category: 'Symbol', difficulty: 'easy' },
-  { word: 'BALLOON', hint: 'Floating party sphere on string', category: 'Object', difficulty: 'easy' },
-  { word: 'BOOK', hint: 'Bound pages with stories', category: 'Object', difficulty: 'easy' },
-  { word: 'HAT', hint: 'Headwear for warmth or shade', category: 'Object', difficulty: 'easy' },
-  { word: 'COOKIE', hint: 'Baked chocolate chip circle', category: 'Food', difficulty: 'easy' },
-  { word: 'CANDLE', hint: 'Wax stick with glowing flame', category: 'Object', difficulty: 'easy' },
-  { word: 'KEY', hint: 'Small metal door unlocker', category: 'Object', difficulty: 'easy' },
-  { word: 'LOLLIPOP', hint: 'Sweet candy swirl on a stick', category: 'Food', difficulty: 'easy' },
-  { word: 'BANANA', hint: 'Peelable yellow curved fruit', category: 'Food', difficulty: 'easy' },
-  { word: 'MUSHROOM', hint: 'Spotted forest cap with stem', category: 'Nature', difficulty: 'easy' },
+const RAW_DOODLE_WORDS: Record<DoodleDifficulty, string> = {
+  easy: 'APPLE|SUN|MOON|STAR|TREE|EGG|DONUT|PIZZA|FLOWER|CLOUD|HEART|BALLOON|BOOK|HAT|COOKIE|CANDLE|KEY|LOLLIPOP|BANANA|MUSHROOM|FISH|LEAF|CUP|SPOON|FORK|SOCK|SHOE|DOOR|HOUSE|CAR|BOAT|BONE|BELL|GIFT|RING|CHERRY|PEAR|GRAPES|CARROT|BREAD|CHEESE|PENCIL|BROOM|LADDER|BOW|CHAIR|BED|LAMP|BALL|CORN|CAKE|PIE|BOWL|SOAP|COMB|BOOT|COAT|GLOVE|DRUM|FLAG|COIN|WORM|BIRD|ANT|PIG|COW|HEN|DOG|MOUSE|KITE|CROWN|CLOCK',
+  medium:
+    'BURGER|ICE CREAM|WATERMELON|TACO|RABBIT|TURTLE|DUCK|SNAIL|BUTTERFLY|UMBRELLA|GUITAR|SUNGLASSES|RAINBOW|SNOWMAN|CACTUS|ROCKET|CAMERA|PANCAKE|CUPCAKE|PRETZEL|PINEAPPLE|STRAWBERRY|AVOCADO|CROISSANT|FROG|BEE|LADYBUG|OWL|SHARK|WHALE|CRAB|STARFISH|ANCHOR|COMPASS|LANTERN|TROPHY|MAGNET|HAMMER|WRENCH|FEATHER|IGLOO|TENT|WAFFLE|NOODLES|HOTDOG|MUFFIN|COCONUT|LEMON|PEACH|MONKEY|SHEEP|HORSE|SNAKE|SPIDER|PIANO|VIOLIN|TRUMPET|TEAPOT|FRYING PAN|MITTENS|SCARF|NECKTIE|DIAMOND|SHIELD|SWORD|BOW AND ARROW|SKULL|GHOST|ROBOT|UFO',
+  hard: 'ELEPHANT|GIRAFFE|PENGUIN|OCTOPUS|DOLPHIN|PANDA|BICYCLE|HELICOPTER|SAILBOAT|VOLCANO|ISLAND|CAMPFIRE|BACKPACK|SCISSORS|POPCORN|SUSHI|HEADPHONES|TELESCOPE|FLAMINGO|KANGAROO|CROCODILE|PEACOCK|SEAHORSE|JELLYFISH|SCORPION|CHAMELEON|HEDGEHOG|KOALA|UNICORN|TRACTOR|AMBULANCE|FIRE TRUCK|SKATEBOARD|PARACHUTE|BINOCULARS|MICROSCOPE|HOURGLASS|STETHOSCOPE|LIGHTBULB|PINECONE|WINDMILL|SNOWFLAKE|TORNADO|LOBSTER|SQUIRREL|RACCOON|BAT|CAMEL|ZEBRA|RHINO|HIPPO|GORILLA|OSTRICH|PELICAN|TOUCAN|PORCUPINE|SLOTH|PLATYPUS|NARWHAL|WALRUS|TYPEWRITER|SEWING MACHINE|BOOMBOX|JOYSTICK|ROLLER SKATES|SURFBOARD|SNOWBOARD|ANCHOR CHAIN|CUCKOO CLOCK|GLOBE',
+  final:
+    'DINOSAUR|DRAGON|MERMAID|ASTRONAUT|CASTLE|LIGHTHOUSE|TREEHOUSE|ROLLERCOASTER|TREASURE CHEST|HOT AIR BALLOON|SUBMARINE|TIME MACHINE|WATERFALL|CHANDELIER|SANDCASTLE|FERRIS WHEEL|PIRATE SHIP|SPACE STATION|ALIEN UFO|SCARECROW|GINGERBREAD HOUSE|SNOW GLOBE|CAROUSEL|SOLAR SYSTEM|BOWLING ALLEY|ESPRESSO MACHINE|GRAND PIANO|GRAMOPHONE|VENDING MACHINE|CLAW MACHINE|MAGIC CARPET|WISHING WELL|SUSPENSION BRIDGE|EGYPTIAN PYRAMID|DEEP SEA DIVER|HAUNTED HOUSE|LOG CABIN|SKYSCRAPER|COLOSSEUM|EIFFEL TOWER|STATUE OF LIBERTY|GREAT WALL|TAJ MAHAL|MOUNT RUSHMORE|TROJAN HORSE|LOCH NESS MONSTER|YETI|PHOENIX|PEGASUS|GRIFFIN|CENTAUR|WEREWOLF|VAMPIRE|WIZARD TOWER|ALCHEMIST LAB|STEAM TRAIN|CABLE CAR|ZEPPELIN|HOVERCRAFT|MOON ROVER',
+};
 
-  // Round 2: MEDIUM (Animals, snacks, wearable items & fun objects)
-  { word: 'BURGER', hint: 'Juicy patty stacked in a bun', category: 'Food', difficulty: 'medium' },
-  { word: 'ICE CREAM', hint: 'Cold scoop on a crunchy cone', category: 'Food', difficulty: 'medium' },
-  { word: 'WATERMELON', hint: 'Green rind with seeded pink slice', category: 'Food', difficulty: 'medium' },
-  { word: 'TACO', hint: 'Folded shell with savory filling', category: 'Food', difficulty: 'medium' },
-  { word: 'RABBIT', hint: 'Hopper with long fluffy ears', category: 'Animal', difficulty: 'medium' },
-  { word: 'TURTLE', hint: 'Slow crawler with hard shell', category: 'Animal', difficulty: 'medium' },
-  { word: 'DUCK', hint: 'Quacking pond swimmer', category: 'Animal', difficulty: 'medium' },
-  { word: 'SNAIL', hint: 'Slow garden mover with spiral shell', category: 'Animal', difficulty: 'medium' },
-  { word: 'BUTTERFLY', hint: 'Colorful symmetrical winged insect', category: 'Animal', difficulty: 'medium' },
-  { word: 'UMBRELLA', hint: 'Canopy shelter from the rain', category: 'Object', difficulty: 'medium' },
-  { word: 'GUITAR', hint: 'Six-stringed musical instrument', category: 'Object', difficulty: 'medium' },
-  { word: 'SUNGLASSES', hint: 'Cool tinted shades for sunny days', category: 'Object', difficulty: 'medium' },
-  { word: 'CROWN', hint: 'Regal golden royal headwear', category: 'Object', difficulty: 'medium' },
-  { word: 'KITE', hint: 'Wind-soaring diamond on string', category: 'Object', difficulty: 'medium' },
-  { word: 'RAINBOW', hint: 'Colorful arc across the sky', category: 'Nature', difficulty: 'medium' },
-  { word: 'SNOWMAN', hint: 'Three stacked snowballs with carrot nose', category: 'Nature', difficulty: 'medium' },
-  { word: 'CACTUS', hint: 'Prickly desert green plant', category: 'Nature', difficulty: 'medium' },
-  { word: 'ROCKET', hint: 'Spaceship blasting to the stars', category: 'Vehicle', difficulty: 'medium' },
-  { word: 'CAMERA', hint: 'Lens box that snaps photos', category: 'Object', difficulty: 'medium' },
-  { word: 'CLOCK', hint: 'Ticking hands tell the hour', category: 'Object', difficulty: 'medium' },
-
-  // Round 3: HARD (Detailed creatures, vehicles, places & gear)
-  { word: 'ELEPHANT', hint: 'Giant mammal with trunk and tusks', category: 'Animal', difficulty: 'hard' },
-  { word: 'GIRAFFE', hint: 'Spotted animal with towering neck', category: 'Animal', difficulty: 'hard' },
-  { word: 'PENGUIN', hint: 'Waddling tuxedo bird on ice', category: 'Animal', difficulty: 'hard' },
-  { word: 'OCTOPUS', hint: 'Sea creature with eight tentacles', category: 'Animal', difficulty: 'hard' },
-  { word: 'DOLPHIN', hint: 'Acrobatic jumping ocean mammal', category: 'Animal', difficulty: 'hard' },
-  { word: 'PANDA', hint: 'Bamboo-munching black and white bear', category: 'Animal', difficulty: 'hard' },
-  { word: 'BICYCLE', hint: 'Handlebars, two pedals, and two wheels', category: 'Vehicle', difficulty: 'hard' },
-  { word: 'HELICOPTER', hint: 'Aircraft with spinning top blades', category: 'Vehicle', difficulty: 'hard' },
-  { word: 'SAILBOAT', hint: 'Wind-powered vessel on the waves', category: 'Vehicle', difficulty: 'hard' },
-  { word: 'VOLCANO', hint: 'Erupting peak spewing hot lava', category: 'Nature', difficulty: 'hard' },
-  { word: 'ISLAND', hint: 'Lonely patch of sand with palm tree', category: 'Place', difficulty: 'hard' },
-  { word: 'CAMPFIRE', hint: 'Crackling logs and roasting marshmallows', category: 'Nature', difficulty: 'hard' },
-  { word: 'BACKPACK', hint: 'Zippered bag worn on both shoulders', category: 'Object', difficulty: 'hard' },
-  { word: 'SCISSORS', hint: 'Crossed metal blades that snip paper', category: 'Object', difficulty: 'hard' },
-  { word: 'POPCORN', hint: 'Striped tub of buttery movie kernels', category: 'Food', difficulty: 'hard' },
-  { word: 'SUSHI', hint: 'Seaweed rice roll with chopsticks', category: 'Food', difficulty: 'hard' },
-  { word: 'HEADPHONES', hint: 'Cushioned speakers worn over the ears', category: 'Object', difficulty: 'hard' },
-  { word: 'TELESCOPE', hint: 'Long optical tube for stargazing', category: 'Object', difficulty: 'hard' },
-
-  // Round 4: FINAL (Showstopper scenes, epic creatures & complex concepts)
-  { word: 'DINOSAUR', hint: 'Prehistoric giant reptile with tail', category: 'Creature', difficulty: 'final' },
-  { word: 'DRAGON', hint: 'Mythical winged fire-breather', category: 'Creature', difficulty: 'final' },
-  { word: 'MERMAID', hint: 'Ocean dweller with fish tail', category: 'Creature', difficulty: 'final' },
-  { word: 'ASTRONAUT', hint: 'Space explorer in helmet and suit', category: 'Person', difficulty: 'final' },
-  { word: 'CASTLE', hint: 'Medieval stone fortress with towers', category: 'Place', difficulty: 'final' },
-  { word: 'LIGHTHOUSE', hint: 'Coastal tower guiding ships at night', category: 'Place', difficulty: 'final' },
-  { word: 'TREEHOUSE', hint: 'Cozy wooden hideout high in branches', category: 'Place', difficulty: 'final' },
-  { word: 'ROLLERCOASTER', hint: 'Looping thrill ride on steep tracks', category: 'Place', difficulty: 'final' },
-  { word: 'TREASURE CHEST', hint: 'Locked pirate box overflowing with gold', category: 'Object', difficulty: 'final' },
-  { word: 'HOT AIR BALLOON', hint: 'Giant floating basket in the clouds', category: 'Vehicle', difficulty: 'final' },
-  { word: 'SUBMARINE', hint: 'Underwater vessel with a periscope', category: 'Vehicle', difficulty: 'final' },
-  { word: 'TIME MACHINE', hint: 'Futuristic portal or clockwork pod', category: 'Concept', difficulty: 'final' },
-  { word: 'WATERFALL', hint: 'Rushing river plunging down a cliff', category: 'Nature', difficulty: 'final' },
-  { word: 'CHANDELIER', hint: 'Ornate hanging ceiling light with crystals', category: 'Object', difficulty: 'final' },
-  { word: 'SANDCASTLE', hint: 'Sculpted beach fortress with buckets', category: 'Object', difficulty: 'final' },
-  { word: 'FERRIS WHEEL', hint: 'Giant rotating carnival observation wheel', category: 'Place', difficulty: 'final' },
-];
+export const DOODLE_WORDS: readonly DoodleWordOption[] = (
+  ['easy', 'medium', 'hard', 'final'] as const
+).flatMap((difficulty) =>
+  RAW_DOODLE_WORDS[difficulty].split('|').map((word) => ({
+    word,
+    difficulty,
+  }))
+);
 
 export function pickRandomWords(
   seed: number,
@@ -222,7 +153,6 @@ export function createInitialDoodleState(
     turn: startingDrawer,
     wordChoices: choices,
     selectedWord: null,
-    selectedCategory: null,
     strokes: [],
     guesses: [],
     guessesLeft: DOODLE_MAX_GUESSES,
@@ -257,7 +187,6 @@ export function applySelectDoodleWord(
     phase: 'drawing',
     turn: state.drawerSlot,
     selectedWord: wordOption.word.toUpperCase(),
-    selectedCategory: wordOption.category,
     strokes: [],
     guesses: [],
     guessesLeft: DOODLE_MAX_GUESSES,
@@ -478,7 +407,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
   const nextDifficulty = getDoodleDifficultyInfo(nextRound).id;
   const nextDrawer: PlayerSlot = state.drawerSlot === 'p1' ? 'p2' : 'p1';
   const nextGuesser: PlayerSlot = nextDrawer === 'p1' ? 'p2' : 'p1';
-  const nextSeed = (state.matchSeed + nextRound * 97) % 1000000;
+  const nextSeed = (state.matchSeed + nextRound * 7919) % 1000000;
   const nextChoices = pickRandomWords(nextSeed, 3, nextDifficulty);
 
   return {
@@ -491,7 +420,6 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
     turn: nextDrawer,
     wordChoices: nextChoices,
     selectedWord: null,
-    selectedCategory: null,
     strokes: [],
     guesses: [],
     guessesLeft: DOODLE_MAX_GUESSES,
