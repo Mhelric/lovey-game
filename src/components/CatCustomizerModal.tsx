@@ -25,6 +25,7 @@ import {
   SnakeLadderIcon,
   SoundIcon,
   SparkleIcon,
+  UnoCardsIcon,
 } from './ArcadeIcons';
 import { SnakesMaxTile } from '../engines/snakesEngine';
 import {
@@ -542,8 +543,8 @@ export function CatCustomizerModal({
                 <div className="cozy-section">
                   <span className="cozy-label">Switch Game Mode</span>
                   <div className="game-picker-modal-grid" style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {/* Top Row: Dama and Doodle */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {/* Top Grid: Dama, Uno, Doodle */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px' }}>
                       <button
                         type="button"
                         className={`match-mode-card ${
@@ -551,8 +552,18 @@ export function CatCustomizerModal({
                         }`}
                         onClick={() => handleRequestSwitchGame('dama', snakesMaxTile, 'Cat Dama')}
                       >
-                        <CrownIcon size={22} />
+                        <CrownIcon size={20} />
                         <span>Cat Dama</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`match-mode-card ${
+                          currentMode === 'uno' ? 'active' : ''
+                        }`}
+                        onClick={() => handleRequestSwitchGame('uno', undefined, 'Cat Uno')}
+                      >
+                        <UnoCardsIcon size={20} />
+                        <span>Cat Uno</span>
                       </button>
                       <button
                         type="button"
@@ -561,8 +572,8 @@ export function CatCustomizerModal({
                         }`}
                         onClick={() => handleRequestSwitchGame('doodle', undefined, 'Doodle Clash')}
                       >
-                        <DoodleClashIcon size={22} />
-                        <span>Doodle Clash</span>
+                        <DoodleClashIcon size={20} />
+                        <span>Doodle</span>
                       </button>
                     </div>
 
@@ -786,7 +797,43 @@ export function CatCustomizerModal({
                 </div>
               </div>
 
-              {/* SECTION 3: DOODLE CLASH */}
+              {/* SECTION 3: CAT UNO */}
+              <div className="rules-section-box uno-theme">
+                <div className="rules-section-banner">
+                  <UnoCardsIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">
+                      Cat Uno (2-Player + Extra Rules)
+                    </h3>
+                    <span className="rules-section-sub">
+                      Stacking +2/+4 • The "7" Hand Swap • No Jump-In
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <RuleRow
+                    color="coral"
+                    icon={<SparkleIcon size={16} />}
+                    title="Match Color, Number, or Symbol"
+                    desc="Play a matching card from your hand onto the discard pile. Wild cards let you choose any of the 4 colors!"
+                  />
+                  <RuleRow
+                    color="sky"
+                    icon={<UnoCardsIcon size={16} />}
+                    title="Official 2-Player Skip & Reverse"
+                    desc="Skip skips your partner so you play again immediately! Reverse acts as a U-Turn bouncing straight back to you!"
+                  />
+                  <RuleRow
+                    color="gold"
+                    icon={<PawIcon size={16} />}
+                    title="Stacking & The '7' Hand Swap"
+                    desc="Stack +2 on +2 and +4 on +4 to pass higher penalty cards to your partner! Play any 7 to swap your entire hand!"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 4: DOODLE CLASH */}
               <div className="rules-section-box doodle-theme">
                 <div className="rules-section-banner">
                   <DoodleClashIcon size={20} />

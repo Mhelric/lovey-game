@@ -3,12 +3,15 @@ import {
   CatAvatarConfig,
   FloatingReaction,
   PlayerSlot,
+  QUICK_STICKERS,
+  ReactionStickerId,
 } from '../types/arcade';
 import { CatAvatarSvg } from './CatAvatarSvg';
 import {
   ChatBubbleIcon,
   CloseIcon,
   HeartIcon,
+  ReactionStickerSvg,
 } from './ArcadeIcons';
 
 interface QuickChatBarProps {
@@ -17,6 +20,7 @@ interface QuickChatBarProps {
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
   partnerOnline?: boolean;
+  isConnected?: boolean;
   onSendReaction: (content: string, kind: 'emoji' | 'chat') => void;
 }
 
@@ -30,9 +34,8 @@ function formatChatTime(ts: number): string {
 }
 
 /**
- * Real Couple's Chat Inbox (No preset reactions or quick notes).
- * Displays a live scrollable message thread with cat avatars, message bubbles,
- * timestamps, unread badge, and persistent chat input.
+ * Couple's Chat Inbox with Live Thread, Quick Cat Emoticon Stickers,
+ * and Clear Solo / Offline Connection Indicator.
  */
 export function QuickChatBar({
   messages,
@@ -40,6 +43,7 @@ export function QuickChatBar({
   p1Avatar,
   p2Avatar,
   partnerOnline = false,
+  isConnected = true,
   onSendReaction,
 }: QuickChatBarProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -47,22 +51,26 @@ export function QuickChatBar({
   const [lastReadCount, setLastReadCount] = useState(messages.length);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
-  const chatMessages = messages.filter((m) => m.kind === 'chat');
+  // Both text messages and sticker reactions appear in the thread
+  const displayMessages = messages.filter(
+    (m) => m.kind === 'chat' || m.kind === 'emoji'
+  );
   const unreadCount = sheetOpen
     ? 0
-    : Math.max(0, chatMessages.length - lastReadCount);
+    : Math.max(0, displayMessages.length - lastReadCount);
 
   useEffect(() => {
     if (sheetOpen) {
-      setLastReadCount(chatMessages.length);
+      setLastReadCount(displayMessages.length);
       window.requestAnimationFrame(() => {
         threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
     }
-  }, [sheetOpen, chatMessages.length]);
+  }, [sheetOpen, displayMessages.length]);
 
   const handleCustomSubmit = (e: Event) => {
     e.preventDefault();
+    if (!isConnected) return;
     const trimmed = customText.trim().slice(0, 120);
     if (!trimmed) return;
     onSendReaction(trimmed, 'chat');
@@ -105,19 +113,27 @@ export function QuickChatBar({
               <div className="inbox-partner-info">
                 <div className="inbox-avatar-wrap">
                   <CatAvatarSvg
-                    breed={partnerAvatar.breed}
-                    accessory={partnerAvatar.accessory}
+                    breed={isConnected ? partnerAvatar.breed : (mySlot === 'p1' ? p1Avatar.breed : p2Avatar.breed)}
+                    accessory={isConnected ? partnerAvatar.accessory : (mySlot === 'p1' ? p1Avatar.accessory : p2Avatar.accessory)}
                     size={32}
                     animateIdle={false}
                   />
                   <span
-                    className={`online-dot ${partnerOnline ? 'online' : ''}`}
+                    className={`online-dot ${
+                      isConnected && partnerOnline ? 'online' : ''
+                    }`}
                   />
                 </div>
                 <div className="inbox-title-col">
                   <span className="chat-sheet-title">Chat Inbox</span>
-                  <span className="inbox-sub-status">
-                    {partnerOnline
+                  <span
+                    className={`inbox-sub-status ${
+                      !isConnected ? 'solo-status' : ''
+                    }`}
+                  >
+                    {!isConnected
+                      ? 'No partner connected (Solo)'
+                      : partnerOnline
                       ? `${partnerAvatar.name} is online`
                       : `Room chat with ${partnerAvatar.name}`}
                   </span>
@@ -135,54 +151,112 @@ export function QuickChatBar({
 
             {/* Scrollable Message Thread */}
             <div className="chat-inbox-thread">
-              {chatMessages.length === 0 ? (
+              {displayMessages.length === 0 ? (
                 <div className="chat-inbox-empty">
                   <CatAvatarSvg
-                    breed={partnerAvatar.breed}
-                    accessory={partnerAvatar.accessory}
+                    breed={
+                      isConnected
+                        ? partnerAvatar.breed
+                        : mySlot === 'p1'
+                        ? p1Avatar.breed
+                        : p2Avatar.breed
+                    }
+                    accessory={
+                      isConnected
+                        ? partnerAvatar.accessory
+                        : mySlot === 'p1'
+                        ? p1Avatar.accessory
+                        : p2Avatar.accessory
+                    }
                     size={46}
-                    happySquint
+                    happySquint={isConnected}
                   />
-                  <p className="chat-empty-title">No messages yet!</p>
+                  <p className="chat-empty-title">
+                    {isConnected ? 'No messages yet!' : 'Not connected yet'}
+                  </p>
                   <p className="chat-empty-sub">
-                    Send a message below to chat with your lovey ♥
+                    {isConnected
+                      ? 'Send a message or cute emoticon below to chat with your lovey '
+                      : 'You do not have a connection established with another user. Share your room code so your partner can join!'}
                   </p>
                 </div>
               ) : (
-                chatMessages.map((msg) => {
-                  const isMine = msg.sender === mySlot;
-                  const senderAv = msg.sender === 'p1' ? p1Avatar : p2Avatar;
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`chat-msg-row ${
-                        isMine ? 'mine' : 'partner'
-                      }`}
-                    >
-                      <div className="chat-msg-avatar">
-                        <CatAvatarSvg
-                          breed={senderAv.breed}
-                          accessory={senderAv.accessory}
-                          size={26}
-                          animateIdle={false}
-                        />
-                      </div>
-                      <div className="chat-msg-bubble">
-                        <div className="chat-msg-meta">
-                          <span className="chat-msg-sender">
-                            {isMine ? 'You' : senderAv.name}
-                          </span>
-                          <span className="chat-msg-time">
-                            {formatChatTime(msg.createdAt)}
-                          </span>
-                        </div>
-                        <p className="chat-msg-text">{msg.content}</p>
-                      </div>
+                <>
+                  {!isConnected && (
+                    <div className="chat-solo-thread-banner">
+                      Connection not established • Solo Mode
                     </div>
-                  );
-                })
+                  )}
+                  {displayMessages.map((msg) => {
+                    const isMine = msg.sender === mySlot;
+                    const senderAv = msg.sender === 'p1' ? p1Avatar : p2Avatar;
+                    const isSticker = QUICK_STICKERS.some(
+                      (s) => s.id === msg.content
+                    );
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`chat-msg-row ${
+                          isMine ? 'mine' : 'partner'
+                        } ${isSticker ? 'sticker-msg' : ''}`}
+                      >
+                        <div className="chat-msg-avatar">
+                          <CatAvatarSvg
+                            breed={senderAv.breed}
+                            accessory={senderAv.accessory}
+                            size={26}
+                            animateIdle={false}
+                          />
+                        </div>
+                        <div className="chat-msg-bubble">
+                          <div className="chat-msg-meta">
+                            <span className="chat-msg-sender">
+                              {isMine ? 'You' : senderAv.name}
+                            </span>
+                            <span className="chat-msg-time">
+                              {formatChatTime(msg.createdAt)}
+                            </span>
+                          </div>
+                          {isSticker ? (
+                            <div className="chat-sticker-content">
+                              <ReactionStickerSvg
+                                id={msg.content as ReactionStickerId}
+                                size={36}
+                                animated
+                              />
+                            </div>
+                          ) : (
+                            <p className="chat-msg-text">{msg.content}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
               )}
               <div ref={threadEndRef} />
+            </div>
+
+            {/* Quick Cat Emoticon Stickers Row */}
+            <div className="chat-emoticon-strip" role="group" aria-label="Cat Emoticon Stickers">
+              {QUICK_STICKERS.map((sticker) => (
+                <button
+                  key={sticker.id}
+                  type="button"
+                  className={`chat-emoticon-btn sticker-press ${
+                    !isConnected ? 'disabled' : ''
+                  }`}
+                  onClick={() => {
+                    if (!isConnected) return;
+                    onSendReaction(sticker.id, 'emoji');
+                  }}
+                  disabled={!isConnected}
+                  title={sticker.label}
+                  aria-label={sticker.label}
+                >
+                  <ReactionStickerSvg id={sticker.id} size={24} animated={false} />
+                </button>
+              ))}
             </div>
 
             {/* Message Input Bar */}
@@ -192,16 +266,32 @@ export function QuickChatBar({
                 className="chat-text-input"
                 value={customText}
                 maxLength={120}
-                placeholder="Write a message..."
+                placeholder={
+                  isConnected
+                    ? 'Write a message...'
+                    : 'Connect with partner to chat...'
+                }
+                disabled={!isConnected}
                 onInput={(e) =>
                   setCustomText((e.currentTarget as HTMLInputElement).value)
                 }
               />
-              <button type="submit" className="chat-send-btn sticker-press">
+              <button
+                type="submit"
+                className={`chat-send-btn sticker-press ${
+                  !isConnected ? 'disabled' : ''
+                }`}
+                disabled={!isConnected || !customText.trim()}
+              >
                 <span>Send</span>
                 <HeartIcon size={13} />
               </button>
             </form>
+            {!isConnected && (
+              <div className="chat-solo-warning-note">
+                Messaging is disabled while solo. Partner must join to chat!
+              </div>
+            )}
           </div>
         </div>
       )}

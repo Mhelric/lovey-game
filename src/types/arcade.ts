@@ -1,4 +1,4 @@
-export type GameMode = 'dama' | 'snakes' | 'doodle';
+export type GameMode = 'dama' | 'snakes' | 'uno' | 'doodle';
 
 export type PlayerSlot = 'p1' | 'p2';
 
@@ -30,6 +30,8 @@ export interface CoupleRoomRow {
   p2_dama_wins: number;
   p1_snakes_wins: number;
   p2_snakes_wins: number;
+  p1_uno_wins?: number;
+  p2_uno_wins?: number;
   p1_doodle_wins?: number;
   p2_doodle_wins?: number;
   current_mode: GameMode;

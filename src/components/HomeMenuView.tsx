@@ -21,6 +21,7 @@ import {
   SettingsGearIcon,
   SnakeLadderIcon,
   SparkleIcon,
+  UnoCardsIcon,
 } from './ArcadeIcons';
 import { QuickChatBar } from './QuickChatBar';
 import { normalizeRoomCode } from '../services/supabaseService';
@@ -35,6 +36,7 @@ interface HomeMenuViewProps {
   p2Online: boolean;
   hasSavedDama: boolean;
   hasSavedSnakes: boolean;
+  hasSavedUno?: boolean;
   hasSavedDoodle?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
@@ -44,6 +46,7 @@ interface HomeMenuViewProps {
   onSaveOnePhoneP2Avatar?: (avatar: CatAvatarConfig) => void;
   hasSaved1PhoneDama?: boolean;
   hasSaved1PhoneSnakes?: boolean;
+  hasSaved1PhoneUno?: boolean;
   hasSaved1PhoneDoodle?: boolean;
   saved1PhoneSnakesMaxTile?: SnakesMaxTile;
   onOpenSettings: () => void;
@@ -69,6 +72,7 @@ export function HomeMenuView({
   p2Online,
   hasSavedDama,
   hasSavedSnakes,
+  hasSavedUno = false,
   hasSavedDoodle = false,
   savedSnakesMaxTile,
   chatMessages,
@@ -78,6 +82,7 @@ export function HomeMenuView({
   onSaveOnePhoneP2Avatar,
   hasSaved1PhoneDama = false,
   hasSaved1PhoneSnakes = false,
+  hasSaved1PhoneUno = false,
   hasSaved1PhoneDoodle = false,
   saved1PhoneSnakesMaxTile = 100,
   onOpenSettings,
@@ -133,17 +138,21 @@ export function HomeMenuView({
       ? hasSavedDama
       : roomData.current_mode === 'snakes'
       ? hasSavedSnakes
+      : roomData.current_mode === 'uno'
+      ? hasSavedUno
       : hasSavedDoodle;
 
   // Only have the resume button when the player is in a room where the host has an active or saved match
   const hasSavedAny =
-    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedDoodle);
+    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno || hasSavedDoodle);
 
   // Strictly prioritize the room's CURRENT mode so rejoining never changes games unexpectedly!
   const activeSavedMode: GameMode = currentModeHasSaved
     ? roomData.current_mode
     : hasSavedSnakes
     ? 'snakes'
+    : hasSavedUno
+    ? 'uno'
     : hasSavedDoodle
     ? 'doodle'
     : hasSavedDama
@@ -153,6 +162,8 @@ export function HomeMenuView({
   const savedGameLabel =
     activeSavedMode === 'doodle'
       ? 'Doodle Clash'
+      : activeSavedMode === 'uno'
+      ? 'Cat Uno'
       : activeSavedMode === 'snakes'
       ? `Snakes (${savedSnakesMaxTile})`
       : 'Cat Dama';
@@ -162,13 +173,17 @@ export function HomeMenuView({
       ? hasSaved1PhoneDama
       : roomData.current_mode === 'snakes'
       ? hasSaved1PhoneSnakes
+      : roomData.current_mode === 'uno'
+      ? hasSaved1PhoneUno
       : hasSaved1PhoneDoodle;
 
   const hasSaved1PhoneAny =
-    hasSaved1PhoneDama || hasSaved1PhoneSnakes || hasSaved1PhoneDoodle;
+    hasSaved1PhoneDama || hasSaved1PhoneSnakes || hasSaved1PhoneUno || hasSaved1PhoneDoodle;
 
   const activeSaved1PhoneMode: GameMode = currentModeHas1PhoneSaved
     ? roomData.current_mode
+    : hasSaved1PhoneUno
+    ? 'uno'
     : hasSaved1PhoneDoodle
     ? 'doodle'
     : hasSaved1PhoneSnakes
@@ -180,6 +195,8 @@ export function HomeMenuView({
   const saved1PhoneLabel =
     activeSaved1PhoneMode === 'doodle'
       ? 'Doodle Clash'
+      : activeSaved1PhoneMode === 'uno'
+      ? 'Cat Uno'
       : activeSaved1PhoneMode === 'snakes'
       ? `Snakes (${saved1PhoneSnakesMaxTile || 100})`
       : 'Cat Dama';
@@ -847,6 +864,28 @@ export function HomeMenuView({
                 </span>
               </button>
 
+              {/* 2. Cat Uno Card */}
+              <button
+                type="button"
+                className="game-pick-btn uno-pick sticker-press"
+                onClick={() => {
+                  setPickingGame(false);
+                  onHostLaunchGame('uno', passAndPlay);
+                }}
+              >
+                <UnoCardsIcon size={26} />
+                <span className="role-main-label">Cat Uno</span>
+                <span className="role-sub-label">
+                  {passAndPlay
+                    ? hasSaved1PhoneUno
+                      ? 'Resume 1-Phone Match'
+                      : '2P Stacking & 7-Swap'
+                    : hasSavedUno && isJoined
+                    ? 'Resume Saved Match'
+                    : '2P Stacking & 7-Swap'}
+                </span>
+              </button>
+
               {/* 3. Doodle Clash Card */}
               <button
                 type="button"
@@ -964,6 +1003,7 @@ export function HomeMenuView({
           p1Avatar={roomData.p1_avatar}
           p2Avatar={roomData.p2_avatar}
           partnerOnline={p2Online}
+          isConnected={isJoined}
           onSendReaction={onSendReaction}
         />
       </footer>

@@ -94,13 +94,20 @@ export function setSoundMuted(muted: boolean): boolean {
    - 'dama'  : Groovy Playful Cat Duel Showdown Theme
    - 'snakes': Whimsical Carnival Adventure March Theme
    ========================================================================== */
-export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'doodle';
+export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno' | 'doodle';
 
 const DOODLE_MELODY: readonly [number, number][] = [
   [587, 294], [659, 0], [784, 392], [880, 0],
   [988, 330], [880, 0], [784, 392], [659, 0],
   [523, 262], [659, 0], [784, 330], [880, 0],
   [1047, 440], [880, 0], [784, 392], [587, 294],
+];
+
+const UNO_MELODY: readonly [number, number][] = [
+  [698, 349], [880, 0], [1047, 349], [880, 0],
+  [784, 392], [988, 0], [1175, 392], [988, 0],
+  [659, 330], [784, 0], [988, 330], [784, 0],
+  [880, 440], [1047, 0], [1319, 440], [880, 0],
 ];
 
 const MENU_MELODY: readonly [number, number][] = [
@@ -136,6 +143,7 @@ const BGM_CONFIGS: Record<
   }
 > = {
   doodle: { stepMs: 185, melody: DOODLE_MELODY, lType: 'triangle', lVol: 0.08, bType: 'sine', bVol: 0.07 },
+  uno: { stepMs: 180, melody: UNO_MELODY, lType: 'triangle', lVol: 0.075, bType: 'square', bVol: 0.05 },
   dama: { stepMs: 195, melody: DAMA_MELODY, lType: 'square', lVol: 0.065, bType: 'triangle', bVol: 0.08 },
   snakes: { stepMs: 210, melody: SNAKES_MELODY, lType: 'triangle', lVol: 0.085, bType: 'sine', bVol: 0.075 },
   menu: { stepMs: 240, melody: MENU_MELODY, lType: 'triangle', lVol: 0.08, bType: 'sine', bVol: 0.07 },
@@ -332,6 +340,27 @@ export function playVictoryFanfare(): void {
 export function playCardPlay(): void {
   playTone(520, 780, 0.065, 'sine', 0.45, 0);
   playTone(780, 1040, 0.05, 'triangle', 0.42, 0.04);
+}
+
+export function playCardDraw(): void {
+  playTone(440, 620, 0.06, 'triangle', 0.40, 0);
+}
+
+export function playUnoCall(): void {
+  playTone(587.33, 587.33, 0.08, 'sine', 0.45, 0);
+  playTone(880.0, 880.0, 0.09, 'triangle', 0.50, 0.06);
+  playTone(1174.66, 1174.66, 0.16, 'sine', 0.55, 0.13);
+  playCatMeow();
+}
+
+export function playColorSelect(): void {
+  playTone(659.25, 880.0, 0.08, 'sine', 0.42, 0);
+  playTone(880.0, 1046.5, 0.1, 'triangle', 0.45, 0.06);
+}
+
+export function playHandSwap(): void {
+  playTone(783.99, 392.0, 0.16, 'sine', 0.45, 0);
+  playTone(392.0, 880.0, 0.18, 'triangle', 0.48, 0.1);
 }
 
 export function playDoodleStrokePop(): void {
