@@ -30,7 +30,7 @@
   :root {
     --board-size: min(
       calc(100vw - 20px),
-      calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 196px)
+      calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 180px)
     );
   }
 }
@@ -541,7 +541,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   gap: 4px;
 }
@@ -574,10 +574,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  flex: 0 1 auto;
+  justify-content: center;
+  flex: 1;
   min-height: 0;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .dama-stage-container {
@@ -585,7 +587,6 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  margin-bottom: 24px;
   position: relative;
   flex-shrink: 0;
 }
@@ -4817,7 +4818,6 @@ body {
   height: var(--board-size);
   max-width: 440px;
   max-height: 440px;
-  margin-bottom: 24px;
   position: relative;
   user-select: none;
   touch-action: manipulation;
@@ -5370,8 +5370,8 @@ body {
 .doodle-stage-container {
   width: 100%;
   max-width: 480px;
-  height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 126px);
-  max-height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 126px);
+  height: 100%;
+  max-height: 100%;
   flex: 1;
   min-height: 0;
   position: relative;
@@ -5714,11 +5714,10 @@ body {
 }
 
 .doodle-canvas-frame {
-  flex: 1;
+  flex: 1 1 0;
   width: 100%;
-  height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 270px);
-  max-height: calc(var(--app-height, 100vh) - var(--safe-top) - var(--safe-bottom) - 270px);
-  min-height: 130px;
+  height: 100%;
+  min-height: 140px;
   position: relative;
   border-radius: 14px;
   border: 2.5px solid var(--ink);
@@ -5726,16 +5725,16 @@ body {
   box-shadow: 0 2.5px 0 var(--ink);
   overflow: hidden;
   touch-action: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   box-sizing: border-box;
 }
 
 .doodle-drawing-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  max-height: 100%;
   min-width: 0;
   min-height: 0;
   touch-action: none;
@@ -5976,23 +5975,6 @@ body {
     font-size: 12.5px !important;
     padding: 2px 14px 2px 6px !important;
   }
-  .dama-stage-container {
-    margin-bottom: 22px !important;
-    gap: 4px !important;
-  }
-  .uno-stage-container {
-    margin-bottom: 22px !important;
-  }
-  .doodle-stage-container {
-    height: 334px !important;
-    max-height: 334px !important;
-    flex: 0 0 auto !important;
-  }
-  .doodle-canvas-frame {
-    height: 186px !important;
-    max-height: 186px !important;
-    min-height: 140px !important;
-  }
   .ingame-bottom-dock {
     height: 48px !important;
     min-height: 48px !important;
@@ -6060,20 +6042,6 @@ body {
     padding: 2px 6px !important;
     font-size: 10px !important;
     min-height: 24px !important;
-  }
-}
-
-@media (min-height: 701px) {
-  .ingame-screen-layout {
-    justify-content: space-between;
-  }
-  .ingame-board-center {
-    flex: 1;
-    justify-content: center;
-  }
-  .dama-stage-container,
-  .uno-stage-container {
-    margin-bottom: 0;
   }
 }
 

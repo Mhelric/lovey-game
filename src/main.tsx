@@ -61,10 +61,7 @@ const syncViewportVars = () => {
   }
 
   const h = stableViewportH || rawH;
-  const boardSize =
-    h <= 700
-      ? Math.max(200, Math.min(w - 64, h - 250, 276))
-      : Math.max(250, Math.min(w - 20, h - 210, 440));
+  const boardSize = Math.max(220, Math.min(w - 20, h - 180, 440));
   const docStyle = document.documentElement.style;
   docStyle.setProperty('--app-height', `${h}px`);
   docStyle.setProperty('--board-size', `${boardSize}px`);
