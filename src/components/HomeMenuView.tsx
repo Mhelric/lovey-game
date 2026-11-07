@@ -628,29 +628,17 @@ export function HomeMenuView({
                 </button>
               </div>
 
-              {isOnlineSolo ? (
-                <div className="online-solo-waiting-card anim-fade-scale">
-                  <div className="waiting-pill-header">
-                    <span className="mini-paw-spinner" aria-hidden="true" />
-                    <span>Waiting for partner to join…</span>
-                  </div>
-                  <p className="waiting-partner-note">
-                    Share Room Code <strong>{roomData.room_code}</strong> to connect, or switch to 1-Phone mode above!
-                  </p>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="vibrant-play-btn sticker-press"
-                  onClick={() => {
-                    playTapPop();
-                    setPickingGame(true);
-                  }}
-                >
-                  <span>{passAndPlay ? 'Play 1-Phone Game' : 'Play Game'}</span>
-                  <PawIcon size={19} />
-                </button>
-              )}
+              <button
+                type="button"
+                className="vibrant-play-btn sticker-press"
+                onClick={() => {
+                  playTapPop();
+                  setPickingGame(true);
+                }}
+              >
+                <span>{passAndPlay ? 'Play 1-Phone Game' : 'Play Game'}</span>
+                <PawIcon size={19} />
+              </button>
             </div>
           )}
         </div>
