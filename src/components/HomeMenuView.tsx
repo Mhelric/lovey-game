@@ -20,7 +20,6 @@ import {
   SettingsGearIcon,
   SnakeLadderIcon,
   SparkleIcon,
-  UnoCardsIcon,
 } from './ArcadeIcons';
 import { QuickChatBar } from './QuickChatBar';
 import { normalizeRoomCode } from '../services/supabaseService';
@@ -35,7 +34,6 @@ interface HomeMenuViewProps {
   p2Online: boolean;
   hasSavedDama: boolean;
   hasSavedSnakes: boolean;
-  hasSavedUno?: boolean;
   hasSavedDoodle?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
@@ -62,7 +60,6 @@ export function HomeMenuView({
   p2Online,
   hasSavedDama,
   hasSavedSnakes,
-  hasSavedUno = false,
   hasSavedDoodle = false,
   savedSnakesMaxTile,
   chatMessages,
@@ -102,26 +99,20 @@ export function HomeMenuView({
   const isHost = mySlot === 'p1';
   // Only have the resume button when the player is in a room where the host has a past game saved
   const hasSavedAny =
-    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno || hasSavedDoodle);
+    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedDoodle);
   const activeSavedMode: GameMode =
     roomData.current_mode === 'doodle' && hasSavedDoodle
       ? 'doodle'
-      : roomData.current_mode === 'uno' && hasSavedUno
-      ? 'uno'
       : roomData.current_mode === 'snakes' && hasSavedSnakes
       ? 'snakes'
       : hasSavedDama
       ? 'dama'
       : hasSavedDoodle
       ? 'doodle'
-      : hasSavedUno
-      ? 'uno'
       : 'snakes';
   const savedGameLabel =
     activeSavedMode === 'doodle'
       ? 'Doodle Clash'
-      : activeSavedMode === 'uno'
-      ? 'Cat Uno'
       : activeSavedMode === 'snakes'
       ? `Snakes (${savedSnakesMaxTile})`
       : 'Cat Dama';
@@ -683,24 +674,6 @@ export function HomeMenuView({
                   {hasSavedDama && isJoined
                     ? 'Resume Saved Match'
                     : '3D Filipino Checkers'}
-                </span>
-              </button>
-
-              {/* 2. Cat Uno Card */}
-              <button
-                type="button"
-                className="game-pick-btn uno-pick sticker-press"
-                onClick={() => {
-                  setPickingGame(false);
-                  onHostLaunchGame('uno', !p2Online);
-                }}
-              >
-                <UnoCardsIcon size={26} />
-                <span className="role-main-label">Cat Uno</span>
-                <span className="role-sub-label">
-                  {hasSavedUno && isJoined
-                    ? 'Resume Saved Match'
-                    : '2P Stacking & 7-Swap'}
                 </span>
               </button>
 

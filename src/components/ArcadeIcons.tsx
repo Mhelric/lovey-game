@@ -705,62 +705,6 @@ export function SnakeLadderIcon({ size = 18 }: IconProps) {
   );
 }
 
-export function UnoCardsIcon({ size = 18, className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 26 26"
-      width={size}
-      height={size}
-      className={className}
-      aria-hidden="true"
-    >
-      {/* Back Sky Blue Card tilted left */}
-      <g transform="translate(4.5, 3) rotate(-14 8 10)">
-        <rect
-          x="0"
-          y="0"
-          width="12.5"
-          height="17.5"
-          rx="3.2"
-          fill="#38BDF8"
-          stroke="#5B2A4E"
-          strokeWidth="2"
-        />
-        <ellipse
-          cx="6.25"
-          cy="8.75"
-          rx="4.2"
-          ry="3"
-          transform="rotate(25 6.25 8.75)"
-          fill="#ffffff"
-        />
-      </g>
-      {/* Front Strawberry Red Card tilted right */}
-      <g transform="translate(10, 5) rotate(12 8 10)">
-        <rect
-          x="0"
-          y="0"
-          width="12.5"
-          height="17.5"
-          rx="3.2"
-          fill="#FF4B72"
-          stroke="#5B2A4E"
-          strokeWidth="2"
-        />
-        <ellipse
-          cx="6.25"
-          cy="8.75"
-          rx="4.2"
-          ry="3"
-          transform="rotate(-25 6.25 8.75)"
-          fill="#FFF8F2"
-        />
-        <circle cx="6.25" cy="8.75" r="1.4" fill="#FF4B72" />
-      </g>
-    </svg>
-  );
-}
-
 /**
  * Doodle Clash Game Mode Icon: Cute Artist Palette with Dual Paint Brushes & Kawaii Swatches
  */
