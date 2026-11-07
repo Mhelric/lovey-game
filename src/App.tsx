@@ -1315,6 +1315,9 @@ export function App() {
       } else if (modeToJoin === 'snakes') {
         const s = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
         if (s && typeof s.boardSeed === 'number') setSnakesState(s);
+      } else if (modeToJoin === 'uno') {
+        const s = loadLocalGameSavestate<UnoGameState>('', 'uno', true);
+        if (s && typeof s.matchSeed === 'number') setUnoState(s);
       } else if (modeToJoin === 'doodle') {
         const s = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
         if (s && typeof s.matchSeed === 'number') setDoodleState(s);
@@ -1331,6 +1334,9 @@ export function App() {
     } else if (modeToJoin === 'snakes') {
       const s = loadLocalGameSavestate<SnakesGameState>(roomCode, 'snakes', false);
       if (s && typeof s.boardSeed === 'number') setSnakesState(s);
+    } else if (modeToJoin === 'uno') {
+      const s = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno', false);
+      if (s && typeof s.matchSeed === 'number') setUnoState(s);
     } else if (modeToJoin === 'doodle') {
       const s = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle', false);
       if (s && typeof s.matchSeed === 'number') setDoodleState(s);
@@ -1416,6 +1422,13 @@ export function App() {
           : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
         setSnakesState(nextSnakes);
         saveLocalGameSavestate('', 'snakes', nextSnakes, true);
+      } else if (selectedMode === 'uno') {
+        const saved = loadLocalGameSavestate<UnoGameState>('', 'uno', true);
+        const nextUno = !forceNewMatch && saved && isUnoMatchActive(saved)
+          ? saved
+          : createInitialUnoState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+        setUnoState(nextUno);
+        saveLocalGameSavestate('', 'uno', nextUno, true);
       } else {
         const saved = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
         const nextDoodle = !forceNewMatch && saved && isDoodleMatchActive(saved)
@@ -1438,6 +1451,12 @@ export function App() {
         : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
       setSnakesState(nextSnakes);
       broadcastAndPersistMatch('snakes', nextSnakes.turn, nextSnakes.boardSeed, nextSnakes, nextSnakes.winner);
+    } else if (selectedMode === 'uno') {
+      const nextUno = !forceNewMatch && isUnoMatchActive(unoState)
+        ? unoState
+        : createInitialUnoState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+      setUnoState(nextUno);
+      broadcastAndPersistMatch('uno', nextUno.turn, nextUno.matchSeed, nextUno, nextUno.winner);
     } else {
       const nextDoodle = !forceNewMatch && isDoodleMatchActive(doodleState)
         ? doodleState

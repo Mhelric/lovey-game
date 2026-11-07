@@ -366,7 +366,7 @@ export function DoodleBoardView({
                       <HeartIcon size={11} />
                     </span>
                   ))}
-                  <span>{guessesLeft}/3</span>
+                  <span>{guessesLeft} {guessesLeft === 1 ? 'try' : 'tries'} left</span>
                 </div>
               )}
             </div>
@@ -768,12 +768,6 @@ export function DoodleBoardView({
                 /* 'guessing' phase: Drawer is done, Guesser gets 3 guesses! */
                 isGuesser ? (
                   <div className="doodle-guesser-deck">
-                    <div className="doodle-tries-outside-row">
-                      <span className="doodle-tries-outside-indicator">
-                        <HeartIcon size={12} />
-                        <span>{guessesLeft} {guessesLeft === 1 ? 'try' : 'tries'} left</span>
-                      </span>
-                    </div>
                     <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
                       <input
                         type="text"
@@ -788,7 +782,7 @@ export function DoodleBoardView({
                       />
                       <button
                         type="submit"
-                        className="vibrant-play-btn doodle-send-guess-btn sticker-press"
+                        className="doodle-send-guess-btn sticker-press"
                         disabled={!guessInputText.trim()}
                       >
                         <span>Guess</span>

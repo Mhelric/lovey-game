@@ -131,6 +131,31 @@ export function HomeMenuView({
   const joinInputRef = useRef<HTMLInputElement | null>(null);
 
   const isHost = mySlot === 'p1';
+  const isOnlineSolo = !passAndPlay && !isJoined;
+
+  const [savedConfirmState, setSavedConfirmState] = useState<{
+    mode: GameMode;
+    snakesTiles?: SnakesMaxTile;
+  } | null>(null);
+
+  const hasSavedMode = (mode: GameMode, tiles: SnakesMaxTile) => {
+    if (mode === 'dama') return passAndPlay ? !!hasSaved1PhoneDama : !!(hasSavedDama && isJoined);
+    if (mode === 'uno') return passAndPlay ? !!hasSaved1PhoneUno : !!(hasSavedUno && isJoined);
+    if (mode === 'doodle') return passAndPlay ? !!hasSaved1PhoneDoodle : !!(hasSavedDoodle && isJoined);
+    const tileMatch = (passAndPlay ? saved1PhoneSnakesMaxTile : savedSnakesMaxTile) === tiles;
+    return passAndPlay ? !!(hasSaved1PhoneSnakes && tileMatch) : !!(hasSavedSnakes && isJoined && tileMatch);
+  };
+
+  const handleGameCardClick = (mode: GameMode, tiles: SnakesMaxTile = snakesTiles) => {
+    if (isOnlineSolo) return;
+    playTapPop();
+    if (hasSavedMode(mode, tiles)) {
+      setSavedConfirmState({ mode, snakesTiles: tiles });
+    } else {
+      setPickingGame(false);
+      onHostLaunchGame(mode, passAndPlay, tiles, true);
+    }
+  };
 
   // Check if current room mode has an ongoing saved match
   const currentModeHasSaved =
@@ -725,15 +750,28 @@ export function HomeMenuView({
 
               <button
                 type="button"
-                className="vibrant-play-btn sticker-press"
+                className={`vibrant-play-btn sticker-press ${isOnlineSolo ? 'disabled-play' : ''}`}
+                disabled={isOnlineSolo}
                 onClick={() => {
+                  if (isOnlineSolo) return;
                   playTapPop();
                   setPickingGame(true);
                 }}
               >
-                <span>{passAndPlay ? 'Play 1-Phone Game' : 'Play Game'}</span>
+                <span>
+                  {passAndPlay
+                    ? 'Play 1-Phone Game'
+                    : isJoined
+                    ? 'Play Game'
+                    : 'Waiting for Partner to Join...'}
+                </span>
                 <PawIcon size={19} />
               </button>
+              {isOnlineSolo && (
+                <p className="waiting-partner-note">
+                  Share Room Code <strong>{roomData.room_code}</strong> to connect and play online!
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -769,7 +807,7 @@ export function HomeMenuView({
                     ? `1-Phone Mode • With ${onePhoneP2Avatar.name}`
                     : isJoined
                     ? `Playing with ${roomData.p2_avatar.name}`
-                    : 'Choose a game to launch'}
+                    : 'Waiting for partner to join...'}
                 </p>
               </div>
               <button
@@ -784,6 +822,14 @@ export function HomeMenuView({
                 <CloseIcon size={15} />
               </button>
             </div>
+
+            {/* Solo Online Warning Banner */}
+            {isOnlineSolo && (
+              <div className="status-pill-banner warning compact anim-fade-scale" style={{ margin: '4px 0 10px 0' }}>
+                <AlertCircleIcon size={13} />
+                <span>Waiting for a partner to join room <strong>{roomData.room_code}</strong>. Switch to 1-Phone mode above to play solo!</span>
+              </div>
+            )}
 
             {/* 1-Phone Mode Toggle Below Header */}
             <div className="pick-one-phone-card">
@@ -845,11 +891,9 @@ export function HomeMenuView({
               {/* 1. Cat Dama Card */}
               <button
                 type="button"
-                className="game-pick-btn dama-pick sticker-press"
-                onClick={() => {
-                  setPickingGame(false);
-                  onHostLaunchGame('dama', passAndPlay, 100);
-                }}
+                className={`game-pick-btn dama-pick sticker-press ${isOnlineSolo ? 'disabled-pick' : ''}`}
+                disabled={isOnlineSolo}
+                onClick={() => handleGameCardClick('dama', 100)}
               >
                 <CrownIcon size={26} />
                 <span className="role-main-label">Cat Dama</span>
@@ -867,11 +911,9 @@ export function HomeMenuView({
               {/* 2. Cat Uno Card */}
               <button
                 type="button"
-                className="game-pick-btn uno-pick sticker-press"
-                onClick={() => {
-                  setPickingGame(false);
-                  onHostLaunchGame('uno', passAndPlay);
-                }}
+                className={`game-pick-btn uno-pick sticker-press ${isOnlineSolo ? 'disabled-pick' : ''}`}
+                disabled={isOnlineSolo}
+                onClick={() => handleGameCardClick('uno')}
               >
                 <UnoCardsIcon size={26} />
                 <span className="role-main-label">Cat Uno</span>
@@ -889,11 +931,9 @@ export function HomeMenuView({
               {/* 3. Doodle Clash Card */}
               <button
                 type="button"
-                className="game-pick-btn doodle-pick sticker-press"
-                onClick={() => {
-                  setPickingGame(false);
-                  onHostLaunchGame('doodle', passAndPlay);
-                }}
+                className={`game-pick-btn doodle-pick sticker-press ${isOnlineSolo ? 'disabled-pick' : ''}`}
+                disabled={isOnlineSolo}
+                onClick={() => handleGameCardClick('doodle')}
               >
                 <DoodleClashIcon size={26} />
                 <span className="role-main-label">Doodle Clash</span>
@@ -909,14 +949,12 @@ export function HomeMenuView({
               </button>
 
               {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
-              <div className="game-pick-btn snakes-pick-card">
+              <div className={`game-pick-btn snakes-pick-card ${isOnlineSolo ? 'disabled-pick' : ''}`}>
                 <button
                   type="button"
                   className="snakes-launch-hit sticker-press"
-                  onClick={() => {
-                    setPickingGame(false);
-                    onHostLaunchGame('snakes', passAndPlay, snakesTiles);
-                  }}
+                  disabled={isOnlineSolo}
+                  onClick={() => handleGameCardClick('snakes', snakesTiles)}
                 >
                   <SnakeLadderIcon size={24} />
                   <span className="role-main-label">Snakes &amp; Ladders</span>
@@ -962,6 +1000,96 @@ export function HomeMenuView({
           </div>
         </div>
       )}
+
+      {/* Saved Match Confirmation Modal Window */}
+      {savedConfirmState && (() => {
+        const title =
+          savedConfirmState.mode === 'dama'
+            ? 'Cat Dama'
+            : savedConfirmState.mode === 'uno'
+            ? 'Cat Uno'
+            : savedConfirmState.mode === 'doodle'
+            ? 'Doodle Clash'
+            : `Snakes & Ladders (${savedConfirmState.snakesTiles ?? 100})`;
+        return (
+          <div
+            className="modal-backdrop saved-confirm-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Continue Saved Game"
+            onClick={() => {
+              playTapPop();
+              setSavedConfirmState(null);
+            }}
+          >
+            <div
+              className="modal-card saved-confirm-modal-card anim-fade-scale"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div className="modal-title-group">
+                  <h3
+                    className="modal-title"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <SparkleIcon size={18} />
+                    <span>Saved Game Found</span>
+                  </h3>
+                  <p className="modal-subtitle">
+                    {title} • {passAndPlay ? '1-Phone' : 'Online'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="cozy-close-btn"
+                  onClick={() => {
+                    playTapPop();
+                    setSavedConfirmState(null);
+                  }}
+                  aria-label="Close modal"
+                >
+                  <CloseIcon size={15} />
+                </button>
+              </div>
+
+              <p className="saved-confirm-desc">
+                You have an unfinished game of <strong>{title}</strong>. Would you like to continue your saved game or start a fresh match?
+              </p>
+
+              <div className="saved-confirm-actions">
+                <button
+                  type="button"
+                  className="saved-confirm-resume-btn sticker-press"
+                  onClick={() => {
+                    playTapPop();
+                    const { mode, snakesTiles: targetTiles } = savedConfirmState;
+                    setSavedConfirmState(null);
+                    setPickingGame(false);
+                    onHostLaunchGame(mode, passAndPlay, targetTiles, false);
+                  }}
+                >
+                  <PawIcon size={15} />
+                  <span>Continue Saved Game</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="saved-confirm-fresh-btn sticker-press"
+                  onClick={() => {
+                    playTapPop();
+                    const { mode, snakesTiles: targetTiles } = savedConfirmState;
+                    setSavedConfirmState(null);
+                    setPickingGame(false);
+                    onHostLaunchGame(mode, passAndPlay, targetTiles, true);
+                  }}
+                >
+                  <span>Start New Game</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Player 2 Setup Modal for 1-Phone Mode */}
       {P2SetupComp && p2SetupOpen && (
