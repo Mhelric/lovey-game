@@ -1931,18 +1931,10 @@ export function App() {
                 const av = isP1 ? effectiveP1Avatar : effectiveP2Avatar;
                 const name = isP1 ? p1DisplayName : p2DisplayName;
                 const online = isP1 ? p1Online : p2Online;
-                const isLastMover =
-                  roomData.current_mode === 'dama' &&
-                  damaState.lastAction?.mover === slot;
                 const tag =
                   roomData.current_mode === 'dama' ? (
                     <>
-                      <PawIcon size={10} /> {isP1 ? p1CapturedCount : p2CapturedCount} eaten
-                      {isLastMover && (
-                        <span style={{ color: '#ff3366', fontWeight: 800 }}>
-                          {' '}• Moved
-                        </span>
-                      )}
+                      <PawIcon size={9} /> {isP1 ? p1CapturedCount : p2CapturedCount} eaten
                     </>
                   ) : roomData.current_mode === 'doodle' ? (
                     `${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
@@ -1989,7 +1981,7 @@ export function App() {
                         <CatAvatarSvg
                           breed={av.breed}
                           accessory={av.accessory}
-                          size={28}
+                          size={26}
                           animateIdle={false}
                         />
                         <span
