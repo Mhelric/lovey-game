@@ -74,6 +74,12 @@ import {
 } from './services/soundEffects';
 
 /**
+ * Persistent registry of matches that already ran the First-Turn Shuffle Roulette
+ * Prevents re-triggering roulette animation when returning/resuming from menu.
+ */
+const shuffledMatchKeys = new Set<string>();
+
+/**
  * Fun First-Turn Shuffle Ceremony Modal (Applies to Both Cat Dama & Snakes & Ladders)
  * Rapidly bounces a golden spotlight & crown pointer between both players' cats
  * before landing on the randomly selected starting player!
@@ -93,20 +99,22 @@ function FirstTurnShuffleOverlay({
   p2Avatar: CatAvatarConfig;
   onShuffleActiveChange?: (active: boolean) => void;
 }) {
+  const isAlreadyShuffled = shuffledMatchKeys.has(matchKey);
   const [phase, setPhase] = useState<'idle' | 'shuffling' | 'revealed'>(
-    () => (isFreshMatch ? 'shuffling' : 'idle')
+    () => (isFreshMatch && !isAlreadyShuffled ? 'shuffling' : 'idle')
   );
   const [highlightSlot, setHighlightSlot] = useState<PlayerSlot>('p1');
-  const lastShuffledKeyRef = useRef<string>('');
+  const lastShuffledKeyRef = useRef<string>(isAlreadyShuffled ? matchKey : '');
 
   useEffect(() => {
-    if (!isFreshMatch) {
+    if (!isFreshMatch || shuffledMatchKeys.has(matchKey)) {
       setPhase('idle');
       onShuffleActiveChange?.(false);
       return;
     }
     if (lastShuffledKeyRef.current === matchKey) return;
     lastShuffledKeyRef.current = matchKey;
+    shuffledMatchKeys.add(matchKey);
 
     setPhase('shuffling');
     onShuffleActiveChange?.(true);
@@ -338,23 +346,30 @@ function loadLocalActiveSession(
   return p && (p.screen === 'menu' || p.screen === 'play') && p.mode ? (p as any) : null;
 }
 
-function isDamaInProgress(s: DamaGameState | null | undefined): boolean {
+function isDamaMatchActive(s: DamaGameState | null | undefined): boolean {
   if (!s || !Array.isArray(s.board) || s.winner) return false;
   return Boolean(
-    s.lastAction || s.p1Remaining < 12 || s.p2Remaining < 12
+    (s.matchSeed && s.matchSeed !== 0) ||
+    s.lastAction ||
+    s.p1Remaining < 12 ||
+    s.p2Remaining < 12
   );
 }
 
-function isSnakesInProgress(s: SnakesGameState | null | undefined): boolean {
+function isSnakesMatchActive(s: SnakesGameState | null | undefined): boolean {
   if (!s || typeof s.boardSeed !== 'number' || s.winner) return false;
   return Boolean(
-    s.p1Tile > 1 || s.p2Tile > 1 || s.lastAnimation
+    s.boardSeed !== 202610 ||
+    s.p1Tile > 1 ||
+    s.p2Tile > 1 ||
+    s.lastAnimation
   );
 }
 
-function isDoodleInProgress(s: DoodleGameState | null | undefined): boolean {
+function isDoodleMatchActive(s: DoodleGameState | null | undefined): boolean {
   if (!s || s.winner) return false;
   return Boolean(
+    s.matchSeed !== 202612 ||
     s.round > 1 ||
     s.selectedWord ||
     (s.strokes && s.strokes.length > 0) ||
@@ -364,8 +379,12 @@ function isDoodleInProgress(s: DoodleGameState | null | undefined): boolean {
   );
 }
 
-const damaScore = (s: DamaGameState) => Math.max(0, 24 - (s.p1Remaining + s.p2Remaining)) * 10 + (s.lastAction ? 1 : 0) + (s.winner ? 1000 : 0);
-const snakesScore = (s: SnakesGameState) => (s.p1Tile - 1) + (s.p2Tile - 1) + (s.lastAnimation ? 1 : 0) + (s.winner ? 1000 : 0);
+const damaScore = (s: DamaGameState) =>
+  Math.max(0, 24 - (s.p1Remaining + s.p2Remaining)) * 10 +
+  (s.lastAction ? 1 : 0) +
+  (s.winner ? 1000 : 0);
+const snakesScore = (s: SnakesGameState) =>
+  s.p1Tile - 1 + (s.p2Tile - 1) + (s.lastAnimation ? 1 : 0) + (s.winner ? 1000 : 0);
 const doodleScore = (s: DoodleGameState) =>
   (s.round - 1) * 500 +
   s.p1Score +
@@ -374,20 +393,64 @@ const doodleScore = (s: DoodleGameState) =>
   (s.guesses?.length ?? 0) * 5 +
   (s.winner ? 10000 : 0);
 
-function mergeDamaSavestate(l: DamaGameState, inc?: DamaGameState): DamaGameState {
+function mergeDamaSavestate(
+  l: DamaGameState,
+  inc?: DamaGameState,
+  isPlayingLive = false
+): DamaGameState {
   if (!inc?.board) return l;
-  if ((l.matchSeed ?? 0) === (inc.matchSeed ?? 0) && (l.matchSeed ?? 0) !== 0) return damaScore(inc) >= damaScore(l) ? inc : l;
-  return !inc.matchSeed && isDamaInProgress(l) ? l : inc;
+  if ((l.matchSeed ?? 0) === (inc.matchSeed ?? 0) && (l.matchSeed ?? 0) !== 0) {
+    return damaScore(inc) >= damaScore(l) ? inc : l;
+  }
+  const lActive = isDamaMatchActive(l);
+  const incActive = isDamaMatchActive(inc);
+  if (lActive && !incActive) return l;
+  if (!lActive && incActive) return inc;
+  if (lActive && incActive) {
+    if (isPlayingLive) return l;
+    return damaScore(inc) >= damaScore(l) ? inc : l;
+  }
+  return !inc.matchSeed ? l : inc;
 }
-function mergeSnakesSavestate(l: SnakesGameState, inc?: SnakesGameState): SnakesGameState {
+
+function mergeSnakesSavestate(
+  l: SnakesGameState,
+  inc?: SnakesGameState,
+  isPlayingLive = false
+): SnakesGameState {
   if (typeof inc?.boardSeed !== 'number') return l;
-  if (l.boardSeed === inc.boardSeed) return snakesScore(inc) >= snakesScore(l) ? inc : l;
-  return inc.boardSeed === 202610 && isSnakesInProgress(l) ? l : inc;
+  if (l.boardSeed === inc.boardSeed) {
+    return snakesScore(inc) >= snakesScore(l) ? inc : l;
+  }
+  const lActive = isSnakesMatchActive(l);
+  const incActive = isSnakesMatchActive(inc);
+  if (lActive && !incActive) return l;
+  if (!lActive && incActive) return inc;
+  if (lActive && incActive) {
+    if (isPlayingLive) return l;
+    return snakesScore(inc) >= snakesScore(l) ? inc : l;
+  }
+  return inc.boardSeed === 202610 ? l : inc;
 }
-function mergeDoodleSavestate(l: DoodleGameState, inc?: DoodleGameState): DoodleGameState {
+
+function mergeDoodleSavestate(
+  l: DoodleGameState,
+  inc?: DoodleGameState,
+  isPlayingLive = false
+): DoodleGameState {
   if (!inc?.phase) return l;
-  if (l.matchSeed === inc.matchSeed) return doodleScore(inc) >= doodleScore(l) ? inc : l;
-  return inc.matchSeed === 202612 && isDoodleInProgress(l) ? l : inc;
+  if (l.matchSeed === inc.matchSeed) {
+    return doodleScore(inc) >= doodleScore(l) ? inc : l;
+  }
+  const lActive = isDoodleMatchActive(l);
+  const incActive = isDoodleMatchActive(inc);
+  if (lActive && !incActive) return l;
+  if (!lActive && incActive) return inc;
+  if (lActive && incActive) {
+    if (isPlayingLive) return l;
+    return doodleScore(inc) >= doodleScore(l) ? inc : l;
+  }
+  return inc.matchSeed === 202612 ? l : inc;
 }
 
 
@@ -487,9 +550,9 @@ export function App() {
       const savedSnakes = loadLocalGameSavestate<SnakesGameState>(roomCode, 'snakes');
       const savedDoodle = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle');
       return Boolean(
-        (savedSession.mode === 'dama' && savedDama && isDamaInProgress(savedDama)) ||
-        (savedSession.mode === 'snakes' && savedSnakes && isSnakesInProgress(savedSnakes)) ||
-        (savedSession.mode === 'doodle' && savedDoodle && isDoodleInProgress(savedDoodle))
+        (savedSession.mode === 'dama' && isDamaMatchActive(savedDama)) ||
+        (savedSession.mode === 'snakes' && isSnakesMatchActive(savedSnakes)) ||
+        (savedSession.mode === 'doodle' && isDoodleMatchActive(savedDoodle))
       );
     }
     return false;
@@ -803,6 +866,9 @@ export function App() {
           setPartnerLeftModalOpen(false);
           setPassAndPlay(false);
           setOnlineSeen((prev) => ({ ...prev, [event.slot]: Date.now() }));
+          // Reset turn timer on partner rejoin so neither player is penalized by paused time
+          setTimeRemaining(timerDurationSecRef.current);
+          autoMoveExecutingRef.current = false;
           setRoomData((prev) =>
             event.slot === 'p1'
               ? { ...prev, p1_avatar: event.avatar }
@@ -862,22 +928,25 @@ export function App() {
               String(event.timerConfig.durationSec)
             );
           }
+          const isLive = activeScreenRef.current === 'play' && !passAndPlay;
           const inDama = event.damaState as DamaGameState | undefined;
           if (inDama && Array.isArray(inDama.board)) {
-            setDamaState((prev) => mergeDamaSavestate(prev, inDama));
+            setDamaState((prev) => mergeDamaSavestate(prev, inDama, isLive));
           }
           const inSnakes = event.snakesState as SnakesGameState | undefined;
           if (inSnakes && typeof inSnakes.boardSeed === 'number') {
-            setSnakesState((prev) => mergeSnakesSavestate(prev, inSnakes));
+            setSnakesState((prev) => mergeSnakesSavestate(prev, inSnakes, isLive));
           }
           const inDoodle = event.doodleState as DoodleGameState | undefined;
           if (inDoodle && typeof inDoodle.matchSeed === 'number') {
-            setDoodleState((prev) => mergeDoodleSavestate(prev, inDoodle));
+            setDoodleState((prev) => mergeDoodleSavestate(prev, inDoodle, isLive));
           }
+          // Only sync room mode from snapshot if we are on the menu, so an active match is never hijacked
           if (
-            event.currentMode === 'dama' ||
-            event.currentMode === 'snakes' ||
-            event.currentMode === 'doodle'
+            (event.currentMode === 'dama' ||
+              event.currentMode === 'snakes' ||
+              event.currentMode === 'doodle') &&
+            activeScreenRef.current === 'menu'
           ) {
             setRoomData((prev) => ({
               ...prev,
@@ -1170,26 +1239,37 @@ export function App() {
       return;
     }
 
+    // 2-Phone Online Rejoin: Ensure latest savestate for modeToJoin is loaded from local storage
+    if (modeToJoin === 'dama') {
+      const s = loadLocalGameSavestate<DamaGameState>(roomCode, 'dama', false);
+      if (s && Array.isArray(s.board)) setDamaState(s);
+    } else if (modeToJoin === 'snakes') {
+      const s = loadLocalGameSavestate<SnakesGameState>(roomCode, 'snakes', false);
+      if (s && typeof s.boardSeed === 'number') setSnakesState(s);
+    } else if (modeToJoin === 'doodle') {
+      const s = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle', false);
+      if (s && typeof s.matchSeed === 'number') setDoodleState(s);
+    }
+
+    // Reset turn timer on unpause / rejoin so neither player gets auto-moved immediately
+    setTimeRemaining(timerDurationSecRef.current);
+    autoMoveExecutingRef.current = false;
+
     setActiveScreen('play');
     saveLocalActiveSession(roomCode, 'play', modeToJoin, false);
+
     // Announce to partner that we rejoined the game
     channelRef.current?.sendBroadcast({
       type: 'partner_joined',
       slot: mySlot,
       avatar: myAvatarRef.current,
     });
-    // Request latest peer savestate in case moves happened while we were on menu
+    // Request latest peer savestate in case partner made moves or was waiting live
     channelRef.current?.sendBroadcast({
       type: 'request_savestate',
       slot: mySlot,
     });
     if (mySlot === 'p1') {
-      channelRef.current?.sendBroadcast({
-        type: 'start_match',
-        mode: modeToJoin,
-        snakesMaxTile: snakesState.maxTile ?? 100,
-        sender: 'p1',
-      });
       updateRoomModeInDb(roomCode, modeToJoin);
     }
   };
@@ -1239,21 +1319,21 @@ export function App() {
     if (soloPractice) {
       if (selectedMode === 'dama') {
         const saved = loadLocalGameSavestate<DamaGameState>('', 'dama', true);
-        const nextDama = !forceNewMatch && saved && isDamaInProgress(saved)
+        const nextDama = !forceNewMatch && saved && isDamaMatchActive(saved)
           ? saved
           : createInitialDamaState(pickFairStartingTurn());
         setDamaState(nextDama);
         saveLocalGameSavestate('', 'dama', nextDama, true);
       } else if (selectedMode === 'snakes') {
         const saved = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
-        const nextSnakes = !forceNewMatch && saved && isSnakesInProgress(saved) && (saved.maxTile ?? 100) === snakesMaxTile
+        const nextSnakes = !forceNewMatch && saved && isSnakesMatchActive(saved) && (saved.maxTile ?? 100) === snakesMaxTile
           ? saved
           : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
         setSnakesState(nextSnakes);
         saveLocalGameSavestate('', 'snakes', nextSnakes, true);
       } else {
         const saved = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
-        const nextDoodle = !forceNewMatch && saved && isDoodleInProgress(saved)
+        const nextDoodle = !forceNewMatch && saved && isDoodleMatchActive(saved)
           ? saved
           : createInitialDoodleState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
         setDoodleState(nextDoodle);
@@ -1264,17 +1344,17 @@ export function App() {
     }
 
     if (selectedMode === 'dama') {
-      const nextDama = !forceNewMatch && isDamaInProgress(damaState) ? damaState : createInitialDamaState(pickFairStartingTurn());
+      const nextDama = !forceNewMatch && isDamaMatchActive(damaState) ? damaState : createInitialDamaState(pickFairStartingTurn());
       setDamaState(nextDama);
       broadcastAndPersistMatch('dama', nextDama.turn, nextDama.matchSeed ?? 0, nextDama, nextDama.winner);
     } else if (selectedMode === 'snakes') {
-      const nextSnakes = !forceNewMatch && isSnakesInProgress(snakesState) && (snakesState.maxTile ?? 100) === snakesMaxTile
+      const nextSnakes = !forceNewMatch && isSnakesMatchActive(snakesState) && (snakesState.maxTile ?? 100) === snakesMaxTile
         ? snakesState
         : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
       setSnakesState(nextSnakes);
       broadcastAndPersistMatch('snakes', nextSnakes.turn, nextSnakes.boardSeed, nextSnakes, nextSnakes.winner);
     } else {
-      const nextDoodle = !forceNewMatch && isDoodleInProgress(doodleState)
+      const nextDoodle = !forceNewMatch && isDoodleMatchActive(doodleState)
         ? doodleState
         : createInitialDoodleState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
       setDoodleState(nextDoodle);
@@ -1450,7 +1530,7 @@ export function App() {
 
     if (newMode === 'snakes') {
       if (
-        !isSnakesInProgress(snakesState) ||
+        !isSnakesMatchActive(snakesState) ||
         (snakesState.maxTile ?? 100) !== snakesMaxTile
       ) {
         handleNewSnakesSeedMatch(snakesState.twistsEnabled, snakesMaxTile);
@@ -1466,7 +1546,7 @@ export function App() {
         });
       }
     } else if (newMode === 'doodle') {
-      if (!isDoodleInProgress(doodleState)) {
+      if (!isDoodleMatchActive(doodleState)) {
         handleResetDoodleMatch();
       } else {
         channelRef.current?.sendBroadcast({
@@ -1480,7 +1560,7 @@ export function App() {
         });
       }
     } else {
-      if (!isDamaInProgress(damaState)) {
+      if (!isDamaMatchActive(damaState)) {
         handleResetDamaMatch();
       } else {
         channelRef.current?.sendBroadcast({
@@ -1813,9 +1893,9 @@ export function App() {
   const saved1PhoneDama = loadLocalGameSavestate<DamaGameState>('', 'dama', true);
   const saved1PhoneSnakes = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
   const saved1PhoneDoodle = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
-  const hasSaved1PhoneDama = Boolean(saved1PhoneDama && isDamaInProgress(saved1PhoneDama));
-  const hasSaved1PhoneSnakes = Boolean(saved1PhoneSnakes && isSnakesInProgress(saved1PhoneSnakes));
-  const hasSaved1PhoneDoodle = Boolean(saved1PhoneDoodle && isDoodleInProgress(saved1PhoneDoodle));
+  const hasSaved1PhoneDama = Boolean(saved1PhoneDama && isDamaMatchActive(saved1PhoneDama));
+  const hasSaved1PhoneSnakes = Boolean(saved1PhoneSnakes && isSnakesMatchActive(saved1PhoneSnakes));
+  const hasSaved1PhoneDoodle = Boolean(saved1PhoneDoodle && isDoodleMatchActive(saved1PhoneDoodle));
 
   return (
     <main className="arcade-shell">
@@ -1830,9 +1910,9 @@ export function App() {
           myAvatar={myAvatar}
           isJoined={isJoinedWithPartner}
           p2Online={p2Online}
-          hasSavedDama={isJoinedWithPartner && isDamaInProgress(damaState)}
-          hasSavedSnakes={isJoinedWithPartner && isSnakesInProgress(snakesState)}
-          hasSavedDoodle={isJoinedWithPartner && isDoodleInProgress(doodleState)}
+          hasSavedDama={isJoinedWithPartner && isDamaMatchActive(damaState)}
+          hasSavedSnakes={isJoinedWithPartner && isSnakesMatchActive(snakesState)}
+          hasSavedDoodle={isJoinedWithPartner && isDoodleMatchActive(doodleState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           passAndPlay={passAndPlay}
           onTogglePassAndPlay={handleTogglePassAndPlay}

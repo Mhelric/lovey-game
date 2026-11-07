@@ -126,19 +126,30 @@ export function HomeMenuView({
   const joinInputRef = useRef<HTMLInputElement | null>(null);
 
   const isHost = mySlot === 'p1';
-  // Only have the resume button when the player is in a room where the host has a past game saved
+
+  // Check if current room mode has an ongoing saved match
+  const currentModeHasSaved =
+    roomData.current_mode === 'dama'
+      ? hasSavedDama
+      : roomData.current_mode === 'snakes'
+      ? hasSavedSnakes
+      : hasSavedDoodle;
+
+  // Only have the resume button when the player is in a room where the host has an active or saved match
   const hasSavedAny =
     isJoined && (hasSavedDama || hasSavedSnakes || hasSavedDoodle);
-  const activeSavedMode: GameMode =
-    roomData.current_mode === 'doodle' && hasSavedDoodle
-      ? 'doodle'
-      : roomData.current_mode === 'snakes' && hasSavedSnakes
-      ? 'snakes'
-      : hasSavedDama
-      ? 'dama'
-      : hasSavedDoodle
-      ? 'doodle'
-      : 'snakes';
+
+  // Strictly prioritize the room's CURRENT mode so rejoining never changes games unexpectedly!
+  const activeSavedMode: GameMode = currentModeHasSaved
+    ? roomData.current_mode
+    : hasSavedSnakes
+    ? 'snakes'
+    : hasSavedDoodle
+    ? 'doodle'
+    : hasSavedDama
+    ? 'dama'
+    : roomData.current_mode;
+
   const savedGameLabel =
     activeSavedMode === 'doodle'
       ? 'Doodle Clash'
@@ -146,14 +157,26 @@ export function HomeMenuView({
       ? `Snakes (${savedSnakesMaxTile})`
       : 'Cat Dama';
 
+  const currentModeHas1PhoneSaved =
+    roomData.current_mode === 'dama'
+      ? hasSaved1PhoneDama
+      : roomData.current_mode === 'snakes'
+      ? hasSaved1PhoneSnakes
+      : hasSaved1PhoneDoodle;
+
   const hasSaved1PhoneAny =
     hasSaved1PhoneDama || hasSaved1PhoneSnakes || hasSaved1PhoneDoodle;
-  const activeSaved1PhoneMode: GameMode =
-    hasSaved1PhoneDoodle
-      ? 'doodle'
-      : hasSaved1PhoneSnakes
-      ? 'snakes'
-      : 'dama';
+
+  const activeSaved1PhoneMode: GameMode = currentModeHas1PhoneSaved
+    ? roomData.current_mode
+    : hasSaved1PhoneDoodle
+    ? 'doodle'
+    : hasSaved1PhoneSnakes
+    ? 'snakes'
+    : hasSaved1PhoneDama
+    ? 'dama'
+    : roomData.current_mode;
+
   const saved1PhoneLabel =
     activeSaved1PhoneMode === 'doodle'
       ? 'Doodle Clash'
