@@ -13,6 +13,7 @@ import {
   CloseIcon,
   CopyIcon,
   CrownIcon,
+  DoodleClashIcon,
   EditPenIcon,
   LoveyLogoWordmarkSvg,
   PawIcon,
@@ -35,6 +36,7 @@ interface HomeMenuViewProps {
   hasSavedDama: boolean;
   hasSavedSnakes: boolean;
   hasSavedUno?: boolean;
+  hasSavedDoodle?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   onOpenSettings: () => void;
@@ -61,6 +63,7 @@ export function HomeMenuView({
   hasSavedDama,
   hasSavedSnakes,
   hasSavedUno = false,
+  hasSavedDoodle = false,
   savedSnakesMaxTile,
   chatMessages,
   onOpenSettings,
@@ -99,19 +102,25 @@ export function HomeMenuView({
   const isHost = mySlot === 'p1';
   // Only have the resume button when the player is in a room where the host has a past game saved
   const hasSavedAny =
-    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno);
+    isJoined && (hasSavedDama || hasSavedSnakes || hasSavedUno || hasSavedDoodle);
   const activeSavedMode: GameMode =
-    roomData.current_mode === 'uno' && hasSavedUno
+    roomData.current_mode === 'doodle' && hasSavedDoodle
+      ? 'doodle'
+      : roomData.current_mode === 'uno' && hasSavedUno
       ? 'uno'
       : roomData.current_mode === 'snakes' && hasSavedSnakes
       ? 'snakes'
       : hasSavedDama
       ? 'dama'
+      : hasSavedDoodle
+      ? 'doodle'
       : hasSavedUno
       ? 'uno'
       : 'snakes';
   const savedGameLabel =
-    activeSavedMode === 'uno'
+    activeSavedMode === 'doodle'
+      ? 'Doodle Clash'
+      : activeSavedMode === 'uno'
       ? 'Cat Uno'
       : activeSavedMode === 'snakes'
       ? `Snakes (${savedSnakesMaxTile})`
@@ -695,7 +704,25 @@ export function HomeMenuView({
                 </span>
               </button>
 
-              {/* 3. Snakes & Ladders Card with 100 / 150 Mode Switch */}
+              {/* 3. Doodle Clash Card */}
+              <button
+                type="button"
+                className="game-pick-btn doodle-pick sticker-press"
+                onClick={() => {
+                  setPickingGame(false);
+                  onHostLaunchGame('doodle', !p2Online);
+                }}
+              >
+                <DoodleClashIcon size={26} />
+                <span className="role-main-label">Doodle Clash</span>
+                <span className="role-sub-label">
+                  {hasSavedDoodle && isJoined
+                    ? 'Resume Saved Match'
+                    : 'Draw & Guess Duel'}
+                </span>
+              </button>
+
+              {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
               <div className="game-pick-btn snakes-pick-card">
                 <button
                   type="button"

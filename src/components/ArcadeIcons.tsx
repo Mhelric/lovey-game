@@ -761,6 +761,175 @@ export function UnoCardsIcon({ size = 18, className }: IconProps) {
   );
 }
 
+/**
+ * Doodle Clash Game Mode Icon: Cute Artist Palette with Dual Paint Brushes & Kawaii Swatches
+ */
+export function DoodleClashIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 28 28"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Wooden / Pastel Artist Palette */}
+      <path
+        d="M14 3 C7.5 3 2.5 8 2.5 14.5 C2.5 20.8 7.5 25.5 13.8 25.5 C16.5 25.5 18 24.2 19.2 23 C20.2 22 21.2 21.2 23 21.8 C24.5 22.2 25.5 21 25.5 19 C25.5 10 20.5 3 14 3 Z"
+        fill="#FFE8D6"
+        stroke="#5B2A4E"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+      />
+      {/* Thumb Hole */}
+      <ellipse cx="20.5" cy="17" rx="2.2" ry="2.6" fill="#FFF8F2" stroke="#5B2A4E" strokeWidth="1.6" />
+      {/* Paint Color Drops */}
+      <circle cx="8" cy="9" r="2.2" fill="#FF4D6D" stroke="#5B2A4E" strokeWidth="1.3" />
+      <circle cx="14" cy="7.5" r="2.2" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.3" />
+      <circle cx="19.5" cy="10" r="2.2" fill="#38BDF8" stroke="#5B2A4E" strokeWidth="1.3" />
+      <circle cx="8" cy="16.5" r="2.2" fill="#10B981" stroke="#5B2A4E" strokeWidth="1.3" />
+      <circle cx="13" cy="20" r="2.2" fill="#A855F7" stroke="#5B2A4E" strokeWidth="1.3" />
+      {/* Cute Pencil / Paintbrush Cross */}
+      <g transform="translate(14, 11) rotate(42)">
+        <rect x="-2" y="-9" width="4" height="12" rx="1.5" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.5" />
+        <path d="M-2 3 L2 3 L0 7 Z" fill="#FFE8D6" stroke="#5B2A4E" strokeWidth="1.4" strokeLinejoin="round" />
+        <path d="M-0.8 5 L0.8 5 L0 7 Z" fill="#5B2A4E" />
+      </g>
+    </svg>
+  );
+}
+
+export function PencilIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <g transform="translate(4, 3) rotate(45 8 8)">
+        <rect x="6" y="-1" width="5.5" height="4" rx="1.2" fill="#FF6B9A" stroke="#5B2A4E" strokeWidth="1.8" />
+        <rect x="6" y="3" width="5.5" height="11" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.8" />
+        <path d="M6 14 L11.5 14 L8.75 18.5 Z" fill="#FFE8D6" stroke="#5B2A4E" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M7.7 16.8 L9.8 16.8 L8.75 18.5 Z" fill="#5B2A4E" />
+      </g>
+    </svg>
+  );
+}
+
+export function EraserIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <g transform="translate(2, 3) rotate(-28 10 10)">
+        <rect x="3" y="6" width="7" height="9" rx="2" fill="#FF6B9A" stroke="#5B2A4E" strokeWidth="1.8" />
+        <rect x="10" y="6" width="9" height="9" rx="2" fill="#E2E8F0" stroke="#5B2A4E" strokeWidth="1.8" />
+        <line x1="10" y1="6" x2="10" y2="15" stroke="#5B2A4E" strokeWidth="1.8" />
+      </g>
+    </svg>
+  );
+}
+
+export function UndoIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M7 9 L3 13 L7 17 M4 13 H14 C17.5 13 20 15.5 20 19"
+        fill="none"
+        stroke="#5B2A4E"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ClearCanvasIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M4 6 H20 M9 6 V3.5 H15 V6 M6 6 L7.2 19.5 C7.3 20.8 8.4 21.8 9.7 21.8 H14.3 C15.6 21.8 16.7 20.8 16.8 19.5 L18 6"
+        fill="none"
+        stroke="#5B2A4E"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <line x1="10" y1="10.5" x2="10" y2="17" stroke="#5B2A4E" strokeWidth="1.8" strokeLinecap="round" />
+      <line x1="14" y1="10.5" x2="14" y2="17" stroke="#5B2A4E" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function LightbulbIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M12 2.5 C7.8 2.5 5 5.8 5 9.8 C5 12.6 6.8 14.8 8.5 16.2 V18.5 H15.5 V16.2 C17.2 14.8 19 12.6 19 9.8 C19 5.8 16.2 2.5 12 2.5 Z"
+        fill="#FEF08A"
+        stroke="#5B2A4E"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+      />
+      <path d="M9 21.5 H15" stroke="#5B2A4E" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M9.5 18.5 H14.5" stroke="#5B2A4E" strokeWidth="1.8" />
+      <circle cx="12" cy="9.5" r="2.2" fill="#F59E0B" />
+    </svg>
+  );
+}
+
+export function GuessChatIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M4 5.5 C4 4.1 5.1 3 6.5 3 H17.5 C18.9 3 20 4.1 20 5.5 V14.5 C20 15.9 18.9 17 17.5 17 H9 L4.5 21 V5.5 Z"
+        fill="#FFFBEB"
+        stroke="#5B2A4E"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.2 8.5 C10.2 7.2 11.2 6.5 12.2 6.5 C13.4 6.5 14.2 7.3 14.2 8.4 C14.2 9.8 12.8 10.4 12.4 11.2 M12.4 13.5 H12.42"
+        fill="none"
+        stroke="#5B2A4E"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function TimerClockIcon({ size = 13, className }: IconProps) {
   return (
     <svg

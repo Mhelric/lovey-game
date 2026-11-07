@@ -348,6 +348,10 @@ body,
   background: #FEF3C7;
 }
 
+.game-pick-btn.doodle-pick {
+  background: #EDE9FE;
+}
+
 .role-main-label {
   font-family: var(--font-display);
   font-size: 14px;
@@ -4755,4 +4759,633 @@ body,
   cursor: pointer;
   touch-action: manipulation;
 }
+
+/* ==========================================================================
+   DOODLE CLASH (KAWAII DRAW & GUESS) - VIEWPORT & VECTOR STYLES
+   ========================================================================== */
+.rules-section-box.doodle-theme {
+  border-color: #8B5CF6;
+  background: #FAF5FF;
+}
+
+.rules-section-box.doodle-theme .rules-section-banner {
+  color: #6D28D9;
+}
+
+.doodle-stage-container {
+  width: min(100vw - 16px, 100dvh - 188px);
+  height: min(100vw - 16px, 100dvh - 188px);
+  max-width: 440px;
+  max-height: 440px;
+  position: relative;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.doodle-table-stage {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  border: 3.5px solid var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
+  background: #FAF5FF;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.doodle-table-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.doodle-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 2px 4px 5px;
+  border-bottom: 2px dashed rgba(91, 42, 78, 0.15);
+}
+
+.doodle-player-score-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.doodle-player-score-col.right {
+  align-items: flex-end;
+}
+
+.doodle-score-role {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7C3AED;
+}
+
+.doodle-player-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink);
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doodle-score-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #5B2A4E;
+  background: #EDE9FE;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 0 6px;
+  line-height: 1.4;
+}
+
+.doodle-round-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.doodle-round-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.doodle-timer-pill {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #5B2A4E;
+  background: #FEF3C7;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 1px 7px;
+  box-shadow: 0 1.5px 0 var(--ink);
+}
+
+.doodle-timer-pill.urgent {
+  background: #FEE2E2;
+  color: #DC2626;
+  animation: urgentDoodlePulse 0.5s infinite alternate ease-in-out;
+}
+
+@keyframes urgentDoodlePulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+/* Phase 1: Word selection & waiting card */
+.doodle-phase-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.doodle-phase-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.doodle-phase-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+
+.doodle-phase-desc {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(91, 42, 78, 0.7);
+  margin: 0;
+}
+
+.doodle-word-choices-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 250px;
+}
+
+.doodle-word-choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 10px;
+  background: #ffffff;
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  min-height: 44px;
+}
+
+.doodle-word-cat-badge {
+  font-size: 8.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #7C3AED;
+  background: #EDE9FE;
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+.doodle-word-text {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.doodle-word-hint-text {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: rgba(91, 42, 78, 0.65);
+}
+
+.doodle-waiting-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 12px;
+}
+
+.doodle-waiting-avatar-bounce {
+  animation: doodleBounce 1.2s infinite ease-in-out;
+}
+
+@keyframes doodleBounce {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+
+.doodle-waiting-title {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+
+.doodle-waiting-sub {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(91, 42, 78, 0.7);
+  margin: 0;
+}
+
+/* Phase 2: Drawing & Canvas */
+.doodle-canvas-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  gap: 5px;
+  min-height: 0;
+}
+
+.doodle-word-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 26px;
+}
+
+.doodle-drawer-prompt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #EDE9FE;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px 10px;
+  box-shadow: 0 1.5px 0 var(--ink);
+}
+
+.doodle-banner-label {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #7C3AED;
+}
+
+.doodle-banner-word {
+  color: #5B2A4E;
+  letter-spacing: 0.5px;
+}
+
+.doodle-banner-cat {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #6D28D9;
+}
+
+.doodle-guesser-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.doodle-guesser-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7C3AED;
+}
+
+.doodle-letter-count {
+  font-size: 9.5px;
+  color: rgba(91, 42, 78, 0.7);
+}
+
+.doodle-masked-blanks {
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--ink);
+  text-shadow: 0 1px 0 #ffffff;
+}
+
+.doodle-canvas-frame {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  border-radius: 16px;
+  border: 2.5px solid var(--ink);
+  background: #FFFDF9;
+  box-shadow: 0 3px 0 var(--ink);
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.doodle-drawing-svg {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: default;
+}
+
+.doodle-drawing-svg.can-draw {
+  cursor: crosshair;
+}
+
+.doodle-guesses-ribbon {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.doodle-guess-chip {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 1.5px 0 var(--ink);
+  animation: doodleChipIn 0.2s ease-out;
+}
+
+@keyframes doodleChipIn {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.doodle-guess-chip.wrong {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.doodle-guess-chip.correct {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+
+/* Drawer Toolbar */
+.doodle-drawer-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.doodle-palette-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.doodle-color-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s ease;
+  box-shadow: 0 1.5px 0 var(--ink);
+  padding: 0;
+}
+
+.doodle-color-btn.active {
+  transform: scale(1.18);
+  box-shadow: 0 1.5px 0 var(--ink), 0 0 0 2px #A78BFA;
+}
+
+.doodle-tools-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.doodle-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.doodle-tool-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 2px solid var(--ink);
+  background: #ffffff;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 2px 0 var(--ink);
+  padding: 0;
+}
+
+.doodle-tool-btn.active {
+  background: #EDE9FE;
+  border-color: #7C3AED;
+  color: #7C3AED;
+  box-shadow: 0 1px 0 var(--ink);
+  transform: translate3d(0, 1px, 0);
+}
+
+.doodle-tool-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.doodle-size-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1.5px solid var(--ink);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 0;
+}
+
+.doodle-size-btn.active {
+  background: #EDE9FE;
+  border-width: 2px;
+  border-color: #7C3AED;
+}
+
+.doodle-size-dot {
+  border-radius: 999px;
+  display: block;
+}
+
+/* Guesser Input Form */
+.doodle-guesser-form {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 40px;
+}
+
+.doodle-guess-input {
+  flex: 1;
+  height: 36px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: #ffffff;
+  padding: 0 9px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+  outline: none;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.doodle-send-guess-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: 12px;
+}
+
+/* Phase 3: Round Summary Reveal */
+.doodle-summary-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  width: 100%;
+  max-width: 260px;
+}
+
+.doodle-result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.doodle-result-badge.success {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.doodle-result-badge.timeout {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.doodle-summary-word-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 12px;
+  background: #EDE9FE;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--ink);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.doodle-reveal-sub {
+  font-size: 9px;
+  font-weight: 800;
+  color: #7C3AED;
+  text-transform: uppercase;
+}
+
+.doodle-reveal-word {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.doodle-points-breakdown-row {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+}
+
+.doodle-point-award-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 3px;
+  background: #ffffff;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 0 1.5px 0 var(--ink);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.doodle-point-award-pill strong {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 900;
+  color: #7C3AED;
+}
+
+.doodle-next-btn {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 2px;
+  border-radius: 12px;
+}
+
 

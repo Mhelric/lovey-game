@@ -51,7 +51,14 @@ export function setSoundMuted(muted: boolean): boolean {
    - 'dama'  : Groovy Playful Cat Duel Showdown Theme
    - 'snakes': Whimsical Carnival Adventure March Theme
    ========================================================================== */
-export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno';
+export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno' | 'doodle';
+
+const DOODLE_MELODY: readonly [number, number][] = [
+  [587, 294], [659, 0], [784, 392], [880, 0],
+  [988, 330], [880, 0], [784, 392], [659, 0],
+  [523, 262], [659, 0], [784, 330], [880, 0],
+  [1047, 440], [880, 0], [784, 392], [587, 294],
+];
 
 const UNO_MELODY: readonly [number, number][] = [
   [698, 349], [880, 0], [1047, 349], [880, 0],
@@ -92,6 +99,7 @@ const BGM_CONFIGS: Record<
     bVol: number;
   }
 > = {
+  doodle: { stepMs: 185, melody: DOODLE_MELODY, lType: 'triangle', lVol: 0.026, bType: 'sine', bVol: 0.022 },
   uno: { stepMs: 180, melody: UNO_MELODY, lType: 'triangle', lVol: 0.024, bType: 'square', bVol: 0.012 },
   dama: { stepMs: 195, melody: DAMA_MELODY, lType: 'square', lVol: 0.016, bType: 'triangle', bVol: 0.025 },
   snakes: { stepMs: 210, melody: SNAKES_MELODY, lType: 'triangle', lVol: 0.028, bType: 'sine', bVol: 0.024 },
@@ -310,4 +318,23 @@ export function playColorSelect(): void {
 export function playHandSwap(): void {
   playTone(783.99, 392.0, 0.16, 'sine', 0.14, 0);
   playTone(392.0, 880.0, 0.18, 'triangle', 0.14, 0.1);
+}
+
+export function playDoodleStrokePop(): void {
+  playTone(480, 580, 0.04, 'triangle', 0.08, 0);
+}
+
+export function playDoodleCorrectGuess(): void {
+  playTone(523.25, 659.25, 0.08, 'triangle', 0.12, 0);
+  playTone(659.25, 783.99, 0.09, 'sine', 0.13, 0.06);
+  playTone(783.99, 1046.5, 0.16, 'sine', 0.15, 0.13);
+  playCatMeow();
+}
+
+export function playDoodleWrongGuess(): void {
+  playTone(340, 260, 0.12, 'sawtooth', 0.08, 0);
+}
+
+export function playDoodleClear(): void {
+  playTone(640, 320, 0.14, 'sine', 0.1, 0);
 }

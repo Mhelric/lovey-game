@@ -94,6 +94,30 @@ const UNO_STEPS: readonly TutorialStep[] = [
   },
 ];
 
+const DOODLE_STEPS: readonly TutorialStep[] = [
+  {
+    badge: 'Doodle Clash • Step 1 of 3',
+    title: 'Pick a Secret Word to Draw',
+    description:
+      'The Drawer picks 1 of 3 secret words across Food, Animals, Objects, or Nature to sketch on the canvas!',
+    tip: 'Pick something fun you think your partner will recognize quickly!',
+  },
+  {
+    badge: 'Doodle Clash • Step 2 of 3',
+    title: 'Draw & Guess in Real-Time',
+    description:
+      'The Guesser watches live strokes appear and types guesses into the box! Letter hints unlock over time.',
+    tip: 'Hints reveal automatically at 25 seconds and 10 seconds remaining!',
+  },
+  {
+    badge: 'Doodle Clash • Step 3 of 3',
+    title: 'Speed Points & Cooperative Bonus',
+    description:
+      'The Guesser gets up to 300 points for speed, and the Drawer gets +150 bonus points when their partner guesses right!',
+    tip: 'Take turns across 4 rounds to crown the Doodle Clash Champion!',
+  },
+];
+
 function TutorialIllustrationSvg({
   gameMode,
   stepIndex,
@@ -137,7 +161,66 @@ function TutorialIllustrationSvg({
         />
       ))}
 
-      {gameMode === 'uno' ? (
+      {gameMode === 'doodle' ? (
+        <>
+          <rect
+            x="36"
+            y="20"
+            width="58"
+            height="56"
+            rx="10"
+            fill="#FFFDF9"
+            stroke="#5B2A4E"
+            strokeWidth="2.2"
+          />
+          {/* Cute Mini Palette & Swatches */}
+          <path
+            d="M 50 36 C 50 30, 68 30, 78 40 C 82 46, 74 58, 62 58 C 54 58, 50 50, 50 36 Z"
+            fill="#FFE8D6"
+            stroke="#5B2A4E"
+            strokeWidth="1.6"
+          />
+          <circle cx="58" cy="38" r="2.2" fill="#FF4D6D" />
+          <circle cx="68" cy="40" r="2.2" fill="#FFBE0B" />
+          <circle cx="62" cy="48" r="2.2" fill="#38BDF8" />
+          {/* Pencil */}
+          <g transform="translate(68, 26) rotate(35)">
+            <rect x="0" y="0" width="5" height="14" rx="1.5" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.3" />
+            <path d="M0 14 L5 14 L2.5 18 Z" fill="#5B2A4E" />
+          </g>
+
+          <rect
+            x="104"
+            y="26"
+            width="64"
+            height="44"
+            rx="10"
+            fill="#F3E8FF"
+            stroke="#5B2A4E"
+            strokeWidth="2"
+          />
+          <text
+            x="136"
+            y="43"
+            textAnchor="middle"
+            fill="#6B21A8"
+            fontSize="8.5"
+            fontWeight="900"
+          >
+            P _ Z Z A
+          </text>
+          <text
+            x="136"
+            y="56"
+            textAnchor="middle"
+            fill="#5B2A4E"
+            fontSize="7.5"
+            fontWeight="800"
+          >
+            4 Rounds Duel
+          </text>
+        </>
+      ) : gameMode === 'uno' ? (
         <>
           <rect
             x="52"
@@ -368,6 +451,8 @@ export function DamaTutorialModal({
       ? SNAKES_STEPS
       : gameMode === 'uno'
       ? UNO_STEPS
+      : gameMode === 'doodle'
+      ? DOODLE_STEPS
       : DAMA_STEPS;
   const current = steps[step] || steps[0];
 
@@ -391,6 +476,8 @@ export function DamaTutorialModal({
                   ? 'Snakes & Ladders'
                   : gameMode === 'uno'
                   ? 'Cat Uno'
+                  : gameMode === 'doodle'
+                  ? 'Doodle Clash'
                   : 'Cat Dama'}
               </span>
             </h2>

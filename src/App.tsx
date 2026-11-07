@@ -15,6 +15,7 @@ import { CatAvatarSvg, CoupleCatsSceneSvg } from './components/CatAvatarSvg';
 import {
   ConfettiCelebrationOverlay,
   CrownIcon,
+  DoodleClashIcon,
   DoubleHeartIcon,
   PawIcon,
   ReactionStickerSvg,
@@ -53,6 +54,12 @@ import {
   hasAnyPlayableCard,
   UnoGameState,
 } from './engines/unoEngine';
+import {
+  applySelectDoodleWord,
+  createInitialDoodleState,
+  DoodleGameState,
+  DoodleStroke,
+} from './engines/doodleEngine';
 import {
   checkCoupleRoomExists,
   CoupleRealtimeChannel,
@@ -318,9 +325,28 @@ function isUnoInProgress(s: UnoGameState | null | undefined): boolean {
   );
 }
 
+function isDoodleInProgress(s: DoodleGameState | null | undefined): boolean {
+  if (!s || s.winner) return false;
+  return Boolean(
+    s.round > 1 ||
+    s.selectedWord ||
+    (s.strokes && s.strokes.length > 0) ||
+    (s.guesses && s.guesses.length > 0) ||
+    s.p1Score > 0 ||
+    s.p2Score > 0
+  );
+}
+
 const damaScore = (s: DamaGameState) => Math.max(0, 24 - (s.p1Remaining + s.p2Remaining)) * 10 + (s.lastAction ? 1 : 0) + (s.winner ? 1000 : 0);
 const snakesScore = (s: SnakesGameState) => (s.p1Tile - 1) + (s.p2Tile - 1) + (s.lastAnimation ? 1 : 0) + (s.winner ? 1000 : 0);
 const unoScore = (s: UnoGameState) => (s.discardPile?.length ?? 0) * 5 + (s.winner ? 1000 : 0);
+const doodleScore = (s: DoodleGameState) =>
+  (s.round - 1) * 500 +
+  s.p1Score +
+  s.p2Score +
+  (s.strokes?.length ?? 0) * 2 +
+  (s.guesses?.length ?? 0) * 5 +
+  (s.winner ? 10000 : 0);
 
 function mergeDamaSavestate(l: DamaGameState, inc?: DamaGameState): DamaGameState {
   if (!inc?.board) return l;
@@ -336,6 +362,11 @@ function mergeUnoSavestate(l: UnoGameState, inc?: UnoGameState): UnoGameState {
   if (!inc?.deck) return l;
   if (l.matchSeed === inc.matchSeed) return unoScore(inc) >= unoScore(l) ? inc : l;
   return inc.matchSeed === 202611 && isUnoInProgress(l) ? l : inc;
+}
+function mergeDoodleSavestate(l: DoodleGameState, inc?: DoodleGameState): DoodleGameState {
+  if (!inc?.phase) return l;
+  if (l.matchSeed === inc.matchSeed) return doodleScore(inc) >= doodleScore(l) ? inc : l;
+  return inc.matchSeed === 202612 && isDoodleInProgress(l) ? l : inc;
 }
 
 
@@ -402,6 +433,8 @@ export function App() {
       p2_snakes_wins: 0,
       p1_uno_wins: 0,
       p2_uno_wins: 0,
+      p1_doodle_wins: 0,
+      p2_doodle_wins: 0,
       current_mode: savedSession?.mode ?? 'dama',
       updated_at: new Date().toISOString(),
     };
@@ -422,6 +455,11 @@ export function App() {
     if (saved && Array.isArray(saved.deck)) return saved;
     return createInitialUnoState(202611, 'p1');
   });
+  const [doodleState, setDoodleState] = useState<DoodleGameState>(() => {
+    const saved = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle');
+    if (saved && typeof saved.matchSeed === 'number') return saved;
+    return createInitialDoodleState(202612, 'p1');
+  });
   const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>(() => {
     const savedSession = loadLocalActiveSession(roomCode);
     if (savedSession?.screen === 'play') {
@@ -431,10 +469,15 @@ export function App() {
         'snakes'
       );
       const savedUno = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno');
+      const savedDoodle = loadLocalGameSavestate<DoodleGameState>(
+        roomCode,
+        'doodle'
+      );
       if (
         (savedSession.mode === 'dama' && savedDama) ||
         (savedSession.mode === 'snakes' && savedSnakes) ||
-        (savedSession.mode === 'uno' && savedUno)
+        (savedSession.mode === 'uno' && savedUno) ||
+        (savedSession.mode === 'doodle' && savedDoodle)
       ) {
         return 'play';
       }
@@ -484,6 +527,7 @@ export function App() {
 
   const [SnakesBoardComp, setSnakesBoardComp] = useState<any>(null);
   const [UnoBoardComp, setUnoBoardComp] = useState<any>(null);
+  const [DoodleBoardComp, setDoodleBoardComp] = useState<any>(null);
 
   useEffect(() => {
     if (roomData.current_mode === 'snakes' && !SnakesBoardComp) {
@@ -494,8 +538,12 @@ export function App() {
       import('./components/UnoBoardView').then((m) => {
         setUnoBoardComp(() => m.UnoBoardView);
       });
+    } else if (roomData.current_mode === 'doodle' && !DoodleBoardComp) {
+      import('./components/DoodleBoardView').then((m) => {
+        setDoodleBoardComp(() => m.DoodleBoardView);
+      });
     }
-  }, [roomData.current_mode, SnakesBoardComp, UnoBoardComp]);
+  }, [roomData.current_mode, SnakesBoardComp, UnoBoardComp, DoodleBoardComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   const [timerEnabled, setTimerEnabled] = useState<boolean>(() => {
@@ -523,6 +571,8 @@ export function App() {
   snakesStateRef.current = snakesState;
   const unoStateRef = useRef<UnoGameState>(unoState);
   unoStateRef.current = unoState;
+  const doodleStateRef = useRef<DoodleGameState>(doodleState);
+  doodleStateRef.current = doodleState;
   const activeScreenRef = useRef<'menu' | 'play'>(activeScreen);
   activeScreenRef.current = activeScreen;
   const roomDataRef = useRef<CoupleRoomRow>(roomData);
@@ -540,6 +590,10 @@ export function App() {
   useEffect(() => {
     saveLocalGameSavestate(roomCode, 'uno', unoState);
   }, [roomCode, unoState]);
+
+  useEffect(() => {
+    saveLocalGameSavestate(roomCode, 'doodle', doodleState);
+  }, [roomCode, doodleState]);
 
   useEffect(() => {
     saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode);
@@ -579,6 +633,8 @@ export function App() {
       setBgMusicTrack('snakes');
     } else if (roomData.current_mode === 'uno') {
       setBgMusicTrack('uno');
+    } else if (roomData.current_mode === 'doodle') {
+      setBgMusicTrack('doodle');
     } else {
       setBgMusicTrack('dama');
     }
@@ -630,6 +686,10 @@ export function App() {
     if (localUno && Array.isArray(localUno.deck)) {
       setUnoState((prev) => mergeUnoSavestate(prev, localUno));
     }
+    const localDoodle = loadLocalGameSavestate<DoodleGameState>(targetRoom, 'doodle');
+    if (localDoodle && typeof localDoodle.matchSeed === 'number') {
+      setDoodleState((prev) => mergeDoodleSavestate(prev, localDoodle));
+    }
 
     const [row, matchRow] = await Promise.all([
       fetchOrCreateCoupleRoom(targetRoom),
@@ -669,12 +729,18 @@ export function App() {
         if (Array.isArray(maybeUno.deck)) {
           setUnoState((prev) => mergeUnoSavestate(prev, maybeUno));
         }
+      } else if (matchRow.game_mode === 'doodle') {
+        const maybeDoodle = matchRow.state_json as DoodleGameState;
+        if (maybeDoodle && typeof maybeDoodle.matchSeed === 'number') {
+          setDoodleState((prev) => mergeDoodleSavestate(prev, maybeDoodle));
+        }
       }
-    } else if (!localDama && !localSnakes && !localUno) {
+    } else if (!localDama && !localSnakes && !localUno && !localDoodle) {
       // If targetRoom has no local savestate and no database match, reset to fresh initial state
       setDamaState(createInitialDamaState('p1'));
       setSnakesState(createInitialSnakesState());
       setUnoState(createInitialUnoState());
+      setDoodleState(createInitialDoodleState());
     }
   }, []);
 
@@ -718,6 +784,7 @@ export function App() {
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
             unoState: unoStateRef.current,
+            doodleState: doodleStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -733,6 +800,7 @@ export function App() {
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
             unoState: unoStateRef.current,
+            doodleState: doodleStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -773,10 +841,15 @@ export function App() {
           if (inUno && Array.isArray(inUno.deck)) {
             setUnoState((prev) => mergeUnoSavestate(prev, inUno));
           }
+          const inDoodle = event.doodleState as DoodleGameState | undefined;
+          if (inDoodle && typeof inDoodle.matchSeed === 'number') {
+            setDoodleState((prev) => mergeDoodleSavestate(prev, inDoodle));
+          }
           if (
             event.currentMode === 'dama' ||
             event.currentMode === 'snakes' ||
-            event.currentMode === 'uno'
+            event.currentMode === 'uno' ||
+            event.currentMode === 'doodle'
           ) {
             setRoomData((prev) => ({
               ...prev,
@@ -810,6 +883,11 @@ export function App() {
             if (incoming && Array.isArray(incoming.deck)) {
               setUnoState(incoming);
             }
+          } else if (event.gameMode === 'doodle') {
+            const incoming = event.stateJson as DoodleGameState;
+            if (incoming && typeof incoming.matchSeed === 'number') {
+              setDoodleState(incoming);
+            }
           }
           if (event.winner === 'p1' || event.winner === 'p2') {
             const winKey = `${event.winner}_${event.gameMode}_wins` as keyof CoupleRoomRow;
@@ -825,7 +903,7 @@ export function App() {
                   p2_avatar: prev.p2_avatar,
                   current_mode: prev.current_mode || event.gameMode,
                 };
-                (['dama', 'snakes', 'uno'] as const).forEach((gm) => {
+                (['dama', 'snakes', 'uno', 'doodle'] as const).forEach((gm) => {
                   (['p1', 'p2'] as const).forEach((ps) => {
                     const k = `${ps}_${gm}_wins` as keyof CoupleRoomRow;
                     (next as any)[k] = Math.max((prev[k] as number) || 0, (r[k] as number) || 0);
@@ -835,6 +913,16 @@ export function App() {
               });
             });
           }
+        } else if (event.type === 'doodle_stroke') {
+          const stroke = event.stroke as DoodleStroke;
+          if (stroke && Array.isArray(stroke.points)) {
+            setDoodleState((prev) => {
+              if (prev.strokes.some((s) => s.id === stroke.id)) return prev;
+              return { ...prev, strokes: [...prev.strokes, stroke] };
+            });
+          }
+        } else if (event.type === 'doodle_clear') {
+          setDoodleState((prev) => ({ ...prev, strokes: [] }));
         }
       },
       onPartnerOnlineChange: (seenMap) => {
@@ -1067,12 +1155,18 @@ export function App() {
         : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
       setSnakesState(nextSnakes);
       broadcastAndPersistMatch('snakes', nextSnakes.turn, nextSnakes.boardSeed, nextSnakes, nextSnakes.winner);
-    } else {
+    } else if (selectedMode === 'uno') {
       const nextUno = !forceNewMatch && isUnoInProgress(unoState)
         ? unoState
         : createInitialUnoState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
       setUnoState(nextUno);
       broadcastAndPersistMatch('uno', nextUno.turn, nextUno.matchSeed, nextUno, nextUno.winner);
+    } else {
+      const nextDoodle = !forceNewMatch && isDoodleInProgress(doodleState)
+        ? doodleState
+        : createInitialDoodleState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+      setDoodleState(nextDoodle);
+      broadcastAndPersistMatch('doodle', nextDoodle.turn, nextDoodle.matchSeed, nextDoodle, nextDoodle.winner);
     }
 
     channelRef.current?.sendBroadcast({
@@ -1216,6 +1310,37 @@ export function App() {
     );
   };
 
+  const handleCommitDoodleState = async (nextState: DoodleGameState) => {
+    setDoodleState(nextState);
+    await broadcastAndPersistMatch(
+      'doodle',
+      nextState.turn,
+      nextState.matchSeed,
+      nextState,
+      nextState.winner
+    );
+    if (nextState.winner && nextState.winner !== 'draw') {
+      await commitGameWin(
+        'doodle',
+        nextState.winner,
+        `Doodle Clash (P1 ${nextState.p1Score} - P2 ${nextState.p2Score})`
+      );
+    }
+  };
+
+  const handleResetDoodleMatch = async () => {
+    const newSeed = Math.floor(100000 + Math.random() * 899999);
+    const fresh = createInitialDoodleState(newSeed, pickFairStartingTurn());
+    setDoodleState(fresh);
+    await broadcastAndPersistMatch(
+      'doodle',
+      fresh.turn,
+      fresh.matchSeed,
+      fresh,
+      null
+    );
+  };
+
   const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
     const reaction: FloatingReaction = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1268,6 +1393,20 @@ export function App() {
           sender: mySlot,
         });
       }
+    } else if (newMode === 'doodle') {
+      if (!isDoodleInProgress(doodleState)) {
+        handleResetDoodleMatch();
+      } else {
+        channelRef.current?.sendBroadcast({
+          type: 'match_sync',
+          gameMode: 'doodle',
+          turn: doodleState.turn,
+          boardSeed: doodleState.matchSeed,
+          stateJson: doodleState,
+          winner: doodleState.winner,
+          sender: mySlot,
+        });
+      }
     } else {
       if (!isDamaInProgress(damaState)) {
         handleResetDamaMatch();
@@ -1298,6 +1437,8 @@ export function App() {
       handleResetDamaMatch();
     } else if (roomData.current_mode === 'uno') {
       handleResetUnoMatch();
+    } else if (roomData.current_mode === 'doodle') {
+      handleResetDoodleMatch();
     } else {
       handleNewSnakesSeedMatch(
         snakesState.twistsEnabled,
@@ -1353,12 +1494,16 @@ export function App() {
       ? roomData.p1_dama_wins
       : roomData.current_mode === 'uno'
       ? roomData.p1_uno_wins || 0
+      : roomData.current_mode === 'doodle'
+      ? roomData.p1_doodle_wins || 0
       : roomData.p1_snakes_wins;
   const p2Wins =
     roomData.current_mode === 'dama'
       ? roomData.p2_dama_wins
       : roomData.current_mode === 'uno'
       ? roomData.p2_uno_wins || 0
+      : roomData.current_mode === 'doodle'
+      ? roomData.p2_doodle_wins || 0
       : roomData.p2_snakes_wins;
 
   // Authoritative avatars (our own slot always uses our device's myAvatar)
@@ -1378,6 +1523,8 @@ export function App() {
       ? damaState.turn
       : roomData.current_mode === 'uno'
       ? unoState.turn
+      : roomData.current_mode === 'doodle'
+      ? doodleState.turn
       : snakesState.turn;
 
   const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
@@ -1403,6 +1550,16 @@ export function App() {
       }, 1800);
       return () => window.clearTimeout(t);
     }
+    if (
+      roomData.current_mode === 'doodle' &&
+      doodleState.lastRoundOutcome?.summaryMessage
+    ) {
+      setTurnBubbleText(doodleState.lastRoundOutcome.summaryMessage);
+      const t = window.setTimeout(() => {
+        setTurnBubbleText('Your turn!');
+      }, 2500);
+      return () => window.clearTimeout(t);
+    }
     setTurnBubbleText('Your turn!');
   }, [
     roomData.current_mode,
@@ -1410,6 +1567,8 @@ export function App() {
     snakesState.lastAnimation?.eventMessage,
     unoState.lastAction?.id,
     unoState.lastAction?.message,
+    doodleState.lastRoundOutcome?.id,
+    doodleState.lastRoundOutcome?.summaryMessage,
   ]);
 
   const p1CapturedCount = Math.max(0, 12 - damaState.p2Remaining);
@@ -1420,6 +1579,8 @@ export function App() {
       ? damaState.winner
       : roomData.current_mode === 'uno'
       ? unoState.winner
+      : roomData.current_mode === 'doodle'
+      ? doodleState.winner
       : snakesState.winner;
 
   const handleToggleTimer = () => {
@@ -1454,6 +1615,8 @@ export function App() {
       ? damaState.lastAction?.id ?? ''
       : roomData.current_mode === 'uno'
       ? unoState.lastAction?.id ?? ''
+      : roomData.current_mode === 'doodle'
+      ? `${doodleState.round}-${doodleState.phase}-${doodleState.strokes.length}-${doodleState.guesses.length}`
       : snakesState.lastAnimation?.id ?? '';
 
   useEffect(() => {
@@ -1549,12 +1712,18 @@ export function App() {
           handleCommitUnoState(next);
         }
       }
+    } else if (mode === 'doodle') {
+      if (doodleState.phase === 'word_selection' && doodleState.wordChoices.length > 0) {
+        const next = applySelectDoodleWord(doodleState, doodleState.wordChoices[0]);
+        handleCommitDoodleState(next);
+      }
     }
   }, [
     roomData.current_mode,
     damaState,
     snakesState,
     unoState,
+    doodleState,
     passAndPlay,
     mySlot,
     activeTurnSlot,
@@ -1613,6 +1782,7 @@ export function App() {
           hasSavedDama={isJoinedWithPartner && isDamaInProgress(damaState)}
           hasSavedSnakes={isJoinedWithPartner && isSnakesInProgress(snakesState)}
           hasSavedUno={isJoinedWithPartner && isUnoInProgress(unoState)}
+          hasSavedDoodle={isJoinedWithPartner && isDoodleInProgress(doodleState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           chatMessages={chatMessages}
           onOpenSettings={() => setCustomizerOpen(true)}
@@ -1648,6 +1818,11 @@ export function App() {
                 <>
                   <UnoCardsIcon size={16} />
                   <span>Cat Uno</span>
+                </>
+              ) : roomData.current_mode === 'doodle' ? (
+                <>
+                  <DoodleClashIcon size={16} />
+                  <span>Doodle Clash</span>
                 </>
               ) : (
                 <>
@@ -1697,6 +1872,30 @@ export function App() {
                   onCommitState={handleCommitUnoState}
                 />
               ) : null
+            ) : roomData.current_mode === 'doodle' ? (
+              DoodleBoardComp ? (
+                <DoodleBoardComp
+                  gameState={doodleState}
+                  mySlot={mySlot}
+                  p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
+                  p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+                  passAndPlay={passAndPlay}
+                  onCommitState={handleCommitDoodleState}
+                  onBroadcastStroke={(stroke: DoodleStroke) => {
+                    channelRef.current?.sendBroadcast({
+                      type: 'doodle_stroke',
+                      stroke,
+                      sender: mySlot,
+                    });
+                  }}
+                  onBroadcastClear={() => {
+                    channelRef.current?.sendBroadcast({
+                      type: 'doodle_clear',
+                      sender: mySlot,
+                    });
+                  }}
+                />
+              ) : null
             ) : SnakesBoardComp ? (
               <SnakesBoardComp
                 gameState={snakesState}
@@ -1715,6 +1914,8 @@ export function App() {
                   ? `dama-${damaState.matchSeed ?? 1}`
                   : roomData.current_mode === 'uno'
                   ? `uno-${unoState.matchSeed}`
+                  : roomData.current_mode === 'doodle'
+                  ? `doodle-${doodleState.matchSeed}`
                   : `snakes-${snakesState.boardSeed}`
               }
               isFreshMatch={
@@ -1729,6 +1930,12 @@ export function App() {
                     unoState.p1Hand.length === 7 &&
                     unoState.p2Hand.length === 7 &&
                     unoState.discardPile.length === 1
+                  : roomData.current_mode === 'doodle'
+                  ? doodleState.round === 1 &&
+                    doodleState.phase === 'word_selection' &&
+                    !doodleState.winner &&
+                    doodleState.p1Score === 0 &&
+                    doodleState.p2Score === 0
                   : !snakesState.lastAnimation &&
                     !snakesState.winner &&
                     snakesState.p1Tile === 1 &&
@@ -1760,6 +1967,8 @@ export function App() {
                       ? 'Wins Cat Dama!'
                       : roomData.current_mode === 'uno'
                       ? 'Wins Cat Uno!'
+                      : roomData.current_mode === 'doodle'
+                      ? 'Wins Doodle Clash!'
                       : `Reached ${snakesState.maxTile ?? 100}!`}
                   </span>
                 </div>
@@ -1804,6 +2013,8 @@ export function App() {
                     </>
                   ) : roomData.current_mode === 'uno' ? (
                     `${isP1 ? unoState.p1Hand.length : unoState.p2Hand.length} cards`
+                  ) : roomData.current_mode === 'doodle' ? (
+                    `R${doodleState.round}/4 • ${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
                   ) : (
                     `Tile ${isP1 ? snakesState.p1Tile : snakesState.p2Tile}/${snakesState.maxTile ?? 100}`
                   );

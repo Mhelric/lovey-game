@@ -16,7 +16,9 @@ import {
   CloseIcon,
   CrownIcon,
   DiceFaceSvg,
+  DoodleClashIcon,
   DoubleDiceIcon,
+  LightbulbIcon,
   PawIcon,
   PowerupIllustrationSvg,
   SnakeLadderIcon,
@@ -479,6 +481,16 @@ export function CatCustomizerModal({
                     <button
                       type="button"
                       className={`match-mode-card ${
+                        currentMode === 'doodle' ? 'active' : ''
+                      }`}
+                      onClick={() => onHostSwitchGame('doodle')}
+                    >
+                      <DoodleClashIcon size={20} />
+                      <span>Doodle Clash</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`match-mode-card ${
                         currentMode === 'snakes' && snakesMaxTile === 100
                           ? 'active'
                           : ''
@@ -714,6 +726,42 @@ export function CatCustomizerModal({
                     icon={<PawIcon size={16} />}
                     title="Stacking & The '7' Hand Swap"
                     desc="Stack +2 on +2 and +4 on +4 to pass higher penalty cards to your partner! Play any 7 to swap your entire hand!"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 4: DOODLE CLASH */}
+              <div className="rules-section-box doodle-theme">
+                <div className="rules-section-banner">
+                  <DoodleClashIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">
+                      Doodle Clash (Draw &amp; Guess Duel)
+                    </h3>
+                    <span className="rules-section-sub">
+                      4 Rounds • Secret Word Choices • Speed Scoring
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <RuleRow
+                    color="purple"
+                    icon={<DoodleClashIcon size={16} />}
+                    title="Take Turns Drawing &amp; Guessing"
+                    desc="Players alternate roles each round across 4 rounds. The Drawer selects 1 of 3 secret words to sketch!"
+                  />
+                  <RuleRow
+                    color="sky"
+                    icon={<LightbulbIcon size={16} />}
+                    title="Letter Hints Over Time"
+                    desc="Word length is masked with blanks. As the 50s round timer counts down, hint letters unlock automatically to help the Guesser!"
+                  />
+                  <RuleRow
+                    color="gold"
+                    icon={<SparkleIcon size={16} />}
+                    title="Co-op Scoring Bonanza"
+                    desc="The Guesser earns up to 300 points for fast guesses, and the Drawer earns a 150-point bonus when their partner guesses correctly!"
                   />
                 </div>
               </div>
