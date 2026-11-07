@@ -132,7 +132,7 @@ export function LoveyLogoWordmarkSvg() {
 }
 
 /**
- * Redesigned Settings Button Icon: Cute Cat-Eared Gear Charm with Golden Bell Heart
+ * Redesigned Settings Button Icon: Cute Arcade Screw Fastener Head
  */
 export function SettingsGearIcon({ size = 24, className }: IconProps) {
   return (
@@ -143,32 +143,75 @@ export function SettingsGearIcon({ size = 24, className }: IconProps) {
       className={className}
       aria-hidden="true"
     >
-      {/* Gear Scalloped Outer Ring */}
-      <path
-        d="M14 2.2 l1.8 1.9 2.5-.6 1 2.4 2.5.6-.1 2.6 2 1.6-1.1 2.3 1.1 2.3-2 1.6.1 2.6-2.5.6-1 2.4-2.5-.6L14 25.8l-1.8-1.9-2.5.6-1-2.4-2.5-.6.1-2.6-2-1.6 1.1-2.3-1.1-2.3 2-1.6-.1-2.6 2.5-.6 1-2.4 2.5.6z"
-        fill="#FFD6E4"
-        stroke="#5B2A4E"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      {/* Cat Silhouette Inner Charm */}
-      <path
-        d="M8.5 12 C7.5 8, 9.5 6.2, 11.8 8.8 C13.2 8.3, 14.8 8.3, 16.2 8.8 C18.5 6.2, 20.5 8, 19.5 12 C21 15.2, 19.8 19.8, 14 19.8 C8.2 19.8, 7 15.2, 8.5 12 Z"
-        fill="#FF6B9A"
-        stroke="#5B2A4E"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      {/* Golden Bell Center */}
+      {/* Screw Head Outer Disc */}
       <circle
         cx="14"
-        cy="14.5"
-        r="2.8"
-        fill="#FFBE0B"
+        cy="14"
+        r="11.5"
+        fill="#FFE8F1"
         stroke="#5B2A4E"
-        strokeWidth="1.5"
+        strokeWidth="2.4"
       />
-      <circle cx="13.2" cy="13.7" r="0.8" fill="#FFF8F2" />
+      {/* Screw Bevel Inner Ridge */}
+      <circle
+        cx="14"
+        cy="14"
+        r="8.5"
+        fill="#FFF0F5"
+        stroke="#5B2A4E"
+        strokeWidth="1.2"
+      />
+      {/* Specular Highlight Arc */}
+      <path
+        d="M7.8 10.5 A 8.5 8.5 0 0 1 17.5 6"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      {/* Phillips Screw Cross Slots (Tilted 15deg like an authentic fastener) */}
+      <g transform="rotate(15 14 14)">
+        {/* Slot Recess Outer */}
+        <line
+          x1="7.2"
+          y1="14"
+          x2="20.8"
+          y2="14"
+          stroke="#5B2A4E"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+        />
+        <line
+          x1="14"
+          y1="7.2"
+          x2="14"
+          y2="20.8"
+          stroke="#5B2A4E"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+        />
+        {/* Slot Deep Core Shadow */}
+        <line
+          x1="8.5"
+          y1="14"
+          x2="19.5"
+          y2="14"
+          stroke="#3D1832"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <line
+          x1="14"
+          y1="8.5"
+          x2="14"
+          y2="19.5"
+          stroke="#3D1832"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        {/* Center Indent */}
+        <circle cx="14" cy="14" r="2.2" fill="#3D1832" />
+      </g>
     </svg>
   );
 }

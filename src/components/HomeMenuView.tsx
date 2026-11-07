@@ -952,21 +952,21 @@ export function HomeMenuView({
       {/* Bottom Bar with Real Chat Inbox Button on Homescreen */}
       <footer className="menu-bottom-bar">
         <span className="menu-bottom-caption">
-          {roomData.p2_avatar.name && roomData.p2_avatar.name !== 'Lovey 2' ? (
+          {!passAndPlay && !isJoined ? (
+            'Solo'
+          ) : isJoined ? (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <span>{roomData.p1_avatar.name || 'Lovey 1'}</span>
               <span>•</span>
-              <span>{roomData.p2_avatar.name}</span>
+              <span>{roomData.p2_avatar.name || 'Lovey 2'}</span>
               <span
                 className={`online-dot mini ${p2Online ? 'online' : ''}`}
                 style={{ width: '7px', height: '7px', position: 'static', display: 'inline-block' }}
                 title={p2Online ? 'Online' : 'Offline'}
               />
             </span>
-          ) : isJoined ? (
-            `${roomData.p1_avatar.name} • ${roomData.p2_avatar.name}`
           ) : (
-            'Made with love for two'
+            '1-Phone Mode'
           )}
         </span>
         <QuickChatBar

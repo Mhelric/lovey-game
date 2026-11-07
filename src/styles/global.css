@@ -2639,7 +2639,7 @@ body {
 }
 
 .settings-charm-btn {
-  border-radius: 16px;
+  border-radius: 50%;
   background: linear-gradient(180deg, #FFFDF9 0%, #FFE4EE 100%);
 }
 
