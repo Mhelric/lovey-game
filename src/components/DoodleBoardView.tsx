@@ -360,86 +360,42 @@ export function DoodleBoardView({
             </div>
           </div>
 
-          {/* Phase 1: Word Selection */}
+          {/* Phase 1: Word Selection - Main Board View */}
           {gameState.phase === 'word_selection' ? (
             <div className="doodle-phase-card anim-fade-scale">
-              {passAndPlay && prePickHandoverActive ? (
-                <div className="doodle-handover-card anim-fade-scale" style={{ maxWidth: '300px' }}>
-                  <div className="doodle-handover-avatar">
-                    <CatAvatarSvg
-                      breed={drawerAvatar.breed}
-                      accessory={drawerAvatar.accessory}
-                      size={56}
-                    />
-                  </div>
-                  <h3 className="doodle-handover-title">
-                    Pass Phone to {drawerName}!
-                  </h3>
-                  <p className="doodle-handover-desc">
-                    {drawerName} is picking the secret word for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
-                  </p>
-                  <div className="popup-btn-row stacked">
-                    <button
-                      type="button"
-                      className="popup-btn-primary"
-                      onClick={() => {
-                        playTapPop();
-                        setPrePickHandoverActive(false);
-                      }}
-                      autoFocus
-                    >
-                      <span>I am {drawerName} — Pick Secret Word</span>
-                      <PencilIcon size={16} />
-                    </button>
-                  </div>
+              <div className="doodle-waiting-box">
+                <div className="doodle-waiting-avatar-bounce">
+                  <CatAvatarSvg
+                    breed={drawerAvatar.breed}
+                    accessory={drawerAvatar.accessory}
+                    size={56}
+                  />
                 </div>
-              ) : isDrawer ? (
-                <>
-                  <div className="doodle-phase-heading">
-                    <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
-                      Round {gameState.round}: {diffInfo.label} Stage
-                    </span>
-                    <h3 className="doodle-phase-title">Pick a Secret Word!</h3>
-                    <p className="doodle-phase-desc">
-                      You get 60s to draw it before {guesserName} gets 3 guesses.
-                    </p>
-                  </div>
-
-                  <div className="doodle-word-choices-grid">
-                    {gameState.wordChoices.map((opt) => (
-                      <button
-                        key={opt.word}
-                        type="button"
-                        className="doodle-word-choice-card sticker-press"
-                        onClick={() => handleWordSelect(opt)}
-                      >
-                        <span className="doodle-word-cat-badge">{opt.category}</span>
-                        <span className="doodle-word-text">{opt.word}</span>
-                        <span className="doodle-word-hint-text">{opt.hint}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="doodle-waiting-box">
-                  <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
-                    Round {gameState.round}: {diffInfo.label} Stage
-                  </span>
-                  <div className="doodle-waiting-avatar-bounce">
-                    <CatAvatarSvg
-                      breed={drawerAvatar.breed}
-                      accessory={drawerAvatar.accessory}
-                      size={54}
-                    />
-                  </div>
-                  <h3 className="doodle-waiting-title">
-                    {drawerName} is picking a {diffInfo.label.toLowerCase()} word...
-                  </h3>
-                  <p className="doodle-waiting-sub">
-                    They have 60s to draw, then you get 3 guesses!
-                  </p>
-                </div>
-              )}
+                <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
+                  Round {gameState.round}: {diffInfo.label} Stage
+                </span>
+                <h3 className="doodle-waiting-title">
+                  {isDrawer
+                    ? `Pick your secret word, ${drawerName}!`
+                    : `${drawerName} is picking a secret word...`}
+                </h3>
+                <p className="doodle-waiting-sub">
+                  Drawer gets 60s to draw, then guesser gets 3 guesses!
+                </p>
+                {isDrawer && !prePickHandoverActive && (
+                  <button
+                    type="button"
+                    className="vibrant-play-btn doodle-reopen-pick-btn sticker-press"
+                    onClick={() => {
+                      // Modal is open by default
+                    }}
+                    style={{ marginTop: '8px', minWidth: '160px', height: '38px', fontSize: '12px' }}
+                  >
+                    <PencilIcon size={14} />
+                    <span>Choose Word</span>
+                  </button>
+                )}
+              </div>
             </div>
           ) : gameState.phase === 'round_summary' ? (
             /* Phase 3: Round Summary */
@@ -797,26 +753,34 @@ export function DoodleBoardView({
               ) : (
                 /* 'guessing' phase: Drawer is done, Guesser gets 3 guesses! */
                 isGuesser ? (
-                  <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
-                    <input
-                      type="text"
-                      className="doodle-guess-input"
-                      placeholder={`Guess the drawing (${guessesLeft} ${guessesLeft === 1 ? 'try' : 'tries'} left)...`}
-                      value={guessInputText}
-                      onInput={(e) => setGuessInputText((e.target as HTMLInputElement).value)}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      spellcheck={false}
-                      maxLength={24}
-                    />
-                    <button
-                      type="submit"
-                      className="vibrant-play-btn doodle-send-guess-btn sticker-press"
-                      disabled={!guessInputText.trim()}
-                    >
-                      <span>Guess ({guessesLeft})</span>
-                    </button>
-                  </form>
+                  <div className="doodle-guesser-deck">
+                    <div className="doodle-tries-outside-row">
+                      <span className="doodle-tries-outside-indicator">
+                        <HeartIcon size={12} />
+                        <span>{guessesLeft} {guessesLeft === 1 ? 'try' : 'tries'} left</span>
+                      </span>
+                    </div>
+                    <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
+                      <input
+                        type="text"
+                        className="doodle-guess-input"
+                        placeholder="Guess the drawing..."
+                        value={guessInputText}
+                        onInput={(e) => setGuessInputText((e.target as HTMLInputElement).value)}
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellcheck={false}
+                        maxLength={24}
+                      />
+                      <button
+                        type="submit"
+                        className="vibrant-play-btn doodle-send-guess-btn sticker-press"
+                        disabled={!guessInputText.trim()}
+                      >
+                        <span>Guess</span>
+                      </button>
+                    </form>
+                  </div>
                 ) : (
                   <div className="doodle-phase-status-bar guessing-mode">
                     <SparkleIcon size={15} />
@@ -829,6 +793,80 @@ export function DoodleBoardView({
             </div>
           )}
         </div>
+
+        {/* 1-Phone Mode Privacy Handover Curtain before Word Selection */}
+        {passAndPlay && prePickHandoverActive && (
+          <div className="modal-backdrop doodle-handover-modal-backdrop">
+            <div className="doodle-handover-card anim-fade-scale" style={{ maxWidth: '300px' }}>
+              <div className="doodle-handover-avatar">
+                <CatAvatarSvg
+                  breed={drawerAvatar.breed}
+                  accessory={drawerAvatar.accessory}
+                  size={56}
+                />
+              </div>
+              <h3 className="doodle-handover-title">
+                Pass Phone to {drawerName}!
+              </h3>
+              <p className="doodle-handover-desc">
+                {drawerName} is picking the secret word for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
+              </p>
+              <div className="popup-btn-row stacked">
+                <button
+                  type="button"
+                  className="popup-btn-primary"
+                  onClick={() => {
+                    playTapPop();
+                    setPrePickHandoverActive(false);
+                  }}
+                  autoFocus
+                >
+                  <span>I am {drawerName} — Pick Secret Word</span>
+                  <PencilIcon size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dedicated Word Selection Popup Modal (Zero clipping / No scrollbars) */}
+        {gameState.phase === 'word_selection' && !prePickHandoverActive && isDrawer && (
+          <div className="modal-backdrop doodle-word-modal-backdrop">
+            <div className="doodle-word-picker-modal anim-fade-scale">
+              <div className="doodle-modal-cat-ring">
+                <CatAvatarSvg
+                  breed={drawerAvatar.breed}
+                  accessory={drawerAvatar.accessory}
+                  size={50}
+                />
+              </div>
+              <div className="doodle-modal-heading">
+                <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
+                  Round {gameState.round}: {diffInfo.label} Stage
+                </span>
+                <h3 className="doodle-modal-title">Pick a Secret Word!</h3>
+                <p className="doodle-modal-desc">
+                  You get 60s to draw it before {guesserName} gets 3 guesses.
+                </p>
+              </div>
+
+              <div className="doodle-word-choices-modal-grid">
+                {gameState.wordChoices.map((opt) => (
+                  <button
+                    key={opt.word}
+                    type="button"
+                    className="doodle-word-choice-card sticker-press"
+                    onClick={() => handleWordSelect(opt)}
+                  >
+                    <span className="doodle-word-cat-badge">{opt.category}</span>
+                    <span className="doodle-word-text">{opt.word}</span>
+                    <span className="doodle-word-hint-text">{opt.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 1-Phone Mode Handover Overlay for Guesser when 60s drawing timer finishes */}
         {passAndPlay && guesserHandoverModal && (

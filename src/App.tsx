@@ -650,10 +650,14 @@ export function App() {
 
     // Always keep our device's default character authoritative for our own slot!
     setRoomData((prev) => {
+      const savedSession = loadLocalActiveSession(targetRoom);
       const activeMode =
-        (matchRow?.game_mode as GameMode) ||
-        (prev.current_mode ?? row.current_mode) ||
-        row.current_mode;
+        activeScreenRef.current === 'play'
+          ? prev.current_mode
+          : (savedSession?.mode ||
+            prev.current_mode ||
+            (matchRow?.game_mode as GameMode) ||
+            row.current_mode);
       return {
         ...row,
         p1_avatar: slot === 'p1' ? localAv : row.p1_avatar,
@@ -1872,7 +1876,7 @@ export function App() {
                       )}
                     </>
                   ) : roomData.current_mode === 'doodle' ? (
-                    `R${doodleState.round}/4 • ${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
+                    `${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
                   ) : (
                     `Tile ${isP1 ? snakesState.p1Tile : snakesState.p2Tile}/${snakesState.maxTile ?? 100}`
                   );

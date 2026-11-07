@@ -13,6 +13,7 @@ import {
 } from './CatAvatarSvg';
 import {
   AccessoryBadgeIcon,
+  CheckCircleIcon,
   CloseIcon,
   CrownIcon,
   DiceFaceSvg,
@@ -285,7 +286,7 @@ export function CatCustomizerModal({
                       >
                         {isSelected && (
                           <span className="tile-check-badge" aria-hidden="true">
-                            ✓
+                            <CheckCircleIcon size={12} />
                           </span>
                         )}
                         <CatAvatarSvg
