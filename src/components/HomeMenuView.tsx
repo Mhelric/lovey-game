@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   CatAvatarConfig,
   CoupleRoomRow,
@@ -13,6 +13,7 @@ import {
   CloseIcon,
   CopyIcon,
   CrownIcon,
+  DevicePhoneIcon,
   DoodleClashIcon,
   EditPenIcon,
   LoveyLogoWordmarkSvg,
@@ -37,11 +38,19 @@ interface HomeMenuViewProps {
   hasSavedDoodle?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
+  passAndPlay?: boolean;
+  onTogglePassAndPlay?: (nextVal?: boolean) => void;
+  onePhoneP2Avatar?: CatAvatarConfig;
+  onSaveOnePhoneP2Avatar?: (avatar: CatAvatarConfig) => void;
+  hasSaved1PhoneDama?: boolean;
+  hasSaved1PhoneSnakes?: boolean;
+  hasSaved1PhoneDoodle?: boolean;
+  saved1PhoneSnakesMaxTile?: SnakesMaxTile;
   onOpenSettings: () => void;
   onChangeMyRoomCode: (newCode: string) => Promise<void>;
   onAttemptJoinAsInvited: (targetCode: string) => Promise<boolean>;
   onLeaveJoinedRoom: () => void;
-  onRejoinSavedGame: (mode?: GameMode) => void;
+  onRejoinSavedGame: (mode?: GameMode, is1Phone?: boolean) => void;
   onHostLaunchGame: (
     mode: GameMode,
     soloPractice?: boolean,
@@ -63,6 +72,14 @@ export function HomeMenuView({
   hasSavedDoodle = false,
   savedSnakesMaxTile,
   chatMessages,
+  passAndPlay = false,
+  onTogglePassAndPlay,
+  onePhoneP2Avatar = { name: 'Lovey 2', breed: 'calico', accessory: 'ribbon' },
+  onSaveOnePhoneP2Avatar,
+  hasSaved1PhoneDama = false,
+  hasSaved1PhoneSnakes = false,
+  hasSaved1PhoneDoodle = false,
+  saved1PhoneSnakesMaxTile = 100,
   onOpenSettings,
   onChangeMyRoomCode,
   onAttemptJoinAsInvited,
@@ -77,6 +94,18 @@ export function HomeMenuView({
     savedSnakesMaxTile || 100
   );
   const [copied, setCopied] = useState(false);
+
+  // Lazy Player 2 setup modal for 1-Phone mode
+  const [p2SetupOpen, setP2SetupOpen] = useState(false);
+  const [P2SetupComp, setP2SetupComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (p2SetupOpen && !P2SetupComp) {
+      import('./Player2SetupModal').then((m) => {
+        setP2SetupComp(() => m.Player2SetupModal);
+      });
+    }
+  }, [p2SetupOpen, P2SetupComp]);
 
   // Editable Room Code state on homescreen
   const [editingRoomCode, setEditingRoomCode] = useState(false);
@@ -115,6 +144,21 @@ export function HomeMenuView({
       ? 'Doodle Clash'
       : activeSavedMode === 'snakes'
       ? `Snakes (${savedSnakesMaxTile})`
+      : 'Cat Dama';
+
+  const hasSaved1PhoneAny =
+    hasSaved1PhoneDama || hasSaved1PhoneSnakes || hasSaved1PhoneDoodle;
+  const activeSaved1PhoneMode: GameMode =
+    hasSaved1PhoneDoodle
+      ? 'doodle'
+      : hasSaved1PhoneSnakes
+      ? 'snakes'
+      : 'dama';
+  const saved1PhoneLabel =
+    activeSaved1PhoneMode === 'doodle'
+      ? 'Doodle Clash'
+      : activeSaved1PhoneMode === 'snakes'
+      ? `Snakes (${saved1PhoneSnakesMaxTile || 100})`
       : 'Cat Dama';
 
   const handleExpandJoinBox = () => {
@@ -587,15 +631,56 @@ export function HomeMenuView({
           ) : (
             /* Host clicks Play Game (or Resume Saved Game if a savestate exists!) */
             <div className="host-play-actions-stack">
-              {hasSavedAny && (
+              {/* 1-Phone Mode Menu Toggle Strip */}
+              <div className="home-mode-toggle-strip">
                 <button
                   type="button"
-                  className="rejoin-savestate-btn host-resume sticker-press"
-                  onClick={() => onRejoinSavedGame(activeSavedMode)}
+                  className={`home-mode-toggle-btn ${!passAndPlay ? 'active' : ''}`}
+                  onClick={() => {
+                    playTapPop();
+                    onTogglePassAndPlay?.(false);
+                  }}
                 >
-                  <PawIcon size={14} />
-                  <span>Resume Saved {savedGameLabel}</span>
+                  <SparkleIcon size={13} />
+                  <span>2 Phones (Online)</span>
                 </button>
+                <button
+                  type="button"
+                  className={`home-mode-toggle-btn ${passAndPlay ? 'active' : ''}`}
+                  onClick={() => {
+                    playTapPop();
+                    if (!passAndPlay) {
+                      setP2SetupOpen(true);
+                    }
+                  }}
+                >
+                  <DevicePhoneIcon size={13} />
+                  <span>1 Phone (Local)</span>
+                </button>
+              </div>
+
+              {passAndPlay ? (
+                hasSaved1PhoneAny && (
+                  <button
+                    type="button"
+                    className="rejoin-savestate-btn host-resume sticker-press"
+                    onClick={() => onRejoinSavedGame(activeSaved1PhoneMode, true)}
+                  >
+                    <PawIcon size={14} />
+                    <span>Resume Saved {saved1PhoneLabel} (1-Phone)</span>
+                  </button>
+                )
+              ) : (
+                hasSavedAny && (
+                  <button
+                    type="button"
+                    className="rejoin-savestate-btn host-resume sticker-press"
+                    onClick={() => onRejoinSavedGame(activeSavedMode, false)}
+                  >
+                    <PawIcon size={14} />
+                    <span>Resume Saved {savedGameLabel}</span>
+                  </button>
+                )
               )}
 
               <button
@@ -606,7 +691,7 @@ export function HomeMenuView({
                   setPickingGame(true);
                 }}
               >
-                <span>Play Game</span>
+                <span>{passAndPlay ? 'Play 1-Phone Game' : 'Play Game'}</span>
                 <PawIcon size={19} />
               </button>
             </div>
@@ -640,7 +725,9 @@ export function HomeMenuView({
                   <span>Pick a Game</span>
                 </h2>
                 <p className="modal-subtitle">
-                  {isJoined
+                  {passAndPlay
+                    ? `1-Phone Mode • With ${onePhoneP2Avatar.name}`
+                    : isJoined
                     ? `Playing with ${roomData.p2_avatar.name}`
                     : 'Choose a game to launch'}
                 </p>
@@ -658,6 +745,62 @@ export function HomeMenuView({
               </button>
             </div>
 
+            {/* 1-Phone Mode Toggle Below Header */}
+            <div className="pick-one-phone-card">
+              <div className="pick-one-phone-left">
+                <div className="pick-one-phone-badge-row">
+                  <DevicePhoneIcon size={16} />
+                  <span className="pick-one-phone-heading">1-Phone Mode</span>
+                  <span
+                    className={`pick-one-phone-status-pill ${
+                      passAndPlay ? 'on' : 'off'
+                    }`}
+                  >
+                    {passAndPlay ? 'ON' : 'OFF'}
+                  </span>
+                </div>
+                <p className="pick-one-phone-desc">
+                  {passAndPlay
+                    ? `Playing with ${onePhoneP2Avatar.name}`
+                    : 'Pass & play on this single phone'}
+                </p>
+              </div>
+
+              <div className="pick-one-phone-controls">
+                {passAndPlay && (
+                  <button
+                    type="button"
+                    className="pick-one-phone-edit-btn sticker-press"
+                    onClick={() => {
+                      playTapPop();
+                      setP2SetupOpen(true);
+                    }}
+                    title="Edit Player 2"
+                  >
+                    <EditPenIcon size={12} />
+                    <span>Edit P2</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`cozy-switch-pill sticker-press ${
+                    passAndPlay ? 'active' : ''
+                  }`}
+                  onClick={() => {
+                    playTapPop();
+                    if (!passAndPlay) {
+                      setP2SetupOpen(true);
+                    } else {
+                      onTogglePassAndPlay?.(false);
+                    }
+                  }}
+                  aria-label="Toggle 1-Phone mode"
+                >
+                  <span className="switch-thumb" />
+                </button>
+              </div>
+            </div>
+
             <div className="role-buttons-grid game-picker-modal-grid">
               {/* 1. Cat Dama Card */}
               <button
@@ -665,13 +808,17 @@ export function HomeMenuView({
                 className="game-pick-btn dama-pick sticker-press"
                 onClick={() => {
                   setPickingGame(false);
-                  onHostLaunchGame('dama', !isJoined, 100);
+                  onHostLaunchGame('dama', passAndPlay, 100);
                 }}
               >
                 <CrownIcon size={26} />
                 <span className="role-main-label">Cat Dama</span>
                 <span className="role-sub-label">
-                  {hasSavedDama && isJoined
+                  {passAndPlay
+                    ? hasSaved1PhoneDama
+                      ? 'Resume 1-Phone Match'
+                      : '3D Filipino Checkers'
+                    : hasSavedDama && isJoined
                     ? 'Resume Saved Match'
                     : '3D Filipino Checkers'}
                 </span>
@@ -683,13 +830,17 @@ export function HomeMenuView({
                 className="game-pick-btn doodle-pick sticker-press"
                 onClick={() => {
                   setPickingGame(false);
-                  onHostLaunchGame('doodle', !isJoined);
+                  onHostLaunchGame('doodle', passAndPlay);
                 }}
               >
                 <DoodleClashIcon size={26} />
                 <span className="role-main-label">Doodle Clash</span>
                 <span className="role-sub-label">
-                  {hasSavedDoodle && isJoined
+                  {passAndPlay
+                    ? hasSaved1PhoneDoodle
+                      ? 'Resume 1-Phone Match'
+                      : 'Draw & Guess Duel'
+                    : hasSavedDoodle && isJoined
                     ? 'Resume Saved Match'
                     : 'Draw & Guess Duel'}
                 </span>
@@ -702,16 +853,23 @@ export function HomeMenuView({
                   className="snakes-launch-hit sticker-press"
                   onClick={() => {
                     setPickingGame(false);
-                    onHostLaunchGame('snakes', !isJoined, snakesTiles);
+                    onHostLaunchGame('snakes', passAndPlay, snakesTiles);
                   }}
                 >
                   <SnakeLadderIcon size={24} />
                   <span className="role-main-label">Snakes &amp; Ladders</span>
-                  {hasSavedSnakes &&
-                    isJoined &&
-                    savedSnakesMaxTile === snakesTiles && (
-                      <span className="role-sub-label">Resume Saved Match</span>
-                    )}
+                  <span className="role-sub-label">
+                    {passAndPlay
+                      ? hasSaved1PhoneSnakes &&
+                        saved1PhoneSnakesMaxTile === snakesTiles
+                        ? 'Resume 1-Phone Match'
+                        : `${snakesTiles} Tiles Mode`
+                      : hasSavedSnakes &&
+                        isJoined &&
+                        savedSnakesMaxTile === snakesTiles
+                      ? 'Resume Saved Match'
+                      : `${snakesTiles} Tiles Mode`}
+                  </span>
                 </button>
                 <div
                   className="snakes-mode-pills"
@@ -741,6 +899,20 @@ export function HomeMenuView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Player 2 Setup Modal for 1-Phone Mode */}
+      {P2SetupComp && p2SetupOpen && (
+        <P2SetupComp
+          isOpen={p2SetupOpen}
+          currentAvatar={onePhoneP2Avatar}
+          onSave={(av: CatAvatarConfig) => {
+            onSaveOnePhoneP2Avatar?.(av);
+            onTogglePassAndPlay?.(true);
+            setP2SetupOpen(false);
+          }}
+          onClose={() => setP2SetupOpen(false)}
+        />
       )}
 
       {/* Bottom Bar with Real Chat Inbox Button on Homescreen */}

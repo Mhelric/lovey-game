@@ -4296,6 +4296,252 @@ body,
 }
 
 /* ==========================================================================
+   1-PHONE PASS & PLAY TOGGLE AND PLAYER 2 SETUP MODAL
+   ========================================================================== */
+.pick-one-phone-card {
+  width: 100%;
+  background: #FFF5F8;
+  border: 2px solid #FFD6E4;
+  border-radius: 16px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.pick-one-phone-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pick-one-phone-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pick-one-phone-heading {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.pick-one-phone-status-pill {
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pick-one-phone-status-pill.on {
+  background: #DCFCE7;
+  color: #15803D;
+  border: 1px solid #86EFAC;
+}
+
+.pick-one-phone-status-pill.off {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #CBD5E1;
+}
+
+.pick-one-phone-desc {
+  font-size: 10.5px;
+  color: #8E5B7B;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick-one-phone-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pick-one-phone-edit-btn {
+  background: #ffffff;
+  border: 1.5px solid #FFB3CB;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #D9386A;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.cozy-switch-pill {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: #CBD5E1;
+  border: 2px solid var(--ink);
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  box-sizing: border-box;
+  transition: background 0.16s ease;
+}
+
+.cozy-switch-pill.active {
+  background: #10B981;
+}
+
+.cozy-switch-pill .switch-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid var(--ink);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.16s ease;
+}
+
+.cozy-switch-pill.active .switch-thumb {
+  transform: translate3d(18px, 0, 0);
+}
+
+.home-mode-toggle-strip {
+  display: flex;
+  gap: 4px;
+  background: #FFF0F5;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 3px;
+  max-width: 320px;
+  width: 100%;
+  margin: 0 auto 6px;
+  box-sizing: border-box;
+}
+
+.home-mode-toggle-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  color: #7A556B;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.home-mode-toggle-btn.active {
+  background: #FF6B9A;
+  color: #ffffff;
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.one-phone-p2-card {
+  max-width: 324px;
+  width: 90%;
+  padding: 14px 12px 12px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.p2-setup-hero-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #FFF0F5;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  margin: 2px auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p2-setup-input-wrap {
+  margin-bottom: 8px;
+}
+
+.p2-name-input {
+  text-align: center;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.p2-setup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.p2-breed-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.p2-breed-mini-tile {
+  min-height: 44px;
+  background: #ffffff;
+  border: 1.5px solid #F6EDF2;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px 2px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.p2-breed-mini-tile:active {
+  transform: scale(0.94);
+}
+
+.p2-breed-mini-tile.selected {
+  border-color: #FF6B9A;
+  background: #FFF0F5;
+}
+
+.p2-mini-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  color: #5a3a3a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.p2-confirm-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
    DOODLE CLASH (KAWAII DRAW & GUESS) - VIEWPORT & VECTOR STYLES
    ========================================================================== */
 .rules-section-box.doodle-theme {

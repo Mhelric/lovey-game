@@ -262,38 +262,79 @@ const loadStorageJson = <T,>(k: string): T | null => {
   }
 };
 
-function saveLocalGameSavestate<T>(r: string, m: GameMode, state: T): void {
-  saveStorageJson(`${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(r)}_${m}`, {
+const STORAGE_ONE_PHONE_SAVESTATE_PREFIX = 'lovey_1phone_savestate_';
+const STORAGE_ONE_PHONE_SESSION = 'lovey_1phone_session';
+const STORAGE_ONE_PHONE_P2_KEY = 'lovey_1phone_p2_avatar';
+
+const DEFAULT_ONE_PHONE_P2_AVATAR: CatAvatarConfig = {
+  name: 'Lovey 2',
+  breed: 'calico',
+  accessory: 'ribbon',
+};
+
+function loadOnePhoneP2Avatar(): CatAvatarConfig {
+  const p = loadStorageJson<CatAvatarConfig>(STORAGE_ONE_PHONE_P2_KEY);
+  if (p && typeof p.name === 'string' && p.breed && p.accessory) {
+    return {
+      name: p.name.slice(0, 14) || 'Lovey 2',
+      breed: p.breed,
+      accessory: p.accessory,
+    };
+  }
+  return DEFAULT_ONE_PHONE_P2_AVATAR;
+}
+
+function saveLocalGameSavestate<T>(
+  r: string,
+  m: GameMode,
+  state: T,
+  is1Phone = false
+): void {
+  const key = is1Phone
+    ? `${STORAGE_ONE_PHONE_SAVESTATE_PREFIX}${m}`
+    : `${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(r)}_${m}`;
+  saveStorageJson(key, {
     updatedAt: Date.now(),
     state,
   });
 }
 
-function loadLocalGameSavestate<T>(r: string, m: GameMode): T | null {
+function loadLocalGameSavestate<T>(
+  r: string,
+  m: GameMode,
+  is1Phone = false
+): T | null {
+  const key = is1Phone
+    ? `${STORAGE_ONE_PHONE_SAVESTATE_PREFIX}${m}`
+    : `${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(r)}_${m}`;
   return (
-    loadStorageJson<{ state?: T }>(
-      `${STORAGE_SAVESTATE_PREFIX}${normalizeRoomCode(r)}_${m}`
-    )?.state ?? null
+    loadStorageJson<{ state?: T }>(key)?.state ?? null
   );
 }
 
 function saveLocalActiveSession(
   r: string,
   screen: 'menu' | 'play',
-  mode: GameMode
+  mode: GameMode,
+  is1Phone = false
 ): void {
-  saveStorageJson(`${STORAGE_SESSION_PREFIX}${normalizeRoomCode(r)}`, {
+  const key = is1Phone
+    ? STORAGE_ONE_PHONE_SESSION
+    : `${STORAGE_SESSION_PREFIX}${normalizeRoomCode(r)}`;
+  saveStorageJson(key, {
     screen,
     mode,
   });
 }
 
 function loadLocalActiveSession(
-  r: string
+  r: string,
+  is1Phone = false
 ): { screen: 'menu' | 'play'; mode: GameMode } | null {
-  const p = loadStorageJson<{ screen?: 'menu' | 'play'; mode?: GameMode }>(
-    `${STORAGE_SESSION_PREFIX}${normalizeRoomCode(r)}`
-  );
+  const key = is1Phone
+    ? STORAGE_ONE_PHONE_SESSION
+    : `${STORAGE_SESSION_PREFIX}${normalizeRoomCode(r)}`;
+  const p = loadStorageJson<{ screen?: 'menu' | 'play'; mode?: GameMode }>(key);
   return p && (p.screen === 'menu' || p.screen === 'play') && p.mode ? (p as any) : null;
 }
 
@@ -462,7 +503,34 @@ export function App() {
     timestamp: number;
   } | null>(null);
 
-  const [passAndPlay, setPassAndPlay] = useState<boolean>(false);
+  const [onePhoneP2Avatar, setOnePhoneP2Avatar] = useState<CatAvatarConfig>(
+    () => loadOnePhoneP2Avatar()
+  );
+
+  const handleSaveOnePhoneP2Avatar = (avatar: CatAvatarConfig) => {
+    setOnePhoneP2Avatar(avatar);
+    saveStorageJson(STORAGE_ONE_PHONE_P2_KEY, avatar);
+  };
+
+  const [passAndPlay, setPassAndPlay] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('lovey_1phone_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleTogglePassAndPlay = (explicitVal?: boolean) => {
+    setPassAndPlay((prev) => {
+      const next = typeof explicitVal === 'boolean' ? explicitVal : !prev;
+      try {
+        localStorage.setItem('lovey_1phone_mode', String(next));
+      } catch {
+        // Ignore
+      }
+      return next;
+    });
+  };
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
   const [chatMessages, setChatMessages] = useState<FloatingReaction[]>([]);
   const [onlineSeen, setOnlineSeen] = useState<Record<PlayerSlot, number>>({
@@ -548,20 +616,20 @@ export function App() {
 
   // Automatically persist per-game savestates & active screen to localStorage on every move
   useEffect(() => {
-    saveLocalGameSavestate(roomCode, 'dama', damaState);
-  }, [roomCode, damaState]);
+    saveLocalGameSavestate(roomCode, 'dama', damaState, passAndPlay);
+  }, [roomCode, damaState, passAndPlay]);
 
   useEffect(() => {
-    saveLocalGameSavestate(roomCode, 'snakes', snakesState);
-  }, [roomCode, snakesState]);
+    saveLocalGameSavestate(roomCode, 'snakes', snakesState, passAndPlay);
+  }, [roomCode, snakesState, passAndPlay]);
 
   useEffect(() => {
-    saveLocalGameSavestate(roomCode, 'doodle', doodleState);
-  }, [roomCode, doodleState]);
+    saveLocalGameSavestate(roomCode, 'doodle', doodleState, passAndPlay);
+  }, [roomCode, doodleState, passAndPlay]);
 
   useEffect(() => {
-    saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode);
-  }, [roomCode, activeScreen, roomData.current_mode]);
+    saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode, passAndPlay);
+  }, [roomCode, activeScreen, roomData.current_mode, passAndPlay]);
 
   const lastStartingSlotRef = useRef<{ slot: PlayerSlot; streak: number }>({
     slot: 'p1',
@@ -1048,13 +1116,17 @@ export function App() {
 
   const handleExitToMenu = () => {
     playTapPop();
-    // Notify peer immediately that player exited to homescreen from settings so their match pauses and alerts them
-    channelRef.current?.sendBroadcast({
-      type: 'partner_left',
-      slot: mySlotRef.current,
-    });
+    // Only notify partner if we were in an online match!
+    if (!passAndPlay) {
+      channelRef.current?.sendBroadcast({
+        type: 'partner_left',
+        slot: mySlotRef.current,
+      });
+      saveLocalActiveSession(roomCode, 'menu', roomData.current_mode, false);
+    } else {
+      saveLocalActiveSession('', 'menu', roomData.current_mode, true);
+    }
     setActiveScreen('menu');
-    saveLocalActiveSession(roomCode, 'menu', roomData.current_mode);
   };
 
   const handleHostKickPlayer = async () => {
@@ -1076,12 +1148,30 @@ export function App() {
     });
   };
 
-  const handleRejoinSavedGame = (targetMode?: GameMode) => {
+  const handleRejoinSavedGame = (targetMode?: GameMode, is1Phone = passAndPlay) => {
     playTapPop();
     const modeToJoin = targetMode ?? roomData.current_mode;
+    setPassAndPlay(is1Phone);
     setRoomData((prev) => ({ ...prev, current_mode: modeToJoin }));
+
+    if (is1Phone) {
+      if (modeToJoin === 'dama') {
+        const s = loadLocalGameSavestate<DamaGameState>('', 'dama', true);
+        if (s && Array.isArray(s.board)) setDamaState(s);
+      } else if (modeToJoin === 'snakes') {
+        const s = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
+        if (s && typeof s.boardSeed === 'number') setSnakesState(s);
+      } else if (modeToJoin === 'doodle') {
+        const s = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
+        if (s && typeof s.matchSeed === 'number') setDoodleState(s);
+      }
+      setActiveScreen('play');
+      saveLocalActiveSession(roomCode, 'play', modeToJoin, true);
+      return;
+    }
+
     setActiveScreen('play');
-    saveLocalActiveSession(roomCode, 'play', modeToJoin);
+    saveLocalActiveSession(roomCode, 'play', modeToJoin, false);
     // Announce to partner that we rejoined the game
     channelRef.current?.sendBroadcast({
       type: 'partner_joined',
@@ -1111,6 +1201,10 @@ export function App() {
     stateJson: unknown,
     winner: PlayerSlot | 'draw' | null
   ) => {
+    // In 1-phone mode, DO NOT broadcast to room or persist to Supabase PostgreSQL!
+    if (passAndPlay) {
+      return;
+    }
     channelRef.current?.sendBroadcast({
       type: 'match_sync',
       gameMode,
@@ -1132,19 +1226,42 @@ export function App() {
 
   const handleHostLaunchGame = async (
     selectedMode: GameMode,
-    soloPractice = false,
+    soloPractice = passAndPlay,
     snakesMaxTile: SnakesMaxTile = 100,
     forceNewMatch = false
   ) => {
     playTapPop();
-    if (soloPractice && !isJoinedWithPartner) {
-      setPassAndPlay(true);
-    } else {
-      setPassAndPlay(false);
-    }
+    setPassAndPlay(soloPractice);
     setRoomData((prev) => ({ ...prev, current_mode: selectedMode }));
     setActiveScreen('play');
     checkAutoOpenTutorial(selectedMode);
+
+    if (soloPractice) {
+      if (selectedMode === 'dama') {
+        const saved = loadLocalGameSavestate<DamaGameState>('', 'dama', true);
+        const nextDama = !forceNewMatch && saved && isDamaInProgress(saved)
+          ? saved
+          : createInitialDamaState(pickFairStartingTurn());
+        setDamaState(nextDama);
+        saveLocalGameSavestate('', 'dama', nextDama, true);
+      } else if (selectedMode === 'snakes') {
+        const saved = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
+        const nextSnakes = !forceNewMatch && saved && isSnakesInProgress(saved) && (saved.maxTile ?? 100) === snakesMaxTile
+          ? saved
+          : createInitialSnakesState(Math.floor(100000 + Math.random() * 899999), true, snakesMaxTile, pickFairStartingTurn());
+        setSnakesState(nextSnakes);
+        saveLocalGameSavestate('', 'snakes', nextSnakes, true);
+      } else {
+        const saved = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
+        const nextDoodle = !forceNewMatch && saved && isDoodleInProgress(saved)
+          ? saved
+          : createInitialDoodleState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+        setDoodleState(nextDoodle);
+        saveLocalGameSavestate('', 'doodle', nextDoodle, true);
+      }
+      saveLocalActiveSession('', 'play', selectedMode, true);
+      return;
+    }
 
     if (selectedMode === 'dama') {
       const nextDama = !forceNewMatch && isDamaInProgress(damaState) ? damaState : createInitialDamaState(pickFairStartingTurn());
@@ -1459,7 +1576,9 @@ export function App() {
   const effectiveP1Avatar: CatAvatarConfig =
     mySlot === 'p1' ? myAvatar : roomData.p1_avatar;
   const effectiveP2Avatar: CatAvatarConfig =
-    mySlot === 'p2' ? myAvatar : roomData.p2_avatar;
+    passAndPlay
+      ? onePhoneP2Avatar
+      : (mySlot === 'p2' ? myAvatar : roomData.p2_avatar);
 
   const p1DisplayName = effectiveP1Avatar.name || 'Lovey 1';
   const p2DisplayName =
@@ -1549,18 +1668,6 @@ export function App() {
       enabled: timerEnabled,
       durationSec: clamped,
       sender: 'p1',
-    });
-  };
-
-  const handleTogglePassAndPlay = () => {
-    setPassAndPlay((prev) => {
-      const next = !prev;
-      channelRef.current?.sendBroadcast({
-        type: 'pass_and_play_sync',
-        passAndPlay: next,
-        sender: mySlot,
-      });
-      return next;
     });
   };
 
@@ -1703,6 +1810,13 @@ export function App() {
     executeAutoRandomMove,
   ]);
 
+  const saved1PhoneDama = loadLocalGameSavestate<DamaGameState>('', 'dama', true);
+  const saved1PhoneSnakes = loadLocalGameSavestate<SnakesGameState>('', 'snakes', true);
+  const saved1PhoneDoodle = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
+  const hasSaved1PhoneDama = Boolean(saved1PhoneDama && isDamaInProgress(saved1PhoneDama));
+  const hasSaved1PhoneSnakes = Boolean(saved1PhoneSnakes && isSnakesInProgress(saved1PhoneSnakes));
+  const hasSaved1PhoneDoodle = Boolean(saved1PhoneDoodle && isDoodleInProgress(saved1PhoneDoodle));
+
   return (
     <main className="arcade-shell">
       {activeScreen === 'menu' ? (
@@ -1720,6 +1834,14 @@ export function App() {
           hasSavedSnakes={isJoinedWithPartner && isSnakesInProgress(snakesState)}
           hasSavedDoodle={isJoinedWithPartner && isDoodleInProgress(doodleState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
+          passAndPlay={passAndPlay}
+          onTogglePassAndPlay={handleTogglePassAndPlay}
+          onePhoneP2Avatar={onePhoneP2Avatar}
+          onSaveOnePhoneP2Avatar={handleSaveOnePhoneP2Avatar}
+          hasSaved1PhoneDama={hasSaved1PhoneDama}
+          hasSaved1PhoneSnakes={hasSaved1PhoneSnakes}
+          hasSaved1PhoneDoodle={hasSaved1PhoneDoodle}
+          saved1PhoneSnakesMaxTile={saved1PhoneSnakes?.maxTile ?? 100}
           chatMessages={chatMessages}
           onOpenSettings={() => setCustomizerOpen(true)}
           onChangeMyRoomCode={handleChangeMyRoomCode}

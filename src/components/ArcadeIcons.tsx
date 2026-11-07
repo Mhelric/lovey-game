@@ -1138,3 +1138,37 @@ export function ReactionStickerSvg({
     </svg>
   );
 }
+
+export function DevicePhoneIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect
+        x="6"
+        y="2"
+        width="12"
+        height="20"
+        rx="3.5"
+        fill="#FFEAF2"
+        stroke="#5B2A4E"
+        strokeWidth="2"
+      />
+      <line
+        x1="10"
+        y1="5"
+        x2="14"
+        y2="5"
+        stroke="#5B2A4E"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="18" r="1.3" fill="#FF6B9A" />
+    </svg>
+  );
+}
