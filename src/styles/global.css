@@ -1727,9 +1727,11 @@ body,
 }
 
 .cozy-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #9a7b7b;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: #7A556B;
+  letter-spacing: 0.2px;
 }
 
 .cozy-breed-grid {
@@ -1782,8 +1784,10 @@ body,
 }
 
 .cozy-breed-name {
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.2px;
   color: #5a3a3a;
   white-space: nowrap;
   overflow: hidden;
@@ -1798,17 +1802,20 @@ body,
 }
 
 .cozy-acc-tile {
-  min-height: 44px;
+  min-height: 48px;
   background: #ffffff;
-  border: 2px solid transparent;
+  border: 2px solid #F6EDF2;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(255, 120, 160, 0.12);
-  color: #9a7b7b;
+  box-shadow: 0 2px 6px rgba(91, 42, 78, 0.06);
+  color: #7A556B;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+  padding: 6px 2px 5px;
   cursor: pointer;
-  transition: transform 0.12s ease;
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
 
 .cozy-acc-tile:active {
@@ -1819,6 +1826,7 @@ body,
   border-color: #ff6b9a;
   background: #fff0f5;
   color: #c2456b;
+  box-shadow: 0 2px 8px rgba(255, 90, 141, 0.18);
 }
 
 .cozy-chip-row {
@@ -4036,12 +4044,18 @@ body,
 .cozy-acc-tile {
   flex-direction: column;
   gap: 2px;
-  padding: 6px 2px;
+  padding: 6px 2px 5px;
 }
 
 .cozy-acc-label {
-  font-size: 9.5px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
+  color: inherit;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .match-role-status-card {

@@ -822,8 +822,10 @@ export function App() {
         ) {
           setRoomData((prev) => ({ ...prev, current_mode: event.mode }));
           setActiveScreen('play');
+          setPartnerLeftModalOpen(false);
           checkAutoOpenTutorial(event.mode);
         } else if (event.type === 'match_sync') {
+          setPartnerLeftModalOpen(false);
           if (event.gameMode === 'dama') {
             const incoming = event.stateJson as DamaGameState;
             if (incoming && Array.isArray(incoming.board)) {
@@ -1044,6 +1046,17 @@ export function App() {
     setRoomCode(hostRoom);
   };
 
+  const handleExitToMenu = () => {
+    playTapPop();
+    // Notify peer immediately that player exited to homescreen from settings so their match pauses and alerts them
+    channelRef.current?.sendBroadcast({
+      type: 'partner_left',
+      slot: mySlotRef.current,
+    });
+    setActiveScreen('menu');
+    saveLocalActiveSession(roomCode, 'menu', roomData.current_mode);
+  };
+
   const handleHostKickPlayer = async () => {
     playTapPop();
     const partnerName = roomData.p2_avatar.name || 'Invited player';
@@ -1156,6 +1169,11 @@ export function App() {
       mode: selectedMode,
       snakesMaxTile,
       sender: 'p1',
+    });
+    channelRef.current?.sendBroadcast({
+      type: 'partner_joined',
+      slot: 'p1',
+      avatar: myAvatarRef.current,
     });
     updateRoomModeInDb(roomCode, selectedMode);
   };
@@ -2050,7 +2068,7 @@ export function App() {
           onHostSwitchGame={handleHostSwitchMode}
           onHostResetMatch={handleHostResetCurrentMatch}
           onOpenTutorial={() => setTutorialOpen(true)}
-          onExitToMenu={() => setActiveScreen('menu')}
+          onExitToMenu={handleExitToMenu}
           onLeaveJoinedRoom={handleLeaveJoinedRoom}
           isPartnerInRoom={isJoinedWithPartner}
           partnerName={roomData.p2_avatar.name}
@@ -2192,11 +2210,18 @@ export function App() {
               />
             </div>
             <h3 id="partner-left-title" className="kicked-popup-title">
-              Partner Left Match
+              {mySlot === 'p2' ? 'Host Left the Match' : 'Partner Left Match'}
             </h3>
             <p className="kicked-popup-desc">
-              Your partner has disconnected or left the room. The match and all timers are <strong>paused</strong>!
-              The game will automatically resume right where you left off when they rejoin.
+              {mySlot === 'p2' ? (
+                <>
+                  <strong>{effectiveP1Avatar.name || 'The Host'}</strong> has left the game or returned to the menu. The match and all turn timers are <strong>paused</strong>! The game will automatically resume right where you left off when the host returns.
+                </>
+              ) : (
+                <>
+                  Your partner has disconnected or left the room. The match and all turn timers are <strong>paused</strong>! The game will automatically resume right where you left off when they rejoin.
+                </>
+              )}
             </p>
             <div className="popup-btn-row stacked">
               <button
