@@ -93,7 +93,9 @@ function FirstTurnShuffleOverlay({
   p2Avatar: CatAvatarConfig;
   onShuffleActiveChange?: (active: boolean) => void;
 }) {
-  const [phase, setPhase] = useState<'idle' | 'shuffling' | 'revealed'>('idle');
+  const [phase, setPhase] = useState<'idle' | 'shuffling' | 'revealed'>(
+    () => (isFreshMatch ? 'shuffling' : 'idle')
+  );
   const [highlightSlot, setHighlightSlot] = useState<PlayerSlot>('p1');
   const lastShuffledKeyRef = useRef<string>('');
 
@@ -162,6 +164,10 @@ function FirstTurnShuffleOverlay({
       className="first-turn-shuffle-backdrop"
       role="status"
       aria-live="polite"
+      onClick={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
     >
       <div className="first-turn-shuffle-card">
         <span className="shuffle-kicker-pill">
@@ -1742,6 +1748,7 @@ export function App() {
                   p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
                   p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                   passAndPlay={passAndPlay}
+                  isShuffling={isShufflingActive}
                   onCommitState={handleCommitDoodleState}
                   onBroadcastStroke={(stroke: DoodleStroke) => {
                     channelRef.current?.sendBroadcast({

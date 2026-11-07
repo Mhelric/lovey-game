@@ -47,13 +47,14 @@ interface DoodleBoardViewProps {
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
   passAndPlay?: boolean;
+  isShuffling?: boolean;
   onCommitState: (nextState: DoodleGameState) => void;
   onBroadcastStroke?: (stroke: DoodleStroke) => void;
   onBroadcastClear?: () => void;
 }
 
-const SVG_VIEW_W = 1000;
-const SVG_VIEW_H = 650;
+const SVG_VIEW_W = 800;
+const SVG_VIEW_H = 1200;
 
 function pointsToSvgPath(points: DoodlePoint[]): string {
   if (points.length === 0) return '';
@@ -79,6 +80,7 @@ export function DoodleBoardView({
   p1Avatar,
   p2Avatar,
   passAndPlay = false,
+  isShuffling = false,
   onCommitState,
   onBroadcastStroke,
   onBroadcastClear,
@@ -129,9 +131,9 @@ export function DoodleBoardView({
     prevRoundRef.current = gameState.round;
   }, [passAndPlay, gameState.phase, gameState.round]);
 
-  // Decrement 10s pre-pick countdown
+  // Decrement 10s pre-pick countdown (paused while first-turn shuffle is loading/playing)
   useEffect(() => {
-    if (!prePickHandoverActive) return;
+    if (!prePickHandoverActive || isShuffling) return;
     if (prePickCountdown <= 0) {
       setPrePickHandoverActive(false);
       return;
@@ -146,7 +148,7 @@ export function DoodleBoardView({
       });
     }, 1000);
     return () => window.clearInterval(t);
-  }, [prePickHandoverActive, prePickCountdown]);
+  }, [prePickHandoverActive, prePickCountdown, isShuffling]);
 
   // Alarm sound & Guesser handover modal when drawing ends and guessing begins
   useEffect(() => {
@@ -794,8 +796,8 @@ export function DoodleBoardView({
           )}
         </div>
 
-        {/* 1-Phone Mode Privacy Handover Curtain before Word Selection */}
-        {passAndPlay && prePickHandoverActive && (
+        {/* 1-Phone Mode Privacy Handover Curtain before Word Selection (hidden while shuffle roulette is active) */}
+        {passAndPlay && prePickHandoverActive && !isShuffling && (
           <div className="modal-backdrop doodle-handover-modal-backdrop">
             <div className="doodle-handover-card anim-fade-scale" style={{ maxWidth: '300px' }}>
               <div className="doodle-handover-avatar">
@@ -829,8 +831,8 @@ export function DoodleBoardView({
           </div>
         )}
 
-        {/* Dedicated Word Selection Popup Modal (Zero clipping / No scrollbars) */}
-        {gameState.phase === 'word_selection' && !prePickHandoverActive && isDrawer && (
+        {/* Dedicated Word Selection Popup Modal (waits for shuffle roulette to finish!) */}
+        {gameState.phase === 'word_selection' && !prePickHandoverActive && isDrawer && !isShuffling && (
           <div className="modal-backdrop doodle-word-modal-backdrop">
             <div className="doodle-word-picker-modal anim-fade-scale">
               <div className="doodle-modal-cat-ring">
