@@ -30,6 +30,7 @@ interface DamaBoardViewProps {
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
+  isPaused?: boolean;
   onCommitState: (nextState: DamaGameState) => void;
 }
 
@@ -404,6 +405,7 @@ export function DamaBoardView({
   p1Avatar,
   p2Avatar,
   passAndPlay,
+  isPaused = false,
   onCommitState,
 }: DamaBoardViewProps) {
   const [selectedPos, setSelectedPos] = useState<BoardPos | null>(null);
@@ -539,7 +541,7 @@ export function DamaBoardView({
   }, [legalSteps, selectedPos]);
 
   const handleSquareTap = (r: number, c: number) => {
-    if (gameState.winner || !canControlCurrentTurn) return;
+    if (gameState.winner || !canControlCurrentTurn || isPaused) return;
 
     const tappedPos: BoardPos = { r, c };
 

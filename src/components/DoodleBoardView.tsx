@@ -48,6 +48,7 @@ interface DoodleBoardViewProps {
   p2Avatar: CatAvatarConfig;
   passAndPlay?: boolean;
   isShuffling?: boolean;
+  isPaused?: boolean;
   onCommitState: (nextState: DoodleGameState) => void;
   onBroadcastStroke?: (stroke: DoodleStroke) => void;
   onBroadcastClear?: () => void;
@@ -81,6 +82,7 @@ export function DoodleBoardView({
   p2Avatar,
   passAndPlay = false,
   isShuffling = false,
+  isPaused = false,
   onCommitState,
   onBroadcastStroke,
   onBroadcastClear,
@@ -175,7 +177,7 @@ export function DoodleBoardView({
 
   // 60s Drawing Timer tick effect: Drawer ticks the timer (or P1 in passAndPlay)
   useEffect(() => {
-    if (gameState.phase !== 'drawing') return;
+    if (gameState.phase !== 'drawing' || isPaused) return;
     const isMasterTick = passAndPlay ? mySlot === 'p1' : mySlot === gameState.drawerSlot;
     if (!isMasterTick) return;
 
@@ -184,7 +186,7 @@ export function DoodleBoardView({
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [gameState, mySlot, passAndPlay, onCommitState]);
+  }, [gameState, mySlot, passAndPlay, isPaused, onCommitState]);
 
   // Clear active touch state if phase leaves 'drawing'
   useEffect(() => {
@@ -223,7 +225,7 @@ export function DoodleBoardView({
   }, []);
 
   const handlePointerDown = (e: PointerEvent) => {
-    if (!isDrawer || gameState.phase !== 'drawing') return;
+    if (!isDrawer || gameState.phase !== 'drawing' || isPaused) return;
     e.preventDefault();
     const pt = getNormalizedPoint(e);
     if (!pt) return;
@@ -345,9 +347,13 @@ export function DoodleBoardView({
                 R{gameState.round}/{gameState.totalRounds} • {diffInfo.label}
               </span>
               {gameState.phase === 'drawing' && (
-                <div className={`doodle-timer-pill ${gameState.roundSecondsLeft <= 10 ? 'urgent' : ''}`}>
+                <div
+                  className={`doodle-timer-pill ${
+                    isPaused ? 'paused' : gameState.roundSecondsLeft <= 10 ? 'urgent' : ''
+                  }`}
+                >
                   <TimerClockIcon size={12} />
-                  <span>{gameState.roundSecondsLeft}s</span>
+                  <span>{isPaused ? 'PAUSED' : `${gameState.roundSecondsLeft}s`}</span>
                 </div>
               )}
               {gameState.phase === 'guessing' && (

@@ -27,6 +27,7 @@ interface SnakesBoardViewProps {
   p1Avatar: CatAvatarConfig;
   p2Avatar: CatAvatarConfig;
   passAndPlay: boolean;
+  isPaused?: boolean;
   onCommitState: (nextState: SnakesGameState) => void;
   autoRollSignal?: number;
   onBroadcastDiceRolling?: (roller: PlayerSlot, hasDouble: boolean) => void;
@@ -414,6 +415,7 @@ export function SnakesBoardView({
   p1Avatar,
   p2Avatar,
   passAndPlay,
+  isPaused = false,
   onCommitState,
   autoRollSignal,
   onBroadcastDiceRolling,
@@ -715,7 +717,7 @@ export function SnakesBoardView({
 
   const isMyTurn = passAndPlay || gameState.turn === mySlot;
   const canRoll =
-    !gameState.winner && !rolling && hoppingSlot === null && isMyTurn;
+    !gameState.winner && !rolling && hoppingSlot === null && isMyTurn && !isPaused;
 
   const activeDoubleDiceTurns =
     (gameState.turn === 'p1'
@@ -724,7 +726,7 @@ export function SnakesBoardView({
   const hasDoubleDiceActive = activeDoubleDiceTurns > 0;
 
   const handleRollDice = () => {
-    if (!canRoll) return;
+    if (!canRoll || isPaused) return;
     playDiceRattle();
     setRolling(true);
     onBroadcastDiceRolling?.(gameState.turn, hasDoubleDiceActive);

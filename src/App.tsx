@@ -902,6 +902,11 @@ export function App() {
       if (document.visibilityState === 'visible') {
         syncFromDatabase(roomCode);
         channelRef.current?.sendBroadcast({
+          type: 'partner_joined',
+          slot: mySlotRef.current,
+          avatar: myAvatarRef.current,
+        });
+        channelRef.current?.sendBroadcast({
           type: 'request_savestate',
           slot: mySlotRef.current,
         });
@@ -1063,6 +1068,13 @@ export function App() {
     const modeToJoin = targetMode ?? roomData.current_mode;
     setRoomData((prev) => ({ ...prev, current_mode: modeToJoin }));
     setActiveScreen('play');
+    saveLocalActiveSession(roomCode, 'play', modeToJoin);
+    // Announce to partner that we rejoined the game
+    channelRef.current?.sendBroadcast({
+      type: 'partner_joined',
+      slot: mySlot,
+      avatar: myAvatarRef.current,
+    });
     // Request latest peer savestate in case moves happened while we were on menu
     channelRef.current?.sendBroadcast({
       type: 'request_savestate',
@@ -1437,6 +1449,15 @@ export function App() {
       ? effectiveP2Avatar.name
       : 'Lovey 2';
 
+  const isPartnerOnline = mySlot === 'p1' ? p2Online : p1Online;
+
+  // In 2-phone live mode, match and timers pause whenever partner left or disconnected
+  const isGamePaused =
+    !passAndPlay &&
+    isJoinedWithPartner &&
+    activeScreen === 'play' &&
+    (partnerLeftModalOpen || !isPartnerOnline);
+
   const activeTurnSlot: PlayerSlot =
     roomData.current_mode === 'dama'
       ? damaState.turn
@@ -1547,7 +1568,8 @@ export function App() {
       !timerEnabled ||
       activeScreen !== 'play' ||
       currentWinner ||
-      isShufflingActive
+      isShufflingActive ||
+      isGamePaused
     ) {
       return;
     }
@@ -1562,7 +1584,7 @@ export function App() {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [timerEnabled, activeScreen, currentWinner, isShufflingActive]);
+  }, [timerEnabled, activeScreen, currentWinner, isShufflingActive, isGamePaused]);
 
   const executeAutoRandomMove = useCallback(() => {
     const mode = roomData.current_mode;
@@ -1628,7 +1650,8 @@ export function App() {
       !timerEnabled ||
       activeScreen !== 'play' ||
       currentWinner ||
-      isShufflingActive
+      isShufflingActive ||
+      isGamePaused
     ) {
       return;
     }
@@ -1639,7 +1662,8 @@ export function App() {
 
     if (
       (shouldActivePlayerMove || shouldFallbackMove) &&
-      !autoMoveExecutingRef.current
+      !autoMoveExecutingRef.current &&
+      !isGamePaused
     ) {
       autoMoveExecutingRef.current = true;
       executeAutoRandomMove();
@@ -1654,6 +1678,7 @@ export function App() {
     activeScreen,
     currentWinner,
     isShufflingActive,
+    isGamePaused,
     passAndPlay,
     mySlot,
     activeTurnSlot,
@@ -1724,14 +1749,14 @@ export function App() {
 
             {timerEnabled ? (
               <div
-                className={`ingame-timer-badge ${timeRemaining <= 5 ? 'urgent' : ''}`}
-                title={`Turn Timer: ${Math.max(0, timeRemaining)}s remaining`}
+                className={`ingame-timer-badge ${timeRemaining <= 5 && !isGamePaused ? 'urgent' : ''} ${isGamePaused ? 'paused' : ''}`}
+                title={isGamePaused ? 'Turn Timer: Paused' : `Turn Timer: ${Math.max(0, timeRemaining)}s remaining`}
                 aria-label={`Turn Timer: ${Math.max(0, timeRemaining)} seconds`}
               >
                 <span className="timer-clock-icon" aria-hidden="true">
                   <TimerClockIcon size={13} />
                 </span>
-                <span className="timer-sec-count">{Math.max(0, timeRemaining)}s</span>
+                <span className="timer-sec-count">{isGamePaused ? 'PAUSED' : `${Math.max(0, timeRemaining)}s`}</span>
               </div>
             ) : (
               <div className="menu-top-spacer" aria-hidden="true" />
@@ -1740,6 +1765,20 @@ export function App() {
 
           {/* Center Stage: Game Board + Fun First-Turn Shuffle Ceremony */}
           <div className="ingame-board-center" style={{ position: 'relative' }}>
+            {isGamePaused && (
+              <div
+                className="game-paused-banner anim-fade-scale"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="pause-pulse-dot" aria-hidden="true" />
+                <span>
+                  Match Paused — Waiting for{' '}
+                  {mySlot === 'p1' ? p2DisplayName : p1DisplayName} to rejoin...
+                </span>
+              </div>
+            )}
+
             {autoMoveNotice && (
               <div
                 className="auto-move-notice-banner anim-fade-scale"
@@ -1758,6 +1797,7 @@ export function App() {
                 p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
                 p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                 passAndPlay={passAndPlay}
+                isPaused={isGamePaused}
                 onCommitState={handleCommitDamaState}
               />
             ) : roomData.current_mode === 'doodle' ? (
@@ -1769,6 +1809,7 @@ export function App() {
                   p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                   passAndPlay={passAndPlay}
                   isShuffling={isShufflingActive}
+                  isPaused={isGamePaused}
                   onCommitState={handleCommitDoodleState}
                   onBroadcastStroke={(stroke: DoodleStroke) => {
                     channelRef.current?.sendBroadcast({
@@ -1792,6 +1833,7 @@ export function App() {
                 p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
                 p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
                 passAndPlay={passAndPlay}
+                isPaused={isGamePaused}
                 onCommitState={handleCommitSnakesState}
                 autoRollSignal={autoRollSignal}
                 onBroadcastDiceRolling={(roller: PlayerSlot, hasDouble: boolean) => {
@@ -2090,6 +2132,16 @@ export function App() {
                   playTapPop();
                   setRejoinPromptOpen(false);
                   setActiveScreen('play');
+                  saveLocalActiveSession(roomCode, 'play', roomData.current_mode);
+                  channelRef.current?.sendBroadcast({
+                    type: 'partner_joined',
+                    slot: mySlotRef.current,
+                    avatar: myAvatarRef.current,
+                  });
+                  channelRef.current?.sendBroadcast({
+                    type: 'request_savestate',
+                    slot: mySlotRef.current,
+                  });
                 }}
                 autoFocus
               >
@@ -2151,8 +2203,8 @@ export function App() {
               Partner Left Match
             </h3>
             <p className="kicked-popup-desc">
-              Your partner has disconnected or returned to the home screen. You can
-              wait here for them to reconnect, or return to the menu!
+              Your partner has disconnected or left the room. The match and all timers are <strong>paused</strong>!
+              The game will automatically resume right where you left off when they rejoin.
             </p>
             <div className="popup-btn-row stacked">
               <button
