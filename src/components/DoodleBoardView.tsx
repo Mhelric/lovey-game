@@ -3,27 +3,32 @@ import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import {
   applyAddDoodleStroke,
   applyClearDoodleStrokes,
+  applyFinishDoodleDrawing,
   applyNextDoodleRound,
   applySelectDoodleWord,
   applySubmitDoodleGuess,
   applyTickDoodleTimer,
   applyUndoDoodleStroke,
+  DOODLE_MAX_GUESSES,
   DOODLE_PALETTE,
   DOODLE_STROKE_WIDTHS,
   DoodleGameState,
   DoodlePoint,
   DoodleStroke,
   DoodleWordOption,
+  getDoodleDifficultyInfo,
   getMaskedWordDisplay,
 } from '../engines/doodleEngine';
 import {
   ClearCanvasIcon,
   DoodleClashIcon,
   EraserIcon,
+  HeartIcon,
   LightbulbIcon,
   PencilIcon,
   SparkleIcon,
   TimerClockIcon,
+  TrophyIcon,
   UndoIcon,
 } from './ArcadeIcons';
 import { CatAvatarSvg } from './CatAvatarSvg';
@@ -45,6 +50,9 @@ interface DoodleBoardViewProps {
   onBroadcastStroke?: (stroke: DoodleStroke) => void;
   onBroadcastClear?: () => void;
 }
+
+const SVG_VIEW_W = 1000;
+const SVG_VIEW_H = 650;
 
 function pointsToSvgPath(points: DoodlePoint[]): string {
   if (points.length === 0) return '';
@@ -79,18 +87,26 @@ export function DoodleBoardView({
   const [isEraser, setIsEraser] = useState<boolean>(false);
   const [guessInputText, setGuessInputText] = useState<string>('');
 
-  // Live active stroke while finger/pointer is down
+  // Live active stroke & touch dot guide while finger/pointer is down
   const [activePoints, setActivePoints] = useState<DoodlePoint[]>([]);
+  const [touchGuidePoint, setTouchGuidePoint] = useState<DoodlePoint | null>(null);
   const isPointerDownRef = useRef<boolean>(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const isDrawer = passAndPlay || mySlot === gameState.drawerSlot;
+  // In Pass & Play on 1 device, the active viewer follows whose turn it is
+  const effectiveSlot: PlayerSlot = passAndPlay ? gameState.turn : mySlot;
+  const isDrawer = effectiveSlot === gameState.drawerSlot;
+  const isGuesser = effectiveSlot === gameState.guesserSlot;
+
   const drawerAvatar = gameState.drawerSlot === 'p1' ? p1Avatar : p2Avatar;
   const guesserAvatar = gameState.guesserSlot === 'p1' ? p1Avatar : p2Avatar;
   const drawerName = drawerAvatar.name || (gameState.drawerSlot === 'p1' ? 'Lovey 1' : 'Lovey 2');
   const guesserName = guesserAvatar.name || (gameState.guesserSlot === 'p1' ? 'Lovey 1' : 'Lovey 2');
 
-  // Timer tick effect: The Drawer ticks the timer (or P1 in passAndPlay)
+  const diffInfo = getDoodleDifficultyInfo(gameState.round);
+  const guessesLeft = gameState.guessesLeft ?? DOODLE_MAX_GUESSES;
+
+  // 60s Drawing Timer tick effect: Drawer ticks the timer (or P1 in passAndPlay)
   useEffect(() => {
     if (gameState.phase !== 'drawing') return;
     const isMasterTick = passAndPlay ? mySlot === 'p1' : mySlot === gameState.drawerSlot;
@@ -103,47 +119,74 @@ export function DoodleBoardView({
     return () => window.clearInterval(interval);
   }, [gameState, mySlot, passAndPlay, onCommitState]);
 
-  // Pointer event handlers for the SVG Drawing surface
+  // Clear active touch state if phase leaves 'drawing'
+  useEffect(() => {
+    if (gameState.phase !== 'drawing') {
+      isPointerDownRef.current = false;
+      setActivePoints([]);
+      setTouchGuidePoint(null);
+    }
+  }, [gameState.phase]);
+
+  // Exact SVG user-space coordinate mapping (fixes any right/left aspect-ratio offset)
   const getNormalizedPoint = useCallback((e: PointerEvent): DoodlePoint | null => {
     const svg = svgRef.current;
     if (!svg) return null;
+
+    const ctm = svg.getScreenCTM();
+    if (ctm) {
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const loc = pt.matrixTransform(ctm.inverse());
+      return {
+        x: Math.round(Math.max(0, Math.min(SVG_VIEW_W, loc.x)) * 10) / 10,
+        y: Math.round(Math.max(0, Math.min(SVG_VIEW_H, loc.y)) * 10) / 10,
+      };
+    }
+
     const rect = svg.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
-
     const rawX = e.clientX - rect.left;
     const rawY = e.clientY - rect.top;
-    const normX = Math.round(Math.max(0, Math.min(1000, (rawX / rect.width) * 1000)));
-    const normY = Math.round(Math.max(0, Math.min(800, (rawY / rect.height) * 800)));
-    return { x: normX, y: normY };
+    return {
+      x: Math.round(Math.max(0, Math.min(SVG_VIEW_W, (rawX / rect.width) * SVG_VIEW_W)) * 10) / 10,
+      y: Math.round(Math.max(0, Math.min(SVG_VIEW_H, (rawY / rect.height) * SVG_VIEW_H)) * 10) / 10,
+    };
   }, []);
 
   const handlePointerDown = (e: PointerEvent) => {
     if (!isDrawer || gameState.phase !== 'drawing') return;
+    e.preventDefault();
     const pt = getNormalizedPoint(e);
     if (!pt) return;
 
     isPointerDownRef.current = true;
-    (e.target as Element)?.setPointerCapture?.(e.pointerId);
+    (e.currentTarget as Element)?.setPointerCapture?.(e.pointerId);
+    setTouchGuidePoint(pt);
     setActivePoints([pt]);
     playDoodleStrokePop();
   };
 
   const handlePointerMove = (e: PointerEvent) => {
-    if (!isPointerDownRef.current || !isDrawer || gameState.phase !== 'drawing') return;
+    if (!isDrawer || gameState.phase !== 'drawing') return;
     const pt = getNormalizedPoint(e);
     if (!pt) return;
 
-    setActivePoints((prev) => {
-      if (prev.length === 0) return [pt];
-      const last = prev[prev.length - 1];
-      const distSq = (pt.x - last.x) ** 2 + (pt.y - last.y) ** 2;
-      // Skip points too close to keep vector path lightweight
-      if (distSq < 16) return prev;
-      return [...prev, pt];
-    });
+    if (isPointerDownRef.current) {
+      setTouchGuidePoint(pt);
+      setActivePoints((prev) => {
+        if (prev.length === 0) return [pt];
+        const last = prev[prev.length - 1];
+        const distSq = (pt.x - last.x) ** 2 + (pt.y - last.y) ** 2;
+        if (distSq < 4) return prev;
+        return [...prev, pt];
+      });
+    }
   };
 
   const handlePointerUp = () => {
+    setTouchGuidePoint(null);
     if (!isPointerDownRef.current) return;
     isPointerDownRef.current = false;
 
@@ -151,7 +194,7 @@ export function DoodleBoardView({
       const newStroke: DoodleStroke = {
         id: `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
         color: isEraser ? '#FFFDF9' : currentColor,
-        width: isEraser ? currentWidth * 1.8 : currentWidth,
+        width: isEraser ? currentWidth * 1.6 : currentWidth,
         points: activePoints,
       };
       setActivePoints([]);
@@ -174,6 +217,12 @@ export function DoodleBoardView({
     onBroadcastClear?.();
   };
 
+  const handleFinishDrawing = () => {
+    playTapPop();
+    const next = applyFinishDoodleDrawing(gameState);
+    onCommitState(next);
+  };
+
   const handleWordSelect = (option: DoodleWordOption) => {
     playTapPop();
     const next = applySelectDoodleWord(gameState, option);
@@ -183,10 +232,10 @@ export function DoodleBoardView({
   const handleGuessSubmit = (e?: Event) => {
     e?.preventDefault();
     const text = guessInputText.trim();
-    if (!text || gameState.phase !== 'drawing') return;
+    if (!text || gameState.phase !== 'guessing') return;
     setGuessInputText('');
 
-    const next = applySubmitDoodleGuess(gameState, text, mySlot);
+    const next = applySubmitDoodleGuess(gameState, text, effectiveSlot);
     if (next.lastRoundOutcome?.guesserGuessedCorrectly) {
       playDoodleCorrectGuess();
     } else {
@@ -206,11 +255,15 @@ export function DoodleBoardView({
     gameState.revealedHintIndices
   );
 
+  const effectiveBrushWidth = isEraser ? currentWidth * 1.6 : currentWidth;
+  const guideOuterRadius = Math.max(18, effectiveBrushWidth / 2 + 10);
+  const guideInnerRadius = Math.max(3.5, effectiveBrushWidth / 2);
+
   return (
     <div className="dama-stage-container doodle-stage-container">
       <div className="board-stage sticker-board-frame doodle-table-stage">
         <div className="doodle-table-inner">
-          {/* Top Scoreboard & Round Header Bar */}
+          {/* Top Scoreboard & Round Difficulty Header Bar */}
           <div className="doodle-header-bar">
             <div className="doodle-player-score-col">
               <span className="doodle-score-role">
@@ -221,11 +274,26 @@ export function DoodleBoardView({
             </div>
 
             <div className="doodle-round-badge">
-              <span className="doodle-round-title">Round {gameState.round}/{gameState.totalRounds}</span>
+              <span className={`doodle-round-title diff-${diffInfo.id}`}>
+                R{gameState.round}/{gameState.totalRounds} • {diffInfo.label}
+              </span>
               {gameState.phase === 'drawing' && (
                 <div className={`doodle-timer-pill ${gameState.roundSecondsLeft <= 10 ? 'urgent' : ''}`}>
-                  <TimerClockIcon size={13} />
+                  <TimerClockIcon size={12} />
                   <span>{gameState.roundSecondsLeft}s</span>
+                </div>
+              )}
+              {gameState.phase === 'guessing' && (
+                <div className="doodle-tries-pill">
+                  {[0, 1, 2].map((idx) => (
+                    <span
+                      key={idx}
+                      className={`doodle-try-heart ${idx < guessesLeft ? 'active' : 'spent'}`}
+                    >
+                      <HeartIcon size={11} />
+                    </span>
+                  ))}
+                  <span>{guessesLeft}/3</span>
                 </div>
               )}
             </div>
@@ -245,10 +313,12 @@ export function DoodleBoardView({
               {isDrawer ? (
                 <>
                   <div className="doodle-phase-heading">
-                    <DoodleClashIcon size={24} />
+                    <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
+                      Round {gameState.round}: {diffInfo.label} Stage
+                    </span>
                     <h3 className="doodle-phase-title">Pick a Secret Word!</h3>
                     <p className="doodle-phase-desc">
-                      Choose one word to draw for {guesserName}.
+                      You get 60s to draw it before {guesserName} gets 3 guesses.
                     </p>
                   </div>
 
@@ -269,6 +339,9 @@ export function DoodleBoardView({
                 </>
               ) : (
                 <div className="doodle-waiting-box">
+                  <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
+                    Round {gameState.round}: {diffInfo.label} Stage
+                  </span>
                   <div className="doodle-waiting-avatar-bounce">
                     <CatAvatarSvg
                       breed={drawerAvatar.breed}
@@ -277,10 +350,10 @@ export function DoodleBoardView({
                     />
                   </div>
                   <h3 className="doodle-waiting-title">
-                    {drawerName} is picking a word...
+                    {drawerName} is picking a {diffInfo.label.toLowerCase()} word...
                   </h3>
                   <p className="doodle-waiting-sub">
-                    Get ready to guess their masterpiece!
+                    They have 60s to draw, then you get 3 guesses!
                   </p>
                 </div>
               )}
@@ -291,13 +364,13 @@ export function DoodleBoardView({
               <div className="doodle-summary-content">
                 {gameState.lastRoundOutcome?.guesserGuessedCorrectly ? (
                   <div className="doodle-result-badge success">
-                    <SparkleIcon size={20} />
-                    <span>CORRECT GUESS!</span>
+                    <SparkleIcon size={18} />
+                    <span>GUESSED RIGHT!</span>
                   </div>
                 ) : (
                   <div className="doodle-result-badge timeout">
-                    <TimerClockIcon size={20} />
-                    <span>TIME&apos;S UP!</span>
+                    <DoodleClashIcon size={18} />
+                    <span>STUMPED ALL 3 GUESSES!</span>
                   </div>
                 )}
 
@@ -319,36 +392,52 @@ export function DoodleBoardView({
                   </div>
                 </div>
 
-                {mySlot === 'p1' && (
-                  <button
-                    type="button"
-                    className="vibrant-play-btn doodle-next-btn sticker-press"
-                    onClick={handleNextRound}
-                  >
-                    <span>
-                      {gameState.round >= gameState.totalRounds
-                        ? 'Finish Match'
-                        : `Start Round ${gameState.round + 1}`}
-                    </span>
-                    <SparkleIcon size={16} />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="vibrant-play-btn doodle-next-btn sticker-press"
+                  onClick={handleNextRound}
+                >
+                  {gameState.round >= gameState.totalRounds ? (
+                    <>
+                      <TrophyIcon size={16} />
+                      <span>Award Cat Doodle Trophy</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        Next: Round {gameState.round + 1} ({getDoodleDifficultyInfo(gameState.round + 1).label})
+                      </span>
+                      <SparkleIcon size={16} />
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           ) : (
-            /* Phase 2: Drawing & Guessing Canvas Area */
+            /* Phase 2A ('drawing') & Phase 2B ('guessing'): Canvas Area */
             <div className="doodle-canvas-container">
               {/* Word & Hint Banner */}
               <div className="doodle-word-banner">
-                {isDrawer ? (
+                {isDrawer && gameState.phase === 'drawing' ? (
                   <div className="doodle-drawer-prompt">
-                    <span className="doodle-banner-label">DRAW:</span>
-                    <strong className="doodle-banner-word">
-                      {gameState.selectedWord}
-                    </strong>
-                    <span className="doodle-banner-cat">
-                      ({gameState.selectedCategory})
-                    </span>
+                    <div className="doodle-drawer-word-wrap">
+                      <span className="doodle-banner-label">DRAW:</span>
+                      <strong className="doodle-banner-word">
+                        {gameState.selectedWord}
+                      </strong>
+                      <span className="doodle-banner-cat">
+                        ({gameState.selectedCategory})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="doodle-done-drawing-btn sticker-press"
+                      onClick={handleFinishDrawing}
+                      disabled={gameState.strokes.length === 0}
+                      title="Finish drawing and let the guesser guess"
+                    >
+                      <span>Done</span>
+                    </button>
                   </div>
                 ) : (
                   <div className="doodle-guesser-prompt">
@@ -372,12 +461,16 @@ export function DoodleBoardView({
               <div className="doodle-canvas-frame">
                 <svg
                   ref={svgRef}
-                  viewBox="0 0 1000 800"
-                  className={`doodle-drawing-svg ${isDrawer ? 'can-draw' : ''}`}
+                  viewBox={`0 0 ${SVG_VIEW_W} ${SVG_VIEW_H}`}
+                  preserveAspectRatio="none"
+                  className={`doodle-drawing-svg ${
+                    isDrawer && gameState.phase === 'drawing' ? 'can-draw' : ''
+                  }`}
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
+                  onPointerLeave={handlePointerUp}
                   touch-action="none"
                   aria-label="Doodle drawing canvas"
                 >
@@ -392,7 +485,12 @@ export function DoodleBoardView({
                   >
                     <circle cx="20" cy="20" r="1.5" fill="#E2E8F0" />
                   </pattern>
-                  <rect width="1000" height="800" fill="url(#doodleDots)" rx="16" />
+                  <rect
+                    width={SVG_VIEW_W}
+                    height={SVG_VIEW_H}
+                    fill="url(#doodleDots)"
+                    rx="14"
+                  />
 
                   {/* Committed Vector Strokes */}
                   {gameState.strokes.map((stroke) => (
@@ -412,16 +510,91 @@ export function DoodleBoardView({
                     <path
                       d={pointsToSvgPath(activePoints)}
                       stroke={isEraser ? '#FFFDF9' : currentColor}
-                      strokeWidth={isEraser ? currentWidth * 1.8 : currentWidth}
+                      strokeWidth={effectiveBrushWidth}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       fill="none"
-                      opacity={0.92}
+                      opacity={0.94}
                     />
+                  )}
+
+                  {/* Live Touch/Hold Dot & Target Ring Guide */}
+                  {touchGuidePoint && isDrawer && gameState.phase === 'drawing' && (
+                    <g
+                      className="doodle-touch-guide"
+                      transform={`translate(${touchGuidePoint.x}, ${touchGuidePoint.y})`}
+                      pointerEvents="none"
+                    >
+                      {/* Outer visibility ring so user sees exact touch center around their fingertip */}
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r={guideOuterRadius}
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeWidth="4"
+                        opacity="0.9"
+                      />
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r={guideOuterRadius}
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeDasharray="5 4"
+                      />
+                      {/* Crosshair ticks outside the ring */}
+                      <line
+                        x1={-guideOuterRadius - 6}
+                        y1="0"
+                        x2={-guideOuterRadius + 2}
+                        y2="0"
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1={guideOuterRadius - 2}
+                        y1="0"
+                        x2={guideOuterRadius + 6}
+                        y2="0"
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1="0"
+                        y1={-guideOuterRadius - 6}
+                        x2="0"
+                        y2={-guideOuterRadius + 2}
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1="0"
+                        y1={guideOuterRadius - 2}
+                        x2="0"
+                        y2={guideOuterRadius + 6}
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      {/* Exact Brush Size & Color Center Dot */}
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r={guideInnerRadius}
+                        fill={isEraser ? '#FFFDF9' : currentColor}
+                        stroke="#5B2A4E"
+                        strokeWidth="1.8"
+                      />
+                    </g>
                   )}
                 </svg>
 
-                {/* Guesser Floating Wrong Guesses Stream */}
+                {/* Guesser Floating Guesses Stream */}
                 {gameState.guesses.length > 0 && (
                   <div className="doodle-guesses-ribbon" aria-live="polite">
                     {gameState.guesses.slice(0, 3).map((g) => (
@@ -436,121 +609,139 @@ export function DoodleBoardView({
                 )}
               </div>
 
-              {/* Bottom Interactive Deck: Drawer Tool Palette OR Guesser Input Bar */}
-              {isDrawer ? (
-                <div className="doodle-drawer-toolbar">
-                  {/* Color Swatches */}
-                  <div className="doodle-palette-row" role="group" aria-label="Color Palette">
-                    {DOODLE_PALETTE.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        className={`doodle-color-btn ${currentColor === c && !isEraser ? 'active' : ''}`}
-                        style={{ backgroundColor: c }}
-                        onClick={() => {
-                          playTapPop();
-                          setCurrentColor(c);
-                          setIsEraser(false);
-                        }}
-                        aria-label={`Select color ${c}`}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Action Tool Row */}
-                  <div className="doodle-tools-row">
-                    <div className="doodle-tool-group">
-                      <button
-                        type="button"
-                        className={`doodle-tool-btn ${!isEraser ? 'active' : ''}`}
-                        onClick={() => {
-                          playTapPop();
-                          setIsEraser(false);
-                        }}
-                        title="Pencil"
-                      >
-                        <PencilIcon size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className={`doodle-tool-btn ${isEraser ? 'active' : ''}`}
-                        onClick={() => {
-                          playTapPop();
-                          setIsEraser(true);
-                        }}
-                        title="Eraser"
-                      >
-                        <EraserIcon size={16} />
-                      </button>
-                    </div>
-
-                    <div className="doodle-tool-group stroke-sizes">
-                      {DOODLE_STROKE_WIDTHS.map((w) => (
+              {/* Bottom Interactive Deck based on Phase ('drawing' vs 'guessing') and Role */}
+              {gameState.phase === 'drawing' ? (
+                isDrawer ? (
+                  <div className="doodle-drawer-toolbar">
+                    {/* Color Swatches */}
+                    <div className="doodle-palette-row" role="group" aria-label="Color Palette">
+                      {DOODLE_PALETTE.map((c) => (
                         <button
-                          key={w.label}
+                          key={c}
                           type="button"
-                          className={`doodle-size-btn ${currentWidth === w.value ? 'active' : ''}`}
+                          className={`doodle-color-btn ${currentColor === c && !isEraser ? 'active' : ''}`}
+                          style={{ backgroundColor: c }}
                           onClick={() => {
                             playTapPop();
-                            setCurrentWidth(w.value);
+                            setCurrentColor(c);
+                            setIsEraser(false);
                           }}
-                        >
-                          <span
-                            className="doodle-size-dot"
-                            style={{
-                              width: `${w.value / 3}px`,
-                              height: `${w.value / 3}px`,
-                              backgroundColor: isEraser ? '#5B2A4E' : currentColor,
-                            }}
-                          />
-                        </button>
+                          aria-label={`Select color ${c}`}
+                        />
                       ))}
                     </div>
 
-                    <div className="doodle-tool-group">
-                      <button
-                        type="button"
-                        className="doodle-tool-btn"
-                        onClick={handleUndo}
-                        disabled={gameState.strokes.length === 0}
-                        title="Undo"
-                      >
-                        <UndoIcon size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="doodle-tool-btn clear-btn"
-                        onClick={handleClear}
-                        disabled={gameState.strokes.length === 0}
-                        title="Clear Canvas"
-                      >
-                        <ClearCanvasIcon size={16} />
-                      </button>
+                    {/* Action Tool Row */}
+                    <div className="doodle-tools-row">
+                      <div className="doodle-tool-group">
+                        <button
+                          type="button"
+                          className={`doodle-tool-btn ${!isEraser ? 'active' : ''}`}
+                          onClick={() => {
+                            playTapPop();
+                            setIsEraser(false);
+                          }}
+                          title="Pencil"
+                        >
+                          <PencilIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`doodle-tool-btn ${isEraser ? 'active' : ''}`}
+                          onClick={() => {
+                            playTapPop();
+                            setIsEraser(true);
+                          }}
+                          title="Eraser"
+                        >
+                          <EraserIcon size={16} />
+                        </button>
+                      </div>
+
+                      <div className="doodle-tool-group stroke-sizes">
+                        {DOODLE_STROKE_WIDTHS.map((w) => (
+                          <button
+                            key={w.label}
+                            type="button"
+                            className={`doodle-size-btn ${currentWidth === w.value ? 'active' : ''}`}
+                            onClick={() => {
+                              playTapPop();
+                              setCurrentWidth(w.value);
+                            }}
+                          >
+                            <span
+                              className="doodle-size-dot"
+                              style={{
+                                width: `${Math.max(5, Math.round(w.value / 2.2))}px`,
+                                height: `${Math.max(5, Math.round(w.value / 2.2))}px`,
+                                backgroundColor: isEraser ? '#5B2A4E' : currentColor,
+                              }}
+                            />
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="doodle-tool-group">
+                        <button
+                          type="button"
+                          className="doodle-tool-btn"
+                          onClick={handleUndo}
+                          disabled={gameState.strokes.length === 0}
+                          title="Undo"
+                        >
+                          <UndoIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="doodle-tool-btn clear-btn"
+                          onClick={handleClear}
+                          disabled={gameState.strokes.length === 0}
+                          title="Clear Canvas"
+                        >
+                          <ClearCanvasIcon size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="doodle-phase-status-bar">
+                    <PencilIcon size={15} />
+                    <span>
+                      <strong>{drawerName}</strong> is drawing ({gameState.roundSecondsLeft}s left)... You&apos;ll get 3 guesses when they finish!
+                    </span>
+                  </div>
+                )
               ) : (
-                /* Guesser Controls */
-                <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
-                  <input
-                    type="text"
-                    className="doodle-guess-input"
-                    placeholder="Type your guess here..."
-                    value={guessInputText}
-                    onInput={(e) => setGuessInputText((e.target as HTMLInputElement).value)}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    spellcheck={false}
-                    maxLength={24}
-                  />
-                  <button
-                    type="submit"
-                    className="vibrant-play-btn doodle-send-guess-btn sticker-press"
-                    disabled={!guessInputText.trim()}
-                  >
-                    <span>Guess</span>
-                  </button>
-                </form>
+                /* 'guessing' phase: Drawer is done, Guesser gets 3 guesses! */
+                isGuesser ? (
+                  <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
+                    <input
+                      type="text"
+                      className="doodle-guess-input"
+                      placeholder={`Guess the drawing (${guessesLeft} ${guessesLeft === 1 ? 'try' : 'tries'} left)...`}
+                      value={guessInputText}
+                      onInput={(e) => setGuessInputText((e.target as HTMLInputElement).value)}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellcheck={false}
+                      maxLength={24}
+                    />
+                    <button
+                      type="submit"
+                      className="vibrant-play-btn doodle-send-guess-btn sticker-press"
+                      disabled={!guessInputText.trim()}
+                    >
+                      <span>Guess ({guessesLeft})</span>
+                    </button>
+                  </form>
+                ) : (
+                  <div className="doodle-phase-status-bar guessing-mode">
+                    <SparkleIcon size={15} />
+                    <span>
+                      Drawing complete! Waiting for <strong>{guesserName}</strong> to guess ({guessesLeft}/3 tries left)...
+                    </span>
+                  </div>
+                )
               )}
             </div>
           )}

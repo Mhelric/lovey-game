@@ -692,7 +692,7 @@ export function CatCustomizerModal({
                       Doodle Clash (Draw &amp; Guess Duel)
                     </h3>
                     <span className="rules-section-sub">
-                      4 Rounds • Secret Word Choices • Speed Scoring
+                      4 Stages (Easy–Final) • 60s Draw • 3 Guesses
                     </span>
                   </div>
                 </div>
@@ -701,20 +701,20 @@ export function CatCustomizerModal({
                   <RuleRow
                     color="purple"
                     icon={<DoodleClashIcon size={16} />}
-                    title="Take Turns Drawing &amp; Guessing"
-                    desc="Players alternate roles each round across 4 rounds. The Drawer selects 1 of 3 secret words to sketch!"
+                    title="4 Progressive Stages: Easy → Medium → Hard → Final"
+                    desc="Players alternate drawing across 4 escalating rounds. The Drawer has 60 seconds (or taps Done early) to finish their sketch!"
                   />
                   <RuleRow
                     color="sky"
                     icon={<LightbulbIcon size={16} />}
-                    title="Letter Hints Over Time"
-                    desc="Word length is masked with blanks. As the 50s round timer counts down, hint letters unlock automatically to help the Guesser!"
+                    title="Sequential Guessing (3 Tries)"
+                    desc="Once the Drawer finishes drawing, the Guesser gets 3 tries to guess the secret word (with letter hints after a miss)."
                   />
                   <RuleRow
                     color="gold"
                     icon={<SparkleIcon size={16} />}
-                    title="Co-op Scoring Bonanza"
-                    desc="The Guesser earns up to 300 points for fast guesses, and the Drawer earns a 150-point bonus when their partner guesses correctly!"
+                    title="+2 / +1 Point Duel for the Cat Doodle Trophy"
+                    desc="If the Guesser gets it right in 3 tries: Guesser +2 pts, Drawer +1 pt. If all 3 tries miss: Drawer +2 pts! Highest score after 4 rounds wins."
                   />
                 </div>
               </div>

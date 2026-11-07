@@ -73,24 +73,24 @@ const SNAKES_STEPS: readonly TutorialStep[] = [
 const DOODLE_STEPS: readonly TutorialStep[] = [
   {
     badge: 'Doodle Clash • Step 1 of 3',
-    title: 'Pick a Secret Word to Draw',
+    title: '60s to Draw Your Secret Word',
     description:
-      'The Drawer picks 1 of 3 secret words across Food, Animals, Objects, or Nature to sketch on the canvas!',
-    tip: 'Pick something fun you think your partner will recognize quickly!',
+      'Pick 1 of 3 words for the round (Easy → Medium → Hard → Final) and sketch it in 60 seconds using the touch dot guide!',
+    tip: 'Tap the green Done button anytime to finish drawing early and pass to the Guesser.',
   },
   {
     badge: 'Doodle Clash • Step 2 of 3',
-    title: 'Draw & Guess in Real-Time',
+    title: '3 Guesses After Drawing Ends',
     description:
-      'The Guesser watches live strokes appear and types guesses into the box! Letter hints unlock over time.',
-    tip: 'Hints reveal automatically at 25 seconds and 10 seconds remaining!',
+      'Once the Drawer finishes their masterpiece, the Guesser gets 3 tries to guess the secret word!',
+    tip: 'Missing a try unlocks a helpful letter hint in the word blanks.',
   },
   {
     badge: 'Doodle Clash • Step 3 of 3',
-    title: 'Speed Points & Cooperative Bonus',
+    title: 'Win the Cat Doodle Trophy',
     description:
-      'The Guesser gets up to 300 points for speed, and the Drawer gets +150 bonus points when their partner guesses right!',
-    tip: 'Take turns across 4 rounds to crown the Doodle Clash Champion!',
+      'Correct guess within 3 tries: Guesser gets +2 pts & Drawer gets +1 pt. If all 3 guesses miss: Drawer gets +2 pts!',
+    tip: 'Highest score after all 4 rounds (Easy, Medium, Hard, Final) wins the Cat Doodle Trophy!',
   },
 ];
 

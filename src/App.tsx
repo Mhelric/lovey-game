@@ -1746,7 +1746,7 @@ export function App() {
             />
 
             {/* Unified Victory Celebration Overlay for All Games! */}
-            {currentWinner && currentWinner !== 'draw' && (
+            {currentWinner && (
               <div className="victory-overlay-card">
                 <ConfettiCelebrationOverlay />
                 <CoupleCatsSceneSvg
@@ -1760,12 +1760,15 @@ export function App() {
                 <div className="victory-title">
                   <CrownIcon size={20} />
                   <span>
-                    {currentWinner === 'p1' ? p1DisplayName : p2DisplayName}{' '}
-                    {roomData.current_mode === 'dama'
-                      ? 'Wins Cat Dama!'
-                      : roomData.current_mode === 'doodle'
-                      ? 'Wins Doodle Clash!'
-                      : `Reached ${snakesState.maxTile ?? 100}!`}
+                    {currentWinner === 'draw'
+                      ? 'Tie! Both Win the Cat Doodle Trophy!'
+                      : `${currentWinner === 'p1' ? p1DisplayName : p2DisplayName} ${
+                          roomData.current_mode === 'dama'
+                            ? 'Wins Cat Dama!'
+                            : roomData.current_mode === 'doodle'
+                            ? 'Wins the Cat Doodle Trophy!'
+                            : `Reached ${snakesState.maxTile ?? 100}!`
+                        }`}
                   </span>
                 </div>
                 <button

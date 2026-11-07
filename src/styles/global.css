@@ -4832,3 +4832,128 @@ body,
 }
 
 
+.doodle-round-title.diff-easy {
+  color: #059669;
+}
+
+.doodle-round-title.diff-medium {
+  color: #D97706;
+}
+
+.doodle-round-title.diff-hard {
+  color: #E11D48;
+}
+
+.doodle-round-title.diff-final {
+  color: #7C3AED;
+}
+
+.doodle-diff-stage-pill {
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 1.5px 0 var(--ink);
+}
+
+.doodle-diff-stage-pill.diff-easy {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.doodle-diff-stage-pill.diff-medium {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.doodle-diff-stage-pill.diff-hard {
+  background: #FFE4E6;
+  color: #9F1239;
+}
+
+.doodle-diff-stage-pill.diff-final {
+  background: #EDE9FE;
+  color: #5B21B6;
+}
+
+.doodle-tries-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--ink);
+  background: #FFF0F6;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+.doodle-try-heart {
+  display: inline-flex;
+  align-items: center;
+  color: #FF4D6D;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.doodle-try-heart.spent {
+  opacity: 0.25;
+  transform: scale(0.82);
+}
+
+.doodle-drawer-word-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doodle-done-drawing-btn {
+  margin-left: 4px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: #10B981;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 1.5px 0 var(--ink);
+}
+
+.doodle-done-drawing-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.doodle-phase-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 5px 10px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: #FEF9C3;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 0 var(--ink);
+  box-sizing: border-box;
+}
+
+.doodle-phase-status-bar.guessing-mode {
+  background: #EDE9FE;
+  color: #4C1D95;
+}

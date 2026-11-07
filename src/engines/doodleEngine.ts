@@ -9,9 +9,11 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+export type DoodleDifficulty = 'easy' | 'medium' | 'hard' | 'final';
+
 export interface DoodlePoint {
   x: number; // 0 to 1000 normalized
-  y: number; // 0 to 1000 normalized
+  y: number; // 0 to 650 normalized
 }
 
 export interface DoodleStroke {
@@ -25,6 +27,7 @@ export interface DoodleWordOption {
   word: string;
   hint: string;
   category: string;
+  difficulty: DoodleDifficulty;
 }
 
 export interface DoodleGuessAttempt {
@@ -37,9 +40,10 @@ export interface DoodleGuessAttempt {
 
 export interface DoodleGameState {
   matchSeed: number;
-  round: number; // 1 to 4
+  round: number; // 1 to 4 (Easy -> Medium -> Hard -> Final)
   totalRounds: number; // 4
-  phase: 'word_selection' | 'drawing' | 'round_summary' | 'game_over';
+  difficulty: DoodleDifficulty;
+  phase: 'word_selection' | 'drawing' | 'guessing' | 'round_summary' | 'game_over';
   drawerSlot: PlayerSlot;
   guesserSlot: PlayerSlot;
   turn: PlayerSlot;
@@ -48,7 +52,8 @@ export interface DoodleGameState {
   selectedCategory: string | null;
   strokes: DoodleStroke[];
   guesses: DoodleGuessAttempt[];
-  roundSecondsLeft: number;
+  guessesLeft: number; // 3 guesses per round in 'guessing' phase
+  roundSecondsLeft: number; // 60 seconds in 'drawing' phase
   revealedHintIndices: number[];
   p1Score: number;
   p2Score: number;
@@ -63,7 +68,8 @@ export interface DoodleGameState {
   winner: PlayerSlot | 'draw' | null;
 }
 
-export const DOODLE_ROUND_TIME_SEC = 50;
+export const DOODLE_ROUND_TIME_SEC = 60;
+export const DOODLE_MAX_GUESSES = 3;
 
 export const DOODLE_PALETTE: readonly string[] = [
   '#5B2A4E', // Ink Purple
@@ -77,100 +83,113 @@ export const DOODLE_PALETTE: readonly string[] = [
 ];
 
 export const DOODLE_STROKE_WIDTHS = [
-  { label: 'Thin', value: 14 },
-  { label: 'Medium', value: 26 },
-  { label: 'Thick', value: 44 },
+  { label: 'Thin', value: 10 },
+  { label: 'Medium', value: 20 },
+  { label: 'Thick', value: 34 },
 ] as const;
 
+export function getDoodleDifficultyInfo(round: number): {
+  id: DoodleDifficulty;
+  label: string;
+} {
+  if (round === 1) return { id: 'easy', label: 'Easy' };
+  if (round === 2) return { id: 'medium', label: 'Medium' };
+  if (round === 3) return { id: 'hard', label: 'Hard' };
+  return { id: 'final', label: 'Final' };
+}
+
 export const DOODLE_WORDS: readonly DoodleWordOption[] = [
-  // Food & Drinks
-  { word: 'PIZZA', hint: 'Cheesy slice with toppings', category: 'Food' },
-  { word: 'BURGER', hint: 'Juicy patty in a bun', category: 'Food' },
-  { word: 'SUSHI', hint: 'Rice roll with seaweed', category: 'Food' },
-  { word: 'DONUT', hint: 'Sweet ring with glaze', category: 'Food' },
-  { word: 'APPLE', hint: 'Crisp fruit with a stem', category: 'Food' },
-  { word: 'BANANA', hint: 'Peelable yellow curve', category: 'Food' },
-  { word: 'TACO', hint: 'Folded tortilla with filling', category: 'Food' },
-  { word: 'COOKIE', hint: 'Baked chocolate chip treat', category: 'Food' },
-  { word: 'CAKE', hint: 'Frosted celebration dessert', category: 'Food' },
-  { word: 'ICE CREAM', hint: 'Cold scoop on a crunchy cone', category: 'Food' },
-  { word: 'CHEESE', hint: 'Yellow block with holes', category: 'Food' },
-  { word: 'COFFEE', hint: 'Steaming morning cup', category: 'Food' },
-  { word: 'POPCORN', hint: 'Puffy movie theater snack', category: 'Food' },
-  { word: 'STRAWBERRY', hint: 'Red heart-shaped berry', category: 'Food' },
-  { word: 'WATERMELON', hint: 'Green rind with pink slice', category: 'Food' },
-  { word: 'LOLLIPOP', hint: 'Sweet swirl on a stick', category: 'Food' },
-  { word: 'HOTDOG', hint: 'Sausage in an elongated bun', category: 'Food' },
-  { word: 'EGG', hint: 'Breakfast oval or sunny side up', category: 'Food' },
+  // Round 1: EASY (Simple shapes, everyday objects & foods)
+  { word: 'APPLE', hint: 'Crisp fruit with a stem', category: 'Food', difficulty: 'easy' },
+  { word: 'SUN', hint: 'Bright yellow shining star', category: 'Nature', difficulty: 'easy' },
+  { word: 'MOON', hint: 'Nighttime crescent in the sky', category: 'Nature', difficulty: 'easy' },
+  { word: 'STAR', hint: 'Five-pointed glowing night light', category: 'Nature', difficulty: 'easy' },
+  { word: 'TREE', hint: 'Tall trunk with green leaves', category: 'Nature', difficulty: 'easy' },
+  { word: 'EGG', hint: 'Breakfast oval or sunny side up', category: 'Food', difficulty: 'easy' },
+  { word: 'DONUT', hint: 'Sweet ring with glaze', category: 'Food', difficulty: 'easy' },
+  { word: 'PIZZA', hint: 'Cheesy slice with toppings', category: 'Food', difficulty: 'easy' },
+  { word: 'FLOWER', hint: 'Blooming garden petals', category: 'Nature', difficulty: 'easy' },
+  { word: 'CLOUD', hint: 'Puffy white sky shape', category: 'Nature', difficulty: 'easy' },
+  { word: 'HEART', hint: 'Symbol of pure love', category: 'Symbol', difficulty: 'easy' },
+  { word: 'BALLOON', hint: 'Floating party sphere on string', category: 'Object', difficulty: 'easy' },
+  { word: 'BOOK', hint: 'Bound pages with stories', category: 'Object', difficulty: 'easy' },
+  { word: 'HAT', hint: 'Headwear for warmth or shade', category: 'Object', difficulty: 'easy' },
+  { word: 'COOKIE', hint: 'Baked chocolate chip circle', category: 'Food', difficulty: 'easy' },
+  { word: 'CANDLE', hint: 'Wax stick with glowing flame', category: 'Object', difficulty: 'easy' },
+  { word: 'KEY', hint: 'Small metal door unlocker', category: 'Object', difficulty: 'easy' },
+  { word: 'LOLLIPOP', hint: 'Sweet candy swirl on a stick', category: 'Food', difficulty: 'easy' },
+  { word: 'BANANA', hint: 'Peelable yellow curved fruit', category: 'Food', difficulty: 'easy' },
+  { word: 'MUSHROOM', hint: 'Spotted forest cap with stem', category: 'Nature', difficulty: 'easy' },
 
-  // Animals & Creatures
-  { word: 'ELEPHANT', hint: 'Large giant with long trunk', category: 'Animal' },
-  { word: 'GIRAFFE', hint: 'Tall animal with long neck', category: 'Animal' },
-  { word: 'PENGUIN', hint: 'Flightless tuxedo bird', category: 'Animal' },
-  { word: 'MONKEY', hint: 'Playful banana lover', category: 'Animal' },
-  { word: 'DOLPHIN', hint: 'Jumping ocean mammal', category: 'Animal' },
-  { word: 'BUTTERFLY', hint: 'Colorful winged flutterer', category: 'Animal' },
-  { word: 'RABBIT', hint: 'Hop hop with long ears', category: 'Animal' },
-  { word: 'PANDA', hint: 'Bamboo eating black-and-white bear', category: 'Animal' },
-  { word: 'OCTOPUS', hint: 'Eight wiggly ocean arms', category: 'Animal' },
-  { word: 'LION', hint: 'Brave king with fluffy mane', category: 'Animal' },
-  { word: 'TURTLE', hint: 'Slow crawler with hard shell', category: 'Animal' },
-  { word: 'FROG', hint: 'Green ribbit pond hopper', category: 'Animal' },
-  { word: 'OWL', hint: 'Wise nocturnal wide-eyed bird', category: 'Animal' },
-  { word: 'DUCK', hint: 'Quacking water bird', category: 'Animal' },
-  { word: 'BEE', hint: 'Buzzing honey maker with stripes', category: 'Animal' },
-  { word: 'CRAB', hint: 'Sideways beach scuttler with claws', category: 'Animal' },
-  { word: 'WHALE', hint: 'Giant ocean spout blower', category: 'Animal' },
-  { word: 'DINOSAUR', hint: 'Ancient prehistoric lizard', category: 'Animal' },
-  { word: 'FOX', hint: 'Clever woodland tail fluffer', category: 'Animal' },
-  { word: 'SNAIL', hint: 'Slow mover with spiral shell', category: 'Animal' },
+  // Round 2: MEDIUM (Animals, snacks, wearable items & fun objects)
+  { word: 'BURGER', hint: 'Juicy patty stacked in a bun', category: 'Food', difficulty: 'medium' },
+  { word: 'ICE CREAM', hint: 'Cold scoop on a crunchy cone', category: 'Food', difficulty: 'medium' },
+  { word: 'WATERMELON', hint: 'Green rind with seeded pink slice', category: 'Food', difficulty: 'medium' },
+  { word: 'TACO', hint: 'Folded shell with savory filling', category: 'Food', difficulty: 'medium' },
+  { word: 'RABBIT', hint: 'Hopper with long fluffy ears', category: 'Animal', difficulty: 'medium' },
+  { word: 'TURTLE', hint: 'Slow crawler with hard shell', category: 'Animal', difficulty: 'medium' },
+  { word: 'DUCK', hint: 'Quacking pond swimmer', category: 'Animal', difficulty: 'medium' },
+  { word: 'SNAIL', hint: 'Slow garden mover with spiral shell', category: 'Animal', difficulty: 'medium' },
+  { word: 'BUTTERFLY', hint: 'Colorful symmetrical winged insect', category: 'Animal', difficulty: 'medium' },
+  { word: 'UMBRELLA', hint: 'Canopy shelter from the rain', category: 'Object', difficulty: 'medium' },
+  { word: 'GUITAR', hint: 'Six-stringed musical instrument', category: 'Object', difficulty: 'medium' },
+  { word: 'SUNGLASSES', hint: 'Cool tinted shades for sunny days', category: 'Object', difficulty: 'medium' },
+  { word: 'CROWN', hint: 'Regal golden royal headwear', category: 'Object', difficulty: 'medium' },
+  { word: 'KITE', hint: 'Wind-soaring diamond on string', category: 'Object', difficulty: 'medium' },
+  { word: 'RAINBOW', hint: 'Colorful arc across the sky', category: 'Nature', difficulty: 'medium' },
+  { word: 'SNOWMAN', hint: 'Three stacked snowballs with carrot nose', category: 'Nature', difficulty: 'medium' },
+  { word: 'CACTUS', hint: 'Prickly desert green plant', category: 'Nature', difficulty: 'medium' },
+  { word: 'ROCKET', hint: 'Spaceship blasting to the stars', category: 'Vehicle', difficulty: 'medium' },
+  { word: 'CAMERA', hint: 'Lens box that snaps photos', category: 'Object', difficulty: 'medium' },
+  { word: 'CLOCK', hint: 'Ticking hands tell the hour', category: 'Object', difficulty: 'medium' },
 
-  // Objects & Clothing
-  { word: 'GUITAR', hint: 'Strummed string instrument', category: 'Object' },
-  { word: 'UMBRELLA', hint: 'Shelter from the rain', category: 'Object' },
-  { word: 'BICYCLE', hint: 'Two pedals and two wheels', category: 'Object' },
-  { word: 'CAMERA', hint: 'Device to snap photos', category: 'Object' },
-  { word: 'CLOCK', hint: 'Ticking hands tell the hour', category: 'Object' },
-  { word: 'BACKPACK', hint: 'Bag worn over both shoulders', category: 'Object' },
-  { word: 'SUNGLASSES', hint: 'Tinted shades for sunny days', category: 'Object' },
-  { word: 'KEY', hint: 'Small metal unlocker', category: 'Object' },
-  { word: 'SCISSORS', hint: 'Two blades that snip paper', category: 'Object' },
-  { word: 'LAMP', hint: 'Cozy light beside the bed', category: 'Object' },
-  { word: 'CANDLE', hint: 'Wax stick with glowing wick', category: 'Object' },
-  { word: 'SHOE', hint: 'Laced footwear', category: 'Object' },
-  { word: 'BOOK', hint: 'Bound pages with stories', category: 'Object' },
-  { word: 'CROWN', hint: 'Regal royal headwear', category: 'Object' },
-  { word: 'BALLOON', hint: 'Floating party sphere on string', category: 'Object' },
-  { word: 'RING', hint: 'Sparkling jewelry circle', category: 'Object' },
-  { word: 'TELEPHONE', hint: 'Device used to call people', category: 'Object' },
-  { word: 'TOOTHBRUSH', hint: 'Bristles that clean your teeth', category: 'Object' },
-  { word: 'KITE', hint: 'Wind-soaring diamond on string', category: 'Object' },
-  { word: 'HAT', hint: 'Headwear for warmth or fashion', category: 'Object' },
+  // Round 3: HARD (Detailed creatures, vehicles, places & gear)
+  { word: 'ELEPHANT', hint: 'Giant mammal with trunk and tusks', category: 'Animal', difficulty: 'hard' },
+  { word: 'GIRAFFE', hint: 'Spotted animal with towering neck', category: 'Animal', difficulty: 'hard' },
+  { word: 'PENGUIN', hint: 'Waddling tuxedo bird on ice', category: 'Animal', difficulty: 'hard' },
+  { word: 'OCTOPUS', hint: 'Sea creature with eight tentacles', category: 'Animal', difficulty: 'hard' },
+  { word: 'DOLPHIN', hint: 'Acrobatic jumping ocean mammal', category: 'Animal', difficulty: 'hard' },
+  { word: 'PANDA', hint: 'Bamboo-munching black and white bear', category: 'Animal', difficulty: 'hard' },
+  { word: 'BICYCLE', hint: 'Handlebars, two pedals, and two wheels', category: 'Vehicle', difficulty: 'hard' },
+  { word: 'HELICOPTER', hint: 'Aircraft with spinning top blades', category: 'Vehicle', difficulty: 'hard' },
+  { word: 'SAILBOAT', hint: 'Wind-powered vessel on the waves', category: 'Vehicle', difficulty: 'hard' },
+  { word: 'VOLCANO', hint: 'Erupting peak spewing hot lava', category: 'Nature', difficulty: 'hard' },
+  { word: 'ISLAND', hint: 'Lonely patch of sand with palm tree', category: 'Place', difficulty: 'hard' },
+  { word: 'CAMPFIRE', hint: 'Crackling logs and roasting marshmallows', category: 'Nature', difficulty: 'hard' },
+  { word: 'BACKPACK', hint: 'Zippered bag worn on both shoulders', category: 'Object', difficulty: 'hard' },
+  { word: 'SCISSORS', hint: 'Crossed metal blades that snip paper', category: 'Object', difficulty: 'hard' },
+  { word: 'POPCORN', hint: 'Striped tub of buttery movie kernels', category: 'Food', difficulty: 'hard' },
+  { word: 'SUSHI', hint: 'Seaweed rice roll with chopsticks', category: 'Food', difficulty: 'hard' },
+  { word: 'HEADPHONES', hint: 'Cushioned speakers worn over the ears', category: 'Object', difficulty: 'hard' },
+  { word: 'TELESCOPE', hint: 'Long optical tube for stargazing', category: 'Object', difficulty: 'hard' },
 
-  // Nature, Places & Weather
-  { word: 'RAINBOW', hint: 'Colorful arc across the sky', category: 'Nature' },
-  { word: 'VOLCANO', hint: 'Mountain that spews red lava', category: 'Nature' },
-  { word: 'MOUNTAIN', hint: 'Rocky towering snowy peak', category: 'Nature' },
-  { word: 'SUN', hint: 'Bright yellow shining star', category: 'Nature' },
-  { word: 'MOON', hint: 'Nighttime crescent in the sky', category: 'Nature' },
-  { word: 'TREE', hint: 'Tall trunk with green leaves', category: 'Nature' },
-  { word: 'FLOWER', hint: 'Blooming garden petals', category: 'Nature' },
-  { word: 'CLOUD', hint: 'Puffy white sky shape', category: 'Nature' },
-  { word: 'SNOWMAN', hint: 'Three stacked snowballs with carrot nose', category: 'Nature' },
-  { word: 'CAMPFIRE', hint: 'Crackling outdoor wood fire', category: 'Nature' },
-  { word: 'STAR', hint: 'Five-pointed glowing night light', category: 'Nature' },
-  { word: 'LIGHTNING', hint: 'Zigzag flash in a storm', category: 'Nature' },
-  { word: 'ISLAND', hint: 'Patch of sand with palm tree', category: 'Nature' },
-  { word: 'CACTUS', hint: 'Prickly desert green plant', category: 'Nature' },
-  { word: 'MUSHROOM', hint: 'Forest cap with stem', category: 'Nature' },
-  { word: 'CASTLE', hint: 'Stone fortress with towers', category: 'Nature' },
-  { word: 'ROCKET', hint: 'Spaceship blasting to the stars', category: 'Nature' },
-  { word: 'HEART', hint: 'Symbol of pure love and cuddles', category: 'Nature' },
+  // Round 4: FINAL (Showstopper scenes, epic creatures & complex concepts)
+  { word: 'DINOSAUR', hint: 'Prehistoric giant reptile with tail', category: 'Creature', difficulty: 'final' },
+  { word: 'DRAGON', hint: 'Mythical winged fire-breather', category: 'Creature', difficulty: 'final' },
+  { word: 'MERMAID', hint: 'Ocean dweller with fish tail', category: 'Creature', difficulty: 'final' },
+  { word: 'ASTRONAUT', hint: 'Space explorer in helmet and suit', category: 'Person', difficulty: 'final' },
+  { word: 'CASTLE', hint: 'Medieval stone fortress with towers', category: 'Place', difficulty: 'final' },
+  { word: 'LIGHTHOUSE', hint: 'Coastal tower guiding ships at night', category: 'Place', difficulty: 'final' },
+  { word: 'TREEHOUSE', hint: 'Cozy wooden hideout high in branches', category: 'Place', difficulty: 'final' },
+  { word: 'ROLLERCOASTER', hint: 'Looping thrill ride on steep tracks', category: 'Place', difficulty: 'final' },
+  { word: 'TREASURE CHEST', hint: 'Locked pirate box overflowing with gold', category: 'Object', difficulty: 'final' },
+  { word: 'HOT AIR BALLOON', hint: 'Giant floating basket in the clouds', category: 'Vehicle', difficulty: 'final' },
+  { word: 'SUBMARINE', hint: 'Underwater vessel with a periscope', category: 'Vehicle', difficulty: 'final' },
+  { word: 'TIME MACHINE', hint: 'Futuristic portal or clockwork pod', category: 'Concept', difficulty: 'final' },
+  { word: 'WATERFALL', hint: 'Rushing river plunging down a cliff', category: 'Nature', difficulty: 'final' },
+  { word: 'CHANDELIER', hint: 'Ornate hanging ceiling light with crystals', category: 'Object', difficulty: 'final' },
+  { word: 'SANDCASTLE', hint: 'Sculpted beach fortress with buckets', category: 'Object', difficulty: 'final' },
+  { word: 'FERRIS WHEEL', hint: 'Giant rotating carnival observation wheel', category: 'Place', difficulty: 'final' },
 ];
 
-export function pickRandomWords(seed: number, count = 3): DoodleWordOption[] {
+export function pickRandomWords(
+  seed: number,
+  count = 3,
+  difficulty: DoodleDifficulty = 'easy'
+): DoodleWordOption[] {
   const rand = mulberry32(seed);
-  const pool = [...DOODLE_WORDS];
+  const filtered = DOODLE_WORDS.filter((w) => w.difficulty === difficulty);
+  const pool = filtered.length >= count ? [...filtered] : [...DOODLE_WORDS];
   const selected: DoodleWordOption[] = [];
 
   for (let i = 0; i < count && pool.length > 0; i++) {
@@ -186,13 +205,15 @@ export function createInitialDoodleState(
   seed = Date.now(),
   startingDrawer: PlayerSlot = 'p1'
 ): DoodleGameState {
-  const choices = pickRandomWords(seed, 3);
+  const difficulty: DoodleDifficulty = 'easy';
+  const choices = pickRandomWords(seed, 3, difficulty);
   const guesser = startingDrawer === 'p1' ? 'p2' : 'p1';
 
   return {
     matchSeed: seed,
     round: 1,
     totalRounds: 4,
+    difficulty,
     phase: 'word_selection',
     drawerSlot: startingDrawer,
     guesserSlot: guesser,
@@ -202,6 +223,7 @@ export function createInitialDoodleState(
     selectedCategory: null,
     strokes: [],
     guesses: [],
+    guessesLeft: DOODLE_MAX_GUESSES,
     roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
     revealedHintIndices: [],
     p1Score: 0,
@@ -231,10 +253,12 @@ export function applySelectDoodleWord(
   return {
     ...state,
     phase: 'drawing',
+    turn: state.drawerSlot,
     selectedWord: wordOption.word.toUpperCase(),
     selectedCategory: wordOption.category,
     strokes: [],
     guesses: [],
+    guessesLeft: DOODLE_MAX_GUESSES,
     roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
     revealedHintIndices: [],
   };
@@ -272,6 +296,22 @@ export function applyClearDoodleStrokes(state: DoodleGameState): DoodleGameState
   };
 }
 
+/**
+ * Transitions from 'drawing' (60s) to 'guessing' (3 guesses for the guesser).
+ * Called either when the drawer taps "Done Drawing" or when the 60s timer hits 0.
+ */
+export function applyFinishDoodleDrawing(state: DoodleGameState): DoodleGameState {
+  if (state.phase !== 'drawing' || !state.selectedWord) return state;
+
+  return {
+    ...state,
+    phase: 'guessing',
+    turn: state.guesserSlot,
+    guessesLeft: DOODLE_MAX_GUESSES,
+    roundSecondsLeft: 0,
+  };
+}
+
 export function normalizeGuess(text: string): string {
   return text.trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/\s+/g, ' ');
 }
@@ -299,25 +339,18 @@ export function getMaskedWordDisplay(
     .join(' ');
 }
 
-export function calculateDoodlePoints(secondsLeft: number): { guesser: number; drawer: number } {
-  // Speed bonus for guesser: 150 base + up to 150 speed bonus
-  const speedBonus = Math.round((Math.max(0, secondsLeft) / DOODLE_ROUND_TIME_SEC) * 150);
-  const guesserPoints = 150 + speedBonus;
-  const drawerPoints = 150; // Drawer gets rewarded for drawing clearly
-  return { guesser: guesserPoints, drawer: drawerPoints };
-}
-
 export function applySubmitDoodleGuess(
   state: DoodleGameState,
   guessText: string,
   slot: PlayerSlot
 ): DoodleGameState {
-  if (state.phase !== 'drawing' || !state.selectedWord) return state;
+  if (state.phase !== 'guessing' || !state.selectedWord) return state;
 
   const cleanGuess = normalizeGuess(guessText);
   if (!cleanGuess) return state;
 
   const isCorrect = checkWordMatch(cleanGuess, state.selectedWord);
+  const currentGuessesLeft = state.guessesLeft ?? DOODLE_MAX_GUESSES;
 
   const newAttempt: DoodleGuessAttempt = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -327,33 +360,82 @@ export function applySubmitDoodleGuess(
     timestamp: Date.now(),
   };
 
-  const updatedGuesses = [newAttempt, ...state.guesses.slice(0, 19)]; // keep 20 recent
+  const updatedGuesses = [newAttempt, ...state.guesses.slice(0, 19)];
 
   if (isCorrect) {
-    const { guesser, drawer } = calculateDoodlePoints(state.roundSecondsLeft);
-    const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesser : drawer);
-    const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesser : drawer);
+    // Guesser gets 2 points, Drawer gets 1 point!
+    const guesserPts = 2;
+    const drawerPts = 1;
+    const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesserPts : drawerPts);
+    const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesserPts : drawerPts);
+    const triesUsed = DOODLE_MAX_GUESSES - currentGuessesLeft + 1;
 
     return {
       ...state,
       phase: 'round_summary',
       guesses: updatedGuesses,
+      guessesLeft: currentGuessesLeft - 1,
       p1Score: nextP1,
       p2Score: nextP2,
       lastRoundOutcome: {
         id: `outcome-${Date.now()}`,
         word: state.selectedWord,
         guesserGuessedCorrectly: true,
-        pointsAwardedGuesser: guesser,
-        pointsAwardedDrawer: drawer,
-        summaryMessage: `Guessed correctly with ${state.roundSecondsLeft}s left!`,
+        pointsAwardedGuesser: guesserPts,
+        pointsAwardedDrawer: drawerPts,
+        summaryMessage: `Guessed on try ${triesUsed}/${DOODLE_MAX_GUESSES}! (+2 Guesser, +1 Drawer)`,
       },
     };
+  }
+
+  const nextGuessesLeft = currentGuessesLeft - 1;
+
+  if (nextGuessesLeft <= 0) {
+    // Out of guesses! Drawer gets 2 points, Guesser gets 0 points.
+    const guesserPts = 0;
+    const drawerPts = 2;
+    const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesserPts : drawerPts);
+    const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesserPts : drawerPts);
+
+    return {
+      ...state,
+      phase: 'round_summary',
+      guesses: updatedGuesses,
+      guessesLeft: 0,
+      p1Score: nextP1,
+      p2Score: nextP2,
+      lastRoundOutcome: {
+        id: `out-of-guesses-${Date.now()}`,
+        word: state.selectedWord,
+        guesserGuessedCorrectly: false,
+        pointsAwardedGuesser: guesserPts,
+        pointsAwardedDrawer: drawerPts,
+        summaryMessage: 'All 3 guesses used! Drawer earns +2 pts!',
+      },
+    };
+  }
+
+  // Reveal a helpful letter hint after each wrong guess (1st letter after 1st miss, middle letter after 2nd miss)
+  let revealed = state.revealedHintIndices;
+  const wordChars = state.selectedWord.split('');
+  const nonSpaceIndices = wordChars
+    .map((c, i) => (c !== ' ' ? i : -1))
+    .filter((i) => i !== -1);
+
+  if (nextGuessesLeft === 2 && revealed.length === 0 && nonSpaceIndices.length > 2) {
+    revealed = [nonSpaceIndices[0]];
+  } else if (nextGuessesLeft === 1 && revealed.length <= 1 && nonSpaceIndices.length > 4) {
+    const nextHintIdx = nonSpaceIndices[Math.floor(nonSpaceIndices.length / 2)];
+    if (!revealed.includes(nextHintIdx)) {
+      revealed = [...revealed, nextHintIdx];
+    }
   }
 
   return {
     ...state,
     guesses: updatedGuesses,
+    guessesLeft: nextGuessesLeft,
+    revealedHintIndices: revealed,
   };
 }
 
@@ -363,42 +445,13 @@ export function applyTickDoodleTimer(state: DoodleGameState): DoodleGameState {
   const nextSec = state.roundSecondsLeft - 1;
 
   if (nextSec <= 0) {
-    // Time expired
-    return {
-      ...state,
-      phase: 'round_summary',
-      roundSecondsLeft: 0,
-      lastRoundOutcome: {
-        id: `timeout-${Date.now()}`,
-        word: state.selectedWord,
-        guesserGuessedCorrectly: false,
-        pointsAwardedGuesser: 0,
-        pointsAwardedDrawer: 0,
-        summaryMessage: 'Time ran out! The secret word was revealed.',
-      },
-    };
-  }
-
-  // Automatic hints: Reveal 1st letter at 25s left, 2nd letter at 10s left
-  let revealed = state.revealedHintIndices;
-  const wordChars = state.selectedWord.split('');
-  const nonSpaceIndices = wordChars
-    .map((c, i) => (c !== ' ' ? i : -1))
-    .filter((i) => i !== -1);
-
-  if (nextSec === 25 && revealed.length === 0 && nonSpaceIndices.length > 2) {
-    revealed = [nonSpaceIndices[0]];
-  } else if (nextSec === 10 && revealed.length === 1 && nonSpaceIndices.length > 4) {
-    const nextHintIdx = nonSpaceIndices[Math.floor(nonSpaceIndices.length / 2)];
-    if (!revealed.includes(nextHintIdx)) {
-      revealed = [...revealed, nextHintIdx];
-    }
+    // 60s drawing timer finished -> hand over to the Guesser for their 3 guesses!
+    return applyFinishDoodleDrawing(state);
   }
 
   return {
     ...state,
     roundSecondsLeft: nextSec,
-    revealedHintIndices: revealed,
   };
 }
 
@@ -406,7 +459,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
   if (state.phase !== 'round_summary') return state;
 
   if (state.round >= state.totalRounds) {
-    // Match finished!
+    // 4-round match finished! Highest score wins the Cat Doodle Trophy.
     let winner: PlayerSlot | 'draw' | null = null;
     if (state.p1Score > state.p2Score) winner = 'p1';
     else if (state.p2Score > state.p1Score) winner = 'p2';
@@ -420,14 +473,16 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
   }
 
   const nextRound = state.round + 1;
+  const nextDifficulty = getDoodleDifficultyInfo(nextRound).id;
   const nextDrawer: PlayerSlot = state.drawerSlot === 'p1' ? 'p2' : 'p1';
   const nextGuesser: PlayerSlot = nextDrawer === 'p1' ? 'p2' : 'p1';
   const nextSeed = (state.matchSeed + nextRound * 97) % 1000000;
-  const nextChoices = pickRandomWords(nextSeed, 3);
+  const nextChoices = pickRandomWords(nextSeed, 3, nextDifficulty);
 
   return {
     ...state,
     round: nextRound,
+    difficulty: nextDifficulty,
     phase: 'word_selection',
     drawerSlot: nextDrawer,
     guesserSlot: nextGuesser,
@@ -437,6 +492,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
     selectedCategory: null,
     strokes: [],
     guesses: [],
+    guessesLeft: DOODLE_MAX_GUESSES,
     roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
     revealedHintIndices: [],
     lastRoundOutcome: undefined,
