@@ -12,13 +12,12 @@ interface IntroCatItem {
   accessory?: CatAccessoryId;
   expression: CatEyeExpression;
   delay: number;
-  isMovingBackAndForth?: boolean;
 }
 
 // Exactly matches user mockup (media_1794142158589_8f8a7d33.png)
 // Row 1 (Ground Base): 5 cats (White, Ginger, Tuxedo, Strawberry, Siamese)
 // Row 2: 4 cats (Peach Calico, Blue-grey Fold, Ginger, Void)
-// Row 3: Middle Wiggle Cat (moving back and forth!), flanked by Pink Strawberry & Peach Calico
+// Row 3: Middle Cat nestled in center pocket, flanked by Pink Strawberry & Peach Calico
 // Row 4: Summit Couple (Ginger King with Crown & Void Queen with Ribbon Bow, Heart Eyes)
 const INTRO_CATS: IntroCatItem[] = [
   // --- Row 1: Ground Base (y = 475) ---
@@ -34,8 +33,8 @@ const INTRO_CATS: IntroCatItem[] = [
   { id: 8, x: 209, y: 439, rot: 0, breed: 'orange-tabby', expression: 'happy', delay: 0.48 },
   { id: 9, x: 267, y: 439, rot: 2, breed: 'void-black', expression: 'wink', delay: 0.54 },
 
-  // --- Row 3: Middle Cat (moving back and forth!) nestled in center pocket ---
-  { id: 10, x: 180, y: 403, rot: 0, breed: 'scottish-fold', expression: 'normal', delay: 0.64, isMovingBackAndForth: true },
+  // --- Row 3: Middle Cat nestled in center pocket ---
+  { id: 10, x: 180, y: 403, rot: 0, breed: 'scottish-fold', expression: 'normal', delay: 0.64 },
 
   // --- Row 3: Flanking Cats (y = 403) ---
   { id: 11, x: 122, y: 403, rot: -2, breed: 'strawberry-cat', expression: 'normal', delay: 0.72 },
@@ -137,18 +136,15 @@ export function IntroStackAnimation({ onComplete }: IntroStackAnimationProps) {
                 animationDelay: `${cat.delay}s`,
               }}
             >
-              {/* If middle cat: playful back-and-forth wiggle animation! */}
-              <g className={cat.isMovingBackAndForth ? 'chibi-middle-wiggle' : ''}>
-                {/* Center the 68x68 CatAvatarSvg box at (0, 0) and apply rotation tilt */}
-                <g transform={`translate(-34, -34) rotate(${cat.rot} 34 34)`}>
-                  <CatAvatarSvg
-                    breed={cat.breed}
-                    accessory={cat.accessory}
-                    expression={cat.expression}
-                    size={68}
-                    animateIdle={false}
-                  />
-                </g>
+              {/* Center the 68x68 CatAvatarSvg box at (0, 0) and apply rotation tilt */}
+              <g transform={`translate(-34, -34) rotate(${cat.rot} 34 34)`}>
+                <CatAvatarSvg
+                  breed={cat.breed}
+                  accessory={cat.accessory}
+                  expression={cat.expression}
+                  size={68}
+                  animateIdle={false}
+                />
               </g>
             </g>
           </g>
