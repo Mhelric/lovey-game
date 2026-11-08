@@ -4934,31 +4934,54 @@ body {
 }
 
 .uno-stage-container {
-  width: calc(100vw - 16px);
-  height: calc(100vw - 16px);
-  width: var(--board-size);
-  height: var(--board-size);
-  max-width: 440px;
-  max-height: 440px;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
   position: relative;
   user-select: none;
   touch-action: manipulation;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 4px;
 }
 
-.uno-table-felt {
-  width: 100%;
-  height: 100%;
-  border-radius: 24px;
+.uno-table-stage,
+.board-stage.sticker-board-frame.uno-table-stage {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  flex: 1;
+  min-height: 0;
+  border-radius: 20px;
   border: 3.5px solid var(--ink);
-  box-shadow: 0 6px 0 var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
   background: radial-gradient(circle at 50% 50%, #FFF8FA 0%, #FCE7F3 100%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 8px 10px;
-  box-sizing: border-box;
-  position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  position: relative;
+}
+
+.uno-top-opponent-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 3px 8px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 2px 0 var(--ink);
+  box-sizing: border-box;
 }
 
 .uno-opponent-bar {
@@ -5099,6 +5122,35 @@ body {
   animation: drawPulse 1s infinite alternate ease-in-out;
 }
 
+.uno-draw-pile-btn.pulse-danger-draw .uno-deck-top-card {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4), 0 3px 0 var(--ink);
+  animation: dangerDrawPulse 0.65s infinite alternate ease-in-out;
+}
+
+@keyframes dangerDrawPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); filter: brightness(1.1); }
+}
+
+.uno-deck-attack-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #EF4444;
+  color: #ffffff;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 7px;
+  box-shadow: 0 2px 0 var(--ink);
+  white-space: nowrap;
+  animation: bounceShout 0.6s infinite alternate ease-in-out;
+  z-index: 4;
+}
+
 @keyframes drawPulse {
   0% { transform: scale(1); }
   100% { transform: scale(1.05); }
@@ -5143,20 +5195,29 @@ body {
 
 .uno-stack-toast {
   position: absolute;
-  top: -10px;
+  top: -12px;
   left: 50%;
   transform: translate3d(-50%, 0, 0);
-  background: #FF4B72;
+  background: #EF4444;
   color: #ffffff;
   border: 2px solid var(--ink);
   border-radius: 999px;
-  padding: 3px 10px;
+  padding: 3px 12px;
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 800;
   box-shadow: 0 3px 0 var(--ink);
   white-space: nowrap;
   z-index: 5;
+}
+
+.uno-stack-toast.attack-active {
+  animation: attackBannerWobble 0.75s infinite alternate ease-in-out;
+}
+
+@keyframes attackBannerWobble {
+  0% { transform: translate3d(-50%, 0, 0) scale(0.97); }
+  100% { transform: translate3d(-50%, 0, 0) scale(1.03); }
 }
 
 .uno-event-toast {
@@ -5302,10 +5363,79 @@ body {
   height: 16px;
 }
 
-.uno-wild-quad-ring .quad.q-red { background: #FF4B72; }
-.uno-wild-quad-ring .quad.q-yellow { background: #FFB703; }
+.uno-wild-quad-ring .quad.q-red { background: #EF4444; }
+.uno-wild-quad-ring .quad.q-yellow { background: #F59E0B; }
 .uno-wild-quad-ring .quad.q-green { background: #10B981; }
-.uno-wild-quad-ring .quad.q-blue { background: #38BDF8; }
+.uno-wild-quad-ring .quad.q-blue { background: #0EA5E9; }
+
+.uno-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #FFFDF9;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s ease;
+}
+
+.uno-sort-btn:active {
+  transform: translate3d(0, 2px, 0);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.uno-flying-deal-card {
+  position: absolute;
+  width: 44px;
+  height: 62px;
+  border-radius: 8px;
+  background: #2E1D27;
+  border: 2px solid #FFCCD5;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 50;
+  left: 50%;
+  top: 45%;
+  will-change: transform, opacity;
+}
+
+.uno-flying-deal-card.fly-to-player {
+  animation: flyToPlayerHand 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.uno-flying-deal-card.fly-to-opponent {
+  animation: flyToOpponentHand 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes flyToPlayerHand {
+  0% {
+    transform: translate3d(-50%, -50%, 0) scale(0.8) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-50%, 140px, 0) scale(1.05) rotate(8deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyToOpponentHand {
+  0% {
+    transform: translate3d(-50%, -50%, 0) scale(0.8) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-50%, -150px, 0) scale(0.6) rotate(-8deg);
+    opacity: 0;
+  }
+}
 
 .uno-player-section {
   display: flex;

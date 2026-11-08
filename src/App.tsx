@@ -1711,6 +1711,8 @@ export function App() {
       ? damaState.turn
       : roomData.current_mode === 'doodle'
       ? doodleState.turn
+      : roomData.current_mode === 'uno'
+      ? unoState.turn
       : snakesState.turn;
 
   const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
@@ -2058,7 +2060,7 @@ export function App() {
 
           {/* Center Stage: Game Board + Fun First-Turn Shuffle Ceremony */}
           <div className="ingame-board-center" style={{ position: 'relative' }}>
-            {isGamePaused && (
+            {isGamePaused && !customizerOpen && (
               <div
                 className="game-paused-banner anim-fade-scale"
                 role="status"
@@ -2253,6 +2255,15 @@ export function App() {
                     </>
                   ) : roomData.current_mode === 'doodle' ? (
                     `${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
+                  ) : roomData.current_mode === 'uno' ? (
+                    (() => {
+                      const hand = isP1 ? unoState.p1Hand : unoState.p2Hand;
+                      const called = isP1 ? unoState.p1CalledUno : unoState.p2CalledUno;
+                      if (hand.length === 1 || called) {
+                        return 'UNO! (1 card)';
+                      }
+                      return `${hand.length} cards`;
+                    })()
                   ) : (
                     `Tile ${isP1 ? snakesState.p1Tile : snakesState.p2Tile}/${snakesState.maxTile ?? 100}`
                   );

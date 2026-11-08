@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import {
   applyCallUno,
@@ -16,10 +16,13 @@ import {
   playCardPlay,
   playColorSelect,
   playHandSwap,
+  playTapPop,
+  playTurnBannerPop,
   playUnoCall,
   playVictoryFanfare,
 } from '../services/soundEffects';
 import { SparkleIcon } from './ArcadeIcons';
+import { CatAvatarSvg } from './CatAvatarSvg';
 
 interface UnoBoardViewProps {
   gameState: UnoGameState;
@@ -30,12 +33,55 @@ interface UnoBoardViewProps {
   onCommitState: (next: UnoGameState) => void;
 }
 
+// High-contrast vibrant colors to clearly distinguish Red vs Green
 const COLOR_MAP: Record<UnoPlayableColor, { bg: string; border: string; label: string }> = {
-  red: { bg: '#FF4B72', border: '#BE185D', label: 'Strawberry' },
-  yellow: { bg: '#FFB703', border: '#D97706', label: 'Honey' },
-  green: { bg: '#10B981', border: '#047857', label: 'Mint' },
-  blue: { bg: '#38BDF8', border: '#0284C7', label: 'Sky' },
+  red: { bg: '#EF4444', border: '#B91C1C', label: 'Red' },
+  yellow: { bg: '#F59E0B', border: '#B45309', label: 'Yellow' },
+  green: { bg: '#10B981', border: '#047857', label: 'Green' },
+  blue: { bg: '#0EA5E9', border: '#0284C7', label: 'Blue' },
 };
+
+// Sort hierarchy: Wilds first -> Colors (Red, Blue, Yellow, Green) -> Numbers (0-9) then Actions
+const COLOR_ORDER: Record<string, number> = {
+  wild: 0,
+  red: 1,
+  blue: 2,
+  yellow: 3,
+  green: 4,
+};
+
+const VALUE_ORDER: Record<string, number> = {
+  wild4: 0,
+  wild: 1,
+  '0': 2,
+  '1': 3,
+  '2': 4,
+  '3': 5,
+  '4': 6,
+  '5': 7,
+  '6': 8,
+  '7': 9,
+  skip: 10,
+  reverse: 11,
+  draw2: 12,
+};
+
+function sortUnoCards(cards: UnoCard[]): UnoCard[] {
+  return [...cards].sort((a, b) => {
+    const colA = COLOR_ORDER[a.color] ?? 99;
+    const colB = COLOR_ORDER[b.color] ?? 99;
+    if (colA !== colB) return colA - colB;
+
+    const valA = VALUE_ORDER[a.value] ?? 99;
+    const valB = VALUE_ORDER[b.value] ?? 99;
+    return valA - valB;
+  });
+}
+
+interface FlyingDeal {
+  id: string;
+  target: 'player' | 'opponent';
+}
 
 export function UnoBoardView({
   gameState,
@@ -48,19 +94,66 @@ export function UnoBoardView({
   const [pendingWildCardId, setPendingWildCardId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [animatingCardId, setAnimatingCardId] = useState<string | null>(null);
+  const [turnPopup, setTurnPopup] = useState<{
+    id: string;
+    slot: PlayerSlot;
+    avatar: CatAvatarConfig;
+  } | null>(null);
+
+  // Auto-sort toggle state
+  const [isSorted, setIsSorted] = useState(false);
+
+  // Flying deal animation state
+  const [flyingDeals, setFlyingDeals] = useState<FlyingDeal[]>([]);
 
   const isMyTurn = passAndPlay || gameState.turn === mySlot;
   const isP1 = mySlot === 'p1';
-  const myHand = isP1 ? gameState.p1Hand : gameState.p2Hand;
+  const rawMyHand = isP1 ? gameState.p1Hand : gameState.p2Hand;
   const opponentHand = isP1 ? gameState.p2Hand : gameState.p1Hand;
   const myAvatar = isP1 ? p1Avatar : p2Avatar;
   const opponentAvatar = isP1 ? p2Avatar : p1Avatar;
   const myCalledUno = isP1 ? gameState.p1CalledUno : gameState.p2CalledUno;
   const opponentCalledUno = isP1 ? gameState.p2CalledUno : gameState.p1CalledUno;
 
+  // Track previous hand lengths to trigger deal swoosh animations on remote/opponent turns
+  const prevMyHandCount = useRef(rawMyHand.length);
+  const prevOppHandCount = useRef(opponentHand.length);
+
+  const myHand = isSorted ? sortUnoCards(rawMyHand) : rawMyHand;
+
   useEffect(() => {
     setPendingWildCardId(null);
   }, [gameState.turn]);
+
+  // Turn Indicator Popup Window ("[CAT AVATAR] Player Name's Turn!")
+  useEffect(() => {
+    if (gameState.winner || !gameState.lastAction) return;
+    const avatar = gameState.turn === 'p1' ? p1Avatar : p2Avatar;
+    const popId = `uno-turn-${gameState.turn}-${Date.now()}`;
+    playTurnBannerPop();
+    setTurnPopup({ id: popId, slot: gameState.turn, avatar });
+    const t = window.setTimeout(() => {
+      setTurnPopup((prev) => (prev?.id === popId ? null : prev));
+    }, 1250);
+    return () => window.clearTimeout(t);
+  }, [gameState.turn]);
+
+  // Detect card additions from remote player actions to trigger flying deal animation
+  useEffect(() => {
+    if (rawMyHand.length > prevMyHandCount.current) {
+      const diff = rawMyHand.length - prevMyHandCount.current;
+      triggerDealAnimation('player', diff);
+    }
+    prevMyHandCount.current = rawMyHand.length;
+  }, [rawMyHand.length]);
+
+  useEffect(() => {
+    if (opponentHand.length > prevOppHandCount.current) {
+      const diff = opponentHand.length - prevOppHandCount.current;
+      triggerDealAnimation('opponent', diff);
+    }
+    prevOppHandCount.current = opponentHand.length;
+  }, [opponentHand.length]);
 
   // Watch for game state animations/toasts
   useEffect(() => {
@@ -79,6 +172,21 @@ export function UnoBoardView({
       playVictoryFanfare();
     }
   }, [gameState.winner]);
+
+  const triggerDealAnimation = (target: 'player' | 'opponent', count: number) => {
+    const deals: FlyingDeal[] = [];
+    const animCount = Math.min(4, Math.max(1, count));
+    for (let i = 0; i < animCount; i++) {
+      deals.push({
+        id: `deal-${Date.now()}-${i}-${Math.random()}`,
+        target,
+      });
+    }
+    setFlyingDeals((prev) => [...prev, ...deals]);
+    window.setTimeout(() => {
+      setFlyingDeals((prev) => prev.filter((d) => !deals.some((x) => x.id === d.id)));
+    }, 450);
+  };
 
   const handleCardClick = (card: UnoCard) => {
     if (!isMyTurn || gameState.winner) return;
@@ -118,6 +226,8 @@ export function UnoBoardView({
   const handleDrawCard = () => {
     if (!isMyTurn || gameState.winner) return;
     playCardDraw();
+    const penaltyCount = gameState.stackCount > 0 ? gameState.stackCount : 1;
+    triggerDealAnimation('player', penaltyCount);
     const next = applyDrawCard(gameState);
     onCommitState(next);
   };
@@ -135,188 +245,260 @@ export function UnoBoardView({
     onCommitState(next);
   };
 
+  const handleToggleSort = () => {
+    playTapPop();
+    setIsSorted((prev) => !prev);
+  };
+
   const topDiscard = gameState.discardPile[gameState.discardPile.length - 1];
   const canPlayAny = hasAnyPlayableCard(myHand, gameState);
+  const isPenaltyActive = gameState.stackCount > 0;
 
   return (
-    <div className="dama-stage-container uno-stage-container">
+    <div className="uno-stage-container">
+      {/* 1. Opponent Bar Outside/Above Table Box */}
+      <div className="uno-top-opponent-bar">
+        <div className="uno-partner-badge">
+          <CatAvatarSvg
+            breed={opponentAvatar.breed}
+            accessory={opponentAvatar.accessory}
+            size={24}
+            animateIdle={false}
+          />
+          <span className="uno-partner-name">{opponentAvatar.name}</span>
+          <span className="uno-card-count-pill">
+            {opponentHand.length} cards
+          </span>
+          {(opponentCalledUno || opponentHand.length === 1) && (
+            <span className="uno-danger-shout-pill anim-fade-scale">
+              UNO!
+            </span>
+          )}
+        </div>
+
+        {/* Opponent Fan of Face-Down Cards */}
+        <div className="uno-opponent-cards-fan" style={{ width: 'auto', minWidth: '90px' }}>
+          {opponentHand.slice(0, 10).map((c, i) => {
+            const total = Math.min(10, opponentHand.length);
+            const rot = (i - (total - 1) / 2) * 5;
+            const tx = (i - (total - 1) / 2) * 9;
+            return (
+              <div
+                key={c.id}
+                className="uno-card-back-mini"
+                style={{
+                  transform: `translate3d(${tx}px, 0, 0) rotate(${rot}deg)`,
+                  zIndex: i + 1,
+                }}
+              >
+                <span className="uno-mini-paw"></span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. Main Full-Height Table Stage Box */}
       <div className="board-stage sticker-board-frame uno-table-stage">
-        {/* Table Felt Background Pattern */}
-        <div
-          className="uno-table-felt"
-          style={{
-            borderColor: COLOR_MAP[gameState.activeColor]?.border || '#5B2A4E',
-          }}
-        >
-          {/* Opponent Hand Banner (Top) */}
-          <div className="uno-opponent-bar">
-            <div className="uno-partner-badge">
-              <span className="uno-partner-name">{opponentAvatar.name}</span>
-              <span className="uno-card-count-pill">
-                {opponentHand.length} cards
+        {/* Flying Deal Animation Cards */}
+        {flyingDeals.map((deal) => (
+          <div
+            key={deal.id}
+            className={`uno-flying-deal-card ${
+              deal.target === 'player' ? 'fly-to-player' : 'fly-to-opponent'
+            }`}
+          />
+        ))}
+
+        {/* Center Arena: Draw Pile + Discard Pile + Active Color Aura */}
+        <div className="uno-center-arena">
+          {/* Draw Pile Button */}
+          <button
+            type="button"
+            className={`uno-draw-pile-btn sticker-press ${
+              isPenaltyActive && isMyTurn
+                ? 'pulse-danger-draw'
+                : isMyTurn && !canPlayAny && !gameState.justDrew
+                ? 'pulse-need-draw'
+                : ''
+            }`}
+            onClick={handleDrawCard}
+            disabled={!isMyTurn || gameState.winner !== null || (gameState.justDrew && gameState.stackCount === 0)}
+            title={
+              isPenaltyActive && isMyTurn
+                ? `Take +${gameState.stackCount} Penalty Cards`
+                : 'Tap to draw from deck'
+            }
+          >
+            <div className="uno-deck-shadow-lip" />
+            <div className="uno-deck-top-card">
+              <span className="uno-draw-label">DRAW</span>
+              <span className="uno-deck-count-badge">
+                {gameState.deck.length}
               </span>
-              {(opponentCalledUno || opponentHand.length === 1) && (
-                <span className="uno-danger-shout-pill anim-fade-scale">
-                  UNO! 
-                </span>
-              )}
             </div>
 
-            {/* Opponent Fan of Face-Down Cards */}
-            <div className="uno-opponent-cards-fan">
-              {opponentHand.slice(0, 12).map((c, i) => {
-                const total = Math.min(12, opponentHand.length);
-                const rot = (i - (total - 1) / 2) * 5;
-                const tx = (i - (total - 1) / 2) * 11;
+            {/* Pulsing Red Attack Badge on Draw Pile button */}
+            {isPenaltyActive && isMyTurn && (
+              <span className="uno-deck-attack-badge">
+                Take +{gameState.stackCount}
+              </span>
+            )}
+          </button>
+
+          {/* Discard Pile with Active Color Glow Ring */}
+          <div
+            className="uno-discard-pile-wrap"
+            style={{
+              boxShadow: `0 0 0 5px ${COLOR_MAP[gameState.activeColor]?.bg || '#EF4444'}55`,
+            }}
+          >
+            {topDiscard && (
+              <UnoCardView card={topDiscard} isDiscardTop />
+            )}
+          </div>
+
+          {/* Active Color Name Indicator (Red, Blue, Yellow, Green) */}
+          <div className="uno-active-color-pill">
+            <span
+              className="uno-color-dot"
+              style={{
+                backgroundColor: COLOR_MAP[gameState.activeColor]?.bg,
+              }}
+            />
+            <span className="uno-color-name">
+              {COLOR_MAP[gameState.activeColor]?.label}
+            </span>
+          </div>
+
+          {/* Stacking Attack/Penalty Banner with Direct Action Prompt */}
+          {isPenaltyActive && (
+            <div className="uno-stack-toast attack-active anim-fade-scale">
+              <span>
+                {isMyTurn
+                  ? `Draw +${gameState.stackCount} Cards or Counter with +2 / +4!`
+                  : `Waiting for ${opponentAvatar.name} to draw +${gameState.stackCount} or counter...`}
+              </span>
+            </div>
+          )}
+
+          {/* Center Action Event Toast */}
+          {toastMessage && (
+            <div className="uno-event-toast anim-fade-scale">
+              <SparkleIcon size={14} />
+              <span>{toastMessage}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Player Section (Bottom of table) */}
+        <div className="uno-player-section">
+          <div className="uno-player-bar-header">
+            <div className="uno-player-meta">
+              <CatAvatarSvg
+                breed={myAvatar.breed}
+                accessory={myAvatar.accessory}
+                size={22}
+                animateIdle={false}
+              />
+              <span className="uno-player-name">{myAvatar.name}</span>
+              <span className="uno-card-count-pill">
+                {rawMyHand.length} cards
+              </span>
+
+              {/* Auto-Organizer Card Sorter Button */}
+              <button
+                type="button"
+                className="uno-sort-btn sticker-press"
+                onClick={handleToggleSort}
+                title="Sort cards: Wilds first, then Colors and Numbers"
+              >
+                <span>{isSorted ? 'Sorted' : 'Sort'}</span>
+              </button>
+            </div>
+
+            {/* UNO Shout Button & Pass Button */}
+            <div className="uno-action-btns-row">
+              {rawMyHand.length <= 2 && !myCalledUno && !gameState.winner && (
+                <button
+                  type="button"
+                  className="uno-shout-btn sticker-press anim-fade-scale"
+                  onClick={handleCallUno}
+                >
+                  <span>UNO!</span>
+                </button>
+              )}
+
+              {gameState.justDrew && isMyTurn && !gameState.winner && (
+                <button
+                  type="button"
+                  className="uno-pass-btn sticker-press anim-fade-scale"
+                  onClick={handlePassTurn}
+                >
+                  <span>Pass Turn</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Scrollable / Spread Hand of Interactive Cards */}
+          <div className="uno-player-cards-scroll">
+            <div className="uno-player-cards-ribbon">
+              {myHand.map((c, idx) => {
+                const playable = isMyTurn && canPlayCard(c, gameState);
+                const isAnimating = animatingCardId === c.id;
                 return (
-                  <div
+                  <button
                     key={c.id}
-                    className="uno-card-back-mini"
+                    type="button"
+                    className={`uno-card-hand-item sticker-press ${
+                      playable ? 'is-playable' : 'is-dim'
+                    } ${isAnimating ? 'is-flying' : ''}`}
+                    onClick={() => handleCardClick(c)}
+                    disabled={!playable}
                     style={{
-                      transform: `translate3d(${tx}px, 0, 0) rotate(${rot}deg)`,
-                      zIndex: i + 1,
+                      zIndex: idx + 1,
                     }}
                   >
-                    <span className="uno-mini-paw"></span>
-                  </div>
+                    <UnoCardView card={c} />
+                  </button>
                 );
               })}
             </div>
           </div>
-
-          {/* Center Arena: Draw Pile + Discard Pile + Active Color Aura */}
-          <div className="uno-center-arena">
-            {/* Draw Pile */}
-            <button
-              type="button"
-              className={`uno-draw-pile-btn sticker-press ${
-                isMyTurn && !canPlayAny && !gameState.justDrew
-                  ? 'pulse-need-draw'
-                  : ''
-              }`}
-              onClick={handleDrawCard}
-              disabled={!isMyTurn || gameState.winner !== null || (gameState.justDrew && gameState.stackCount === 0)}
-              title="Tap to draw from deck"
-            >
-              <div className="uno-deck-shadow-lip" />
-              <div className="uno-deck-top-card">
-                <span className="uno-draw-label">DRAW</span>
-                <span className="uno-deck-count-badge">
-                  {gameState.deck.length}
-                </span>
-              </div>
-            </button>
-
-            {/* Discard Pile with Active Color Glow Ring */}
-            <div
-              className="uno-discard-pile-wrap"
-              style={{
-                boxShadow: `0 0 0 5px ${COLOR_MAP[gameState.activeColor]?.bg || '#FF4B72'}55`,
-              }}
-            >
-              {topDiscard && (
-                <UnoCardView card={topDiscard} isDiscardTop />
-              )}
-            </div>
-
-            {/* Active Color & Stack Indicator */}
-            <div className="uno-active-color-pill">
-              <span
-                className="uno-color-dot"
-                style={{
-                  backgroundColor: COLOR_MAP[gameState.activeColor]?.bg,
-                }}
-              />
-              <span className="uno-color-name">
-                {COLOR_MAP[gameState.activeColor]?.label}
-              </span>
-            </div>
-
-            {/* Stacking Penalty Badge */}
-            {gameState.stackCount > 0 && (
-              <div className="uno-stack-toast anim-fade-scale">
-                <span>+{gameState.stackCount} Penalty! Stack or Draw!</span>
-              </div>
-            )}
-
-            {/* Center Action Event Toast */}
-            {toastMessage && (
-              <div className="uno-event-toast anim-fade-scale">
-                <SparkleIcon size={14} />
-                <span>{toastMessage}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Player Hand & Controls (Bottom) */}
-          <div className="uno-player-section">
-            <div className="uno-player-bar-header">
-              <div className="uno-player-meta">
-                <span className="uno-player-name">{myAvatar.name}</span>
-                <span className="uno-card-count-pill">
-                  {myHand.length} cards
-                </span>
-              </div>
-
-              {/* UNO Shout Button & Pass Button */}
-              <div className="uno-action-btns-row">
-                {myHand.length <= 2 && !myCalledUno && !gameState.winner && (
-                  <button
-                    type="button"
-                    className="uno-shout-btn sticker-press anim-fade-scale"
-                    onClick={handleCallUno}
-                  >
-                    <span>UNO! </span>
-                  </button>
-                )}
-
-                {gameState.justDrew && isMyTurn && !gameState.winner && (
-                  <button
-                    type="button"
-                    className="uno-pass-btn sticker-press anim-fade-scale"
-                    onClick={handlePassTurn}
-                  >
-                    <span>Pass Turn</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Scrollable / Spread Hand of Interactive Cards */}
-            <div className="uno-player-cards-scroll">
-              <div className="uno-player-cards-ribbon">
-                {myHand.map((c, idx) => {
-                  const playable = isMyTurn && canPlayCard(c, gameState);
-                  const isAnimating = animatingCardId === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className={`uno-card-hand-item sticker-press ${
-                        playable ? 'is-playable' : 'is-dim'
-                      } ${isAnimating ? 'is-flying' : ''}`}
-                      onClick={() => handleCardClick(c)}
-                      disabled={!playable}
-                      style={{
-                        zIndex: idx + 1,
-                      }}
-                    >
-                      <UnoCardView card={c} />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* 4-Color Wild Chooser Modal */}
+        {/* 4. Center Turn Indicator Popup: "[CAT AVATAR] Player Name's Turn!" */}
+        {turnPopup && (
+          <div className="turn-popup-overlay" aria-live="polite">
+            <div key={turnPopup.id} className="turn-popup-card">
+              <div className="turn-popup-avatar">
+                <CatAvatarSvg
+                  breed={turnPopup.avatar.breed}
+                  accessory={turnPopup.avatar.accessory}
+                  size={36}
+                  animateIdle={false}
+                />
+              </div>
+              <div className="turn-popup-meta">
+                <span className="turn-popup-role">
+                  {turnPopup.slot === mySlot ? 'Your Turn' : "Opponent's Turn"}
+                </span>
+                <span className="turn-popup-title">
+                  {turnPopup.avatar.name}&apos;s Turn!
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5. 4-Color Wild Chooser Modal */}
         {pendingWildCardId && (
           <div className="uno-wild-modal-backdrop anim-fade-scale">
             <div className="uno-wild-modal-card">
               <h4 className="uno-wild-title">Choose Wild Color</h4>
               <div className="uno-wild-color-grid">
-                {(['red', 'yellow', 'green', 'blue'] as const).map((color) => (
+                {(['red', 'blue', 'yellow', 'green'] as const).map((color) => (
                   <button
                     key={color}
                     type="button"
@@ -351,7 +533,7 @@ function UnoCardView({
   isDiscardTop?: boolean;
 }) {
   const isWild = card.color === 'wild';
-  const cardBg = isWild ? '#2A1824' : COLOR_MAP[card.color as UnoPlayableColor]?.bg || '#FF4B72';
+  const cardBg = isWild ? '#2A1824' : COLOR_MAP[card.color as UnoPlayableColor]?.bg || '#EF4444';
   const borderColor = isWild ? '#FFBE0B' : '#5B2A4E';
 
   const renderSymbol = () => {
@@ -384,9 +566,9 @@ function UnoCardView({
             <span className="uno-wild-label">WILD</span>
             <div className="uno-wild-quad-ring">
               <span className="quad q-red" />
+              <span className="quad q-blue" />
               <span className="quad q-yellow" />
               <span className="quad q-green" />
-              <span className="quad q-blue" />
             </div>
           </div>
         );
@@ -396,9 +578,9 @@ function UnoCardView({
             <span className="uno-symbol-bold">+4</span>
             <div className="uno-wild-quad-ring mini">
               <span className="quad q-red" />
+              <span className="quad q-blue" />
               <span className="quad q-yellow" />
               <span className="quad q-green" />
-              <span className="quad q-blue" />
             </div>
           </div>
         );
@@ -406,7 +588,7 @@ function UnoCardView({
         return (
           <div className="uno-card-7-swap">
             <span className="uno-symbol-num">7</span>
-            <span className="uno-swap-badge">SWAP </span>
+            <span className="uno-swap-badge">SWAP</span>
           </div>
         );
       default:
