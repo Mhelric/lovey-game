@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { playTapPop } from '../services/soundEffects';
 
-interface StackCat {
+interface ChibiStackCat {
   id: number;
   x: number;
   y: number;
@@ -9,56 +9,56 @@ interface StackCat {
   rot: number;
   breed: 'tabby' | 'void' | 'strawberry' | 'tuxedo' | 'calico' | 'cloud' | 'fold' | 'siamese';
   delay: number;
-  expression: 'happy' | 'cute' | 'wink' | 'love';
+  expression: 'happy' | 'sparkle' | 'wink' | 'dizzy' | 'surprised' | 'cute' | 'love';
+  wobbleDirection?: 'left' | 'right';
   hasCrown?: boolean;
   hasBow?: boolean;
 }
 
-const CAT_COLORS: Record<string, { body: string; belly: string; ear: string; eye: string }> = {
-  tabby: { body: '#FFB87A', belly: '#FFF2DF', ear: '#FF8BA7', eye: '#5B2A4E' },
-  void: { body: '#3D3554', belly: '#524970', ear: '#FF7AA5', eye: '#FFBE0B' },
-  strawberry: { body: '#FFB5CC', belly: '#FFF0F5', ear: '#FF6B9A', eye: '#5B2A4E' },
-  tuxedo: { body: '#2E2A3B', belly: '#FFF5F8', ear: '#FF8BA7', eye: '#5B2A4E' },
-  calico: { body: '#FFF5E6', belly: '#FF9E79', ear: '#FF8BA7', eye: '#5B2A4E' },
-  cloud: { body: '#FFFFFF', belly: '#E8F1F5', ear: '#FFB5CC', eye: '#5B2A4E' },
-  fold: { body: '#A3B8C8', belly: '#E8EFF5', ear: '#FF9EBA', eye: '#5B2A4E' },
-  siamese: { body: '#F5E6D3', belly: '#6B4F3B', ear: '#FF8BA7', eye: '#5B2A4E' },
+const BREED_PALETTES: Record<
+  string,
+  { body: string; belly: string; ear: string; eye: string; cheek: string; darkPatch?: string }
+> = {
+  tabby: { body: '#FFB26B', belly: '#FFF3E3', ear: '#FF8BA7', eye: '#5B2A4E', cheek: '#FF7AA5' },
+  void: { body: '#3A3252', belly: '#50466E', ear: '#FF7AA5', eye: '#FFBE0B', cheek: '#FF6B9A' },
+  strawberry: { body: '#FFADC6', belly: '#FFF0F5', ear: '#FF6B9A', eye: '#5B2A4E', cheek: '#FF4D80' },
+  tuxedo: { body: '#2A2638', belly: '#FFF5F8', ear: '#FF8BA7', eye: '#5B2A4E', cheek: '#FF7AA5' },
+  calico: { body: '#FFF5E6', belly: '#FF9E79', ear: '#FF8BA7', eye: '#5B2A4E', cheek: '#FF7AA5', darkPatch: '#5B2A4E' },
+  cloud: { body: '#FFFFFF', belly: '#EBF3F8', ear: '#FFB2CA', eye: '#4A3E56', cheek: '#FF8BA7' },
+  fold: { body: '#9CB2C4', belly: '#E8EFF5', ear: '#FFA3BF', eye: '#5B2A4E', cheek: '#FF7AA5' },
+  siamese: { body: '#F6E7D5', belly: '#6B4D39', ear: '#FF8BA7', eye: '#3B82F6', cheek: '#FF7AA5' },
 };
 
-const STACK_CATS: StackCat[] = [
-  // Row 0 - Ground Base (y = 590)
-  { id: 1, x: 48, y: 590, scale: 1.05, rot: -3, breed: 'tabby', delay: 0.05, expression: 'happy' },
-  { id: 2, x: 136, y: 590, scale: 1.0, rot: 2, breed: 'void', delay: 0.08, expression: 'cute' },
-  { id: 3, x: 224, y: 590, scale: 1.05, rot: -2, breed: 'strawberry', delay: 0.11, expression: 'happy' },
-  { id: 4, x: 312, y: 590, scale: 1.0, rot: 3, breed: 'tuxedo', delay: 0.14, expression: 'wink' },
+// Disney Chibi Stacking Pyramid (15 Cats stacking from ground to pinnacle)
+const CHIBI_STACK: ChibiStackCat[] = [
+  // Tier 1: Foundation Base Ground Floor (y = 575)
+  { id: 1, x: 80, y: 575, scale: 1.08, rot: -2, breed: 'tabby', delay: 0.05, expression: 'happy' },
+  { id: 2, x: 180, y: 580, scale: 1.12, rot: 1, breed: 'tuxedo', delay: 0.12, expression: 'cute' },
+  { id: 3, x: 280, y: 575, scale: 1.08, rot: 3, breed: 'calico', delay: 0.18, expression: 'happy' },
 
-  // Row 1 (y = 485)
-  { id: 5, x: 35, y: 485, scale: 0.98, rot: -4, breed: 'calico', delay: 0.22, expression: 'cute' },
-  { id: 6, x: 120, y: 485, scale: 1.02, rot: 3, breed: 'fold', delay: 0.25, expression: 'happy' },
-  { id: 7, x: 205, y: 485, scale: 0.98, rot: -2, breed: 'cloud', delay: 0.28, expression: 'cute' },
-  { id: 8, x: 290, y: 485, scale: 1.02, rot: 4, breed: 'siamese', delay: 0.31, expression: 'wink' },
-  { id: 9, x: 350, y: 485, scale: 0.92, rot: -3, breed: 'tabby', delay: 0.34, expression: 'happy' },
+  // Tier 2: Lower Balance Tier (y = 495)
+  { id: 4, x: 130, y: 495, scale: 1.02, rot: -3, breed: 'strawberry', delay: 0.32, expression: 'sparkle' },
+  { id: 5, x: 230, y: 495, scale: 1.02, rot: 2, breed: 'fold', delay: 0.38, expression: 'wink' },
 
-  // Row 2 (y = 380)
-  { id: 10, x: 55, y: 380, scale: 1.0, rot: 3, breed: 'void', delay: 0.40, expression: 'love' },
-  { id: 11, x: 140, y: 380, scale: 1.05, rot: -3, breed: 'strawberry', delay: 0.43, expression: 'happy' },
-  { id: 12, x: 225, y: 380, scale: 1.0, rot: 2, breed: 'tuxedo', delay: 0.46, expression: 'cute' },
-  { id: 13, x: 310, y: 380, scale: 0.98, rot: -4, breed: 'calico', delay: 0.49, expression: 'wink' },
+  // Side Clingers: Clinging to Tier 2 (y = 505)
+  { id: 6, x: 38, y: 508, scale: 0.94, rot: -10, breed: 'cloud', delay: 0.44, expression: 'surprised', wobbleDirection: 'left' },
+  { id: 7, x: 322, y: 508, scale: 0.94, rot: 10, breed: 'siamese', delay: 0.50, expression: 'cute', wobbleDirection: 'right' },
 
-  // Row 3 (y = 275)
-  { id: 14, x: 40, y: 275, scale: 0.98, rot: -2, breed: 'cloud', delay: 0.58, expression: 'happy' },
-  { id: 15, x: 125, y: 275, scale: 1.02, rot: 3, breed: 'siamese', delay: 0.61, expression: 'cute' },
-  { id: 16, x: 210, y: 275, scale: 1.0, rot: -3, breed: 'fold', delay: 0.64, expression: 'love' },
-  { id: 17, x: 295, y: 275, scale: 1.02, rot: 2, breed: 'tabby', delay: 0.67, expression: 'happy' },
+  // Tier 3: Mid Stack (y = 415)
+  { id: 8, x: 180, y: 415, scale: 1.05, rot: 1, breed: 'void', delay: 0.65, expression: 'sparkle' },
+  { id: 9, x: 95, y: 425, scale: 0.98, rot: -5, breed: 'calico', delay: 0.72, expression: 'happy' },
+  { id: 10, x: 265, y: 425, scale: 0.98, rot: 5, breed: 'strawberry', delay: 0.78, expression: 'wink' },
 
-  // Row 4 (y = 175)
-  { id: 18, x: 75, y: 175, scale: 1.0, rot: 3, breed: 'strawberry', delay: 0.76, expression: 'cute' },
-  { id: 19, x: 160, y: 175, scale: 1.05, rot: -2, breed: 'void', delay: 0.79, expression: 'wink' },
-  { id: 20, x: 245, y: 175, scale: 1.0, rot: 4, breed: 'calico', delay: 0.82, expression: 'happy' },
+  // Tier 4: Upper Tower (y = 335)
+  { id: 11, x: 135, y: 335, scale: 1.0, rot: -3, breed: 'siamese', delay: 0.92, expression: 'cute' },
+  { id: 12, x: 225, y: 335, scale: 1.0, rot: 3, breed: 'tabby', delay: 0.98, expression: 'happy' },
 
-  // Row 5 - Top Couple Crown Peak (y = 80)
-  { id: 21, x: 135, y: 80, scale: 1.1, rot: -4, breed: 'tabby', delay: 0.95, expression: 'love', hasCrown: true },
-  { id: 22, x: 215, y: 80, scale: 1.1, rot: 4, breed: 'void', delay: 0.98, expression: 'love', hasBow: true },
+  // Tier 5: Precarious Wobbly Balance Cat! (y = 255)
+  { id: 13, x: 180, y: 255, scale: 1.04, rot: -4, breed: 'fold', delay: 1.15, expression: 'dizzy', wobbleDirection: 'left' },
+
+  // Tier 6: The King & Queen Summit Couple (y = 175)
+  { id: 14, x: 142, y: 175, scale: 1.12, rot: -4, breed: 'tabby', delay: 1.35, expression: 'love', hasCrown: true },
+  { id: 15, x: 218, y: 175, scale: 1.12, rot: 4, breed: 'void', delay: 1.40, expression: 'love', hasBow: true },
 ];
 
 interface IntroStackAnimationProps {
@@ -78,21 +78,27 @@ export function IntroStackAnimation({ onComplete }: IntroStackAnimationProps) {
   };
 
   useEffect(() => {
-    // Sound effect on peak landing
-    const soundTimer = window.setTimeout(() => {
+    // Sound pop when mid stack lands
+    const sound1 = window.setTimeout(() => {
       playTapPop();
-    }, 980);
+    }, 680);
 
-    // Auto-advance after screen is completely stacked
+    // Sound pop when king cat crowns the summit
+    const sound2 = window.setTimeout(() => {
+      playTapPop();
+    }, 1400);
+
+    // Auto-advance once stack is complete and celebrated
     const finishTimer = window.setTimeout(() => {
       setFading(true);
       window.setTimeout(() => {
         onComplete();
-      }, 350);
-    }, 2050);
+      }, 340);
+    }, 2450);
 
     return () => {
-      window.clearTimeout(soundTimer);
+      window.clearTimeout(sound1);
+      window.clearTimeout(sound2);
       window.clearTimeout(finishTimer);
     };
   }, [onComplete]);
@@ -108,168 +114,273 @@ export function IntroStackAnimation({ onComplete }: IntroStackAnimationProps) {
       <svg
         viewBox="0 0 360 640"
         className="intro-stack-svg"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
         aria-hidden="true"
       >
-        {/* Soft Background Sparkles */}
-        <g opacity="0.35">
-          <circle cx="50" cy="80" r="3" fill="#FF8BA7" />
-          <circle cx="310" cy="120" r="2.5" fill="#FFBE0B" />
-          <circle cx="40" cy="220" r="2.5" fill="#FF8BA7" />
-          <circle cx="320" cy="330" r="3" fill="#FFBE0B" />
+        {/* Soft Background Cloud Sparks */}
+        <g opacity="0.45">
+          <circle cx="45" cy="110" r="4" fill="#FF8BA7" />
+          <circle cx="315" cy="130" r="3.5" fill="#FFBE0B" />
+          <circle cx="35" cy="280" r="3" fill="#FFBE0B" />
+          <circle cx="325" cy="350" r="4" fill="#FF8BA7" />
+          {/* Subtle Ground Platform Shadow for Foundation Cats */}
+          <ellipse cx="180" cy="618" rx="145" ry="14" fill="#5B2A4E" opacity="0.12" />
         </g>
 
-        {/* Stacking Cats from Bottom to Top */}
-        {STACK_CATS.map((cat) => {
-          const colors = CAT_COLORS[cat.breed];
+        {/* Chibi Cats Stacking Hierarchy */}
+        {CHIBI_STACK.map((cat) => {
+          const colors = BREED_PALETTES[cat.breed];
+          const isWobbly = cat.expression === 'dizzy';
+
           return (
             <g
               key={cat.id}
-              className="intro-cat-node"
-              style={{
-                transform: `translate3d(${cat.x}px, ${cat.y}px, 0) scale(${cat.scale}) rotate(${cat.rot}deg)`,
-                animationDelay: `${cat.delay}s`,
-              }}
+              transform={`translate(${cat.x}, ${cat.y})`}
             >
-              {/* Ears */}
-              <polygon
-                points="-26,-12 -33,-30 -14,-22"
-                fill={colors.body}
-                stroke="#5B2A4E"
-                strokeWidth="2.4"
-                strokeLinejoin="round"
-              />
-              <polygon points="-24,-14 -29,-25 -17,-19" fill={colors.ear} />
+              <g
+                className={`chibi-cat-drop ${isWobbly ? 'chibi-wobbly-sway' : ''}`}
+                style={{
+                  animationDelay: `${cat.delay}s`,
+                }}
+              >
+                {/* Cat Inner Scale and Rotation Group */}
+                <g transform={`scale(${cat.scale}) rotate(${cat.rot})`}>
+                  {/* Left Ear */}
+                  <polygon
+                    points="-26,-13 -34,-32 -13,-23"
+                    fill={colors.body}
+                    stroke="#5B2A4E"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                  />
+                  <polygon points="-24,-15 -30,-27 -16,-20" fill={colors.ear} />
 
-              <polygon
-                points="26,-12 33,-30 14,-22"
-                fill={colors.body}
-                stroke="#5B2A4E"
-                strokeWidth="2.4"
-                strokeLinejoin="round"
-              />
-              <polygon points="24,-14 29,-25 17,-19" fill={colors.ear} />
+                  {/* Right Ear */}
+                  <polygon
+                    points="26,-13 34,-32 13,-23"
+                    fill={colors.body}
+                    stroke="#5B2A4E"
+                    strokeWidth="2.5"
+                    strokeLinejoin="round"
+                  />
+                  <polygon points="24,-15 30,-27 16,-20" fill={colors.ear} />
 
-              {/* Chubby Mochi Body */}
-              <ellipse
-                cx="0"
-                cy="0"
-                rx="34"
-                ry="26"
-                fill={colors.body}
-                stroke="#5B2A4E"
-                strokeWidth="2.4"
-              />
-
-              {/* Belly Cushion */}
-              <ellipse cx="0" cy="6" rx="19" ry="14" fill={colors.belly} />
-
-              {/* Blushing Cheeks */}
-              <circle cx="-19" cy="4" r="4.5" fill="#FF8BA7" opacity="0.55" />
-              <circle cx="19" cy="4" r="4.5" fill="#FF8BA7" opacity="0.55" />
-
-              {/* Eyes Expression */}
-              {cat.expression === 'happy' ? (
-                <>
+                  {/* Curled Side Tail */}
                   <path
-                    d="M-15,-2 Q-11,-7 -7,-2"
+                    d={cat.wobbleDirection === 'right' ? 'M28,14 Q38,16 36,4 Q34,-2 30,2' : 'M-28,14 Q-38,16 -36,4 Q-34,-2 -30,2'}
                     fill="none"
                     stroke="#5B2A4E"
-                    strokeWidth="2.2"
+                    strokeWidth="3.2"
                     strokeLinecap="round"
                   />
-                  <path
-                    d="M7,-2 Q11,-7 15,-2"
-                    fill="none"
+
+                  {/* Chubby Pillowy Mochi Body */}
+                  <ellipse
+                    cx="0"
+                    cy="0"
+                    rx="35"
+                    ry="27"
+                    fill={colors.body}
                     stroke="#5B2A4E"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
+                    strokeWidth="2.6"
                   />
-                </>
-              ) : cat.expression === 'wink' ? (
-                <>
-                  <ellipse cx="-11" cy="-3" rx="3.5" ry="4.5" fill={colors.eye} />
-                  <circle cx="-12" cy="-4.5" r="1.3" fill="#FFF" />
-                  <path
-                    d="M7,-2 Q11,-6 15,-2"
-                    fill="none"
+
+                  {/* Optional Calico / Tuxedo Dark Spot */}
+                  {colors.darkPatch && (
+                    <path
+                      d="M-22,-14 Q-12,-8 -18,8 Q-28,12 -33,-2 Z"
+                      fill={colors.darkPatch}
+                    />
+                  )}
+
+                  {/* Round Mochi Belly Cushion */}
+                  <ellipse cx="0" cy="7" rx="20" ry="14" fill={colors.belly} />
+
+                  {/* Disney Chibi Blushing Cheeks */}
+                  <ellipse cx="-20" cy="5" rx="5" ry="3.8" fill={colors.cheek} opacity="0.65" />
+                  <ellipse cx="20" cy="5" rx="5" ry="3.8" fill={colors.cheek} opacity="0.65" />
+
+                  {/* Chibi Eyes Expression */}
+                  {cat.expression === 'happy' ? (
+                    <>
+                      {/* Joyful Arc Eyes (⌒ ⌒) */}
+                      <path
+                        d="M-16,-2 Q-11,-8 -6,-2"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M6,-2 Q11,-8 16,-2"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                      />
+                    </>
+                  ) : cat.expression === 'wink' ? (
+                    <>
+                      {/* Big Glossy Left Eye */}
+                      <ellipse cx="-11" cy="-3" rx="4" ry="5.2" fill={colors.eye} />
+                      <circle cx="-12.5" cy="-5" r="1.6" fill="#FFF" />
+                      <circle cx="-9.5" cy="-1.5" r="0.8" fill="#FFF" />
+                      {/* Winking Right Eye */}
+                      <path
+                        d="M6,-2 Q11,-7 16,-2"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                      />
+                    </>
+                  ) : cat.expression === 'dizzy' ? (
+                    <>
+                      {/* Wobbly Spiral / Dizzy Eyes for Precarious Balancer (@ @) */}
+                      <path
+                        d="M-14,-2 A 3.2 3.2 0 1 1 -8,-2 A 2 2 0 1 1 -11,-2"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M8,-2 A 3.2 3.2 0 1 1 14,-2 A 2 2 0 1 1 11,-2"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </>
+                  ) : cat.expression === 'love' ? (
+                    <>
+                      {/* Adoring Heart Eyes for Summit Couple */}
+                      <path
+                        d="M-11,-4 C-13,-7 -16,-6 -16,-3 C-16,0 -12,3 -11,5 C-10,3 -6,0 -6,-3 C-6,-6 -9,-7 -11,-4 Z"
+                        fill="#FF4D80"
+                        stroke="#5B2A4E"
+                        strokeWidth="1.2"
+                      />
+                      <path
+                        d="M11,-4 C9,-7 6,-6 6,-3 C6,0 10,3 11,5 C12,3 16,0 16,-3 C16,-6 13,-7 11,-4 Z"
+                        fill="#FF4D80"
+                        stroke="#5B2A4E"
+                        strokeWidth="1.2"
+                      />
+                    </>
+                  ) : cat.expression === 'surprised' ? (
+                    <>
+                      {/* Big Round Surprised Eyes */}
+                      <circle cx="-11" cy="-3" r="4.2" fill={colors.eye} />
+                      <circle cx="-12.2" cy="-4.5" r="1.5" fill="#FFF" />
+                      <circle cx="11" cy="-3" r="4.2" fill={colors.eye} />
+                      <circle cx="9.8" cy="-4.5" r="1.5" fill="#FFF" />
+                      {/* Little 'O' Mouth */}
+                      <circle cx="0" cy="5" r="2.2" fill="#5B2A4E" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Classic Disney Chibi Glossy Sparkle Eyes */}
+                      <ellipse cx="-11" cy="-3" rx="4.2" ry="5.4" fill={colors.eye} />
+                      <circle cx="-12.8" cy="-5.2" r="1.7" fill="#FFF" />
+                      <circle cx="-9.5" cy="-1.5" r="0.9" fill="#FFF" />
+                      <ellipse cx="11" cy="-3" rx="4.2" ry="5.4" fill={colors.eye} />
+                      <circle cx="9.2" cy="-5.2" r="1.7" fill="#FFF" />
+                      <circle cx="12.5" cy="-1.5" r="0.9" fill="#FFF" />
+                    </>
+                  )}
+
+                  {/* Tiny Kawaii Nose & Cat 'w' Mouth (Unless surprised) */}
+                  {cat.expression !== 'surprised' && (
+                    <>
+                      <polygon points="0,0.8 -2,-1.2 2,-1.2" fill="#FF8BA7" />
+                      <path
+                        d="M-4,2.5 Q-2,5.2 0,2.8 Q2,5.2 4,2.5"
+                        fill="none"
+                        stroke="#5B2A4E"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </>
+                  )}
+
+                  {/* Little Stubby Chibi Paws Hanging Down / Clutching */}
+                  <ellipse
+                    cx="-14"
+                    cy="23"
+                    rx="5"
+                    ry="3.5"
+                    fill={colors.belly}
                     stroke="#5B2A4E"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
+                    strokeWidth="2"
                   />
-                </>
-              ) : (
-                <>
-                  <ellipse cx="-11" cy="-3" rx="3.5" ry="4.5" fill={colors.eye} />
-                  <circle cx="-12.2" cy="-4.5" r="1.4" fill="#FFF" />
-                  <circle cx="-9.8" cy="-1.5" r="0.7" fill="#FFF" />
-                  <ellipse cx="11" cy="-3" rx="3.5" ry="4.5" fill={colors.eye} />
-                  <circle cx="9.8" cy="-4.5" r="1.4" fill="#FFF" />
-                  <circle cx="12.2" cy="-1.5" r="0.7" fill="#FFF" />
-                </>
-              )}
+                  <ellipse
+                    cx="14"
+                    cy="23"
+                    rx="5"
+                    ry="3.5"
+                    fill={colors.belly}
+                    stroke="#5B2A4E"
+                    strokeWidth="2"
+                  />
 
-              {/* Nose & Cute Cat Mouth */}
-              <polygon points="0,0.5 -1.8,-1.2 1.8,-1.2" fill="#FF8BA7" />
-              <path
-                d="M-3.8,2 Q-1.8,4.5 0,2.5 Q1.8,4.5 3.8,2"
-                fill="none"
-                stroke="#5B2A4E"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
+                  {/* Crown Accessory for King Ginger Cat */}
+                  {cat.hasCrown && (
+                    <g transform="translate(0, -2)">
+                      <polygon
+                        points="-10,-28 -5,-22 0,-32 5,-22 10,-28 8,-19 -8,-19"
+                        fill="#FFBE0B"
+                        stroke="#5B2A4E"
+                        strokeWidth="1.8"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="0" cy="-21" r="1.4" fill="#FF4D80" />
+                    </g>
+                  )}
 
-              {/* Little Resting Paws */}
-              <ellipse
-                cx="-13"
-                cy="22"
-                rx="4.5"
-                ry="3"
-                fill={colors.belly}
-                stroke="#5B2A4E"
-                strokeWidth="1.8"
-              />
-              <ellipse
-                cx="13"
-                cy="22"
-                rx="4.5"
-                ry="3"
-                fill={colors.belly}
-                stroke="#5B2A4E"
-                strokeWidth="1.8"
-              />
-
-              {/* Crown Accessory for King Ginger Cat */}
-              {cat.hasCrown && (
-                <polygon
-                  points="-9,-28 -5,-23 0,-31 5,-23 9,-28 7,-20 -7,-20"
-                  fill="#FFBE0B"
-                  stroke="#5B2A4E"
-                  strokeWidth="1.6"
-                  strokeLinejoin="round"
-                />
-              )}
-
-              {/* Ribbon Bow Accessory for Queen Void Cat */}
-              {cat.hasBow && (
-                <g transform="translate(8, -24)">
-                  <polygon points="0,0 7,-4 7,4" fill="#FF4D80" stroke="#5B2A4E" strokeWidth="1.4" />
-                  <polygon points="0,0 -7,-4 -7,4" fill="#FF4D80" stroke="#5B2A4E" strokeWidth="1.4" />
-                  <circle cx="0" cy="0" r="2.2" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.2" />
+                  {/* Ribbon Bow Accessory for Queen Void Cat */}
+                  {cat.hasBow && (
+                    <g transform="translate(10, -25)">
+                      <polygon points="0,0 8,-5 8,5" fill="#FF4D80" stroke="#5B2A4E" strokeWidth="1.6" />
+                      <polygon points="0,0 -8,-5 -8,5" fill="#FF4D80" stroke="#5B2A4E" strokeWidth="1.6" />
+                      <circle cx="0" cy="0" r="2.4" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.3" />
+                    </g>
+                  )}
                 </g>
-              )}
+              </g>
             </g>
           );
         })}
 
-        {/* Floating Heart at Peak */}
-        <g className="intro-heart-node" transform="translate(175, 42)">
+        {/* Celebratory Floating Heart and Sparkles at Summit */}
+        <g className="chibi-heart-burst" transform="translate(180, 115)">
           <path
-            d="M0,7 C-5,0 -12,2 -12,8 C-12,14 -4,19 0,23 C4,19 12,14 12,8 C12,2 5,0 0,7 Z"
+            d="M0,6 C-6,-2 -15,0 -15,8 C-15,16 -5,22 0,27 C5,22 15,16 15,8 C15,0 6,-2 0,6 Z"
             fill="#FF4D80"
             stroke="#5B2A4E"
-            strokeWidth="2"
+            strokeWidth="2.4"
             strokeLinejoin="round"
+          />
+          {/* Heart Specular Shimmer */}
+          <path
+            d="M-10,6 C-10,4 -7,2 -4,3"
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          {/* Sparkles */}
+          <path
+            d="M-24,4 L-20,6 L-24,8 L-22,6 Z"
+            fill="#FFBE0B"
+            stroke="#5B2A4E"
+            strokeWidth="1"
+          />
+          <path
+            d="M24,4 L20,6 L24,8 L22,6 Z"
+            fill="#FFBE0B"
+            stroke="#5B2A4E"
+            strokeWidth="1"
           />
         </g>
       </svg>
