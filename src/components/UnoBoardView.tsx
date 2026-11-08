@@ -264,13 +264,13 @@ export function UnoBoardView({
 
   return (
     <div className="uno-stage-container">
-      {/* 1. Opponent Bar Outside/Above Table Box */}
+      {/* 1. Opponent Bar Outside/Above Table Box: opponent name | remaining cards */}
       <div className="uno-top-opponent-bar">
         <div className="uno-partner-badge">
           <CatAvatarSvg
             breed={opponentAvatar.breed}
             accessory={opponentAvatar.accessory}
-            size={24}
+            size={22}
             animateIdle={false}
           />
           <span className="uno-partner-name">{opponentAvatar.name}</span>
@@ -282,27 +282,6 @@ export function UnoBoardView({
               UNO!
             </span>
           )}
-        </div>
-
-        {/* Opponent Fan of Face-Down Cards */}
-        <div className="uno-opponent-cards-fan" style={{ width: 'auto', minWidth: '90px' }}>
-          {opponentHand.slice(0, 10).map((c, i) => {
-            const total = Math.min(10, opponentHand.length);
-            const rot = (i - (total - 1) / 2) * 5;
-            const tx = (i - (total - 1) / 2) * 9;
-            return (
-              <div
-                key={c.id}
-                className="uno-card-back-mini"
-                style={{
-                  transform: `translate3d(${tx}px, 0, 0) rotate(${rot}deg)`,
-                  zIndex: i + 1,
-                }}
-              >
-                <span className="uno-mini-paw"></span>
-              </div>
-            );
-          })}
         </div>
       </div>
 
@@ -318,7 +297,28 @@ export function UnoBoardView({
           />
         ))}
 
-        {/* Center Arena: Draw Pile + Discard Pile + Active Color Aura */}
+        {/* A. Opponent Cards (Top inside the box) */}
+        <div className="uno-stage-opponent-cards">
+          {opponentHand.slice(0, 10).map((c, i) => {
+            const total = Math.min(10, opponentHand.length);
+            const rot = (i - (total - 1) / 2) * 4;
+            const tx = (i - (total - 1) / 2) * 10;
+            return (
+              <div
+                key={c.id}
+                className="uno-card-back-mini"
+                style={{
+                  transform: `translate3d(${tx}px, 0, 0) rotate(${rot}deg)`,
+                  zIndex: i + 1,
+                }}
+              >
+                <PawIcon size={11} className="uno-mini-paw" />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* B. Center Arena: draw deck | pile cards */}
         <div className="uno-center-arena">
           {/* Stacking Attack/Penalty Banner with Direct Action Prompt (in normal layout flow above piles) */}
           {isPenaltyActive && (
@@ -393,57 +393,8 @@ export function UnoBoardView({
           </div>
         </div>
 
-        {/* 3. Player Section (Bottom of table) */}
-        <div className="uno-player-section">
-          <div className="uno-player-bar-header">
-            <div className="uno-player-meta">
-              <CatAvatarSvg
-                breed={myAvatar.breed}
-                accessory={myAvatar.accessory}
-                size={22}
-                animateIdle={false}
-              />
-              <span className="uno-player-name">{myAvatar.name}</span>
-              <span className="uno-card-count-pill">
-                {rawMyHand.length} cards
-              </span>
-
-              {/* Auto-Organizer Card Sorter Button (One-tap immediate sort) */}
-              <button
-                type="button"
-                className="uno-sort-btn sticker-press"
-                onClick={handleSortHand}
-                title="Sort cards: Wilds first, then Colors and Numbers"
-              >
-                <span>{justSorted ? 'Sorted!' : 'Sort'}</span>
-              </button>
-            </div>
-
-            {/* UNO Shout Button & Pass Button */}
-            <div className="uno-action-btns-row">
-              {rawMyHand.length <= 2 && !myCalledUno && !gameState.winner && (
-                <button
-                  type="button"
-                  className="uno-shout-btn sticker-press anim-fade-scale"
-                  onClick={handleCallUno}
-                >
-                  <span>UNO!</span>
-                </button>
-              )}
-
-              {gameState.justDrew && isMyTurn && !gameState.winner && (
-                <button
-                  type="button"
-                  className="uno-pass-btn sticker-press anim-fade-scale"
-                  onClick={handlePassTurn}
-                >
-                  <span>Pass Turn</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Scrollable / Spread Hand of Interactive Cards */}
+        {/* C. Player's Cards (Bottom inside the box) */}
+        <div className="uno-stage-player-cards">
           <div className="uno-player-cards-scroll">
             <div className="uno-player-cards-ribbon">
               {myHand.map((c, idx) => {
@@ -529,6 +480,56 @@ export function UnoBoardView({
             </div>
           </div>
         )}
+      </div>
+
+      {/* 3. Player Bar Outside/Below Table Box: player name | remaining cards | sort btn | pass */}
+      <div className="uno-bottom-player-bar">
+        <div className="uno-bottom-player-meta">
+          <CatAvatarSvg
+            breed={myAvatar.breed}
+            accessory={myAvatar.accessory}
+            size={22}
+            animateIdle={false}
+          />
+          <span className="uno-player-name">{myAvatar.name}</span>
+          <span className="uno-card-count-pill">
+            {rawMyHand.length} cards
+          </span>
+        </div>
+
+        <div className="uno-bottom-player-actions">
+          {/* Auto-Organizer Card Sorter Button */}
+          <button
+            type="button"
+            className="uno-sort-btn sticker-press"
+            onClick={handleSortHand}
+            title="Sort cards: Wilds first, then Colors and Numbers"
+          >
+            <span>{justSorted ? 'Sorted!' : 'Sort'}</span>
+          </button>
+
+          {/* Pass Turn Button */}
+          {gameState.justDrew && isMyTurn && !gameState.winner && (
+            <button
+              type="button"
+              className="uno-pass-btn sticker-press anim-fade-scale"
+              onClick={handlePassTurn}
+            >
+              <span>Pass</span>
+            </button>
+          )}
+
+          {/* UNO Shout Button */}
+          {rawMyHand.length <= 2 && !myCalledUno && !gameState.winner && (
+            <button
+              type="button"
+              className="uno-shout-btn sticker-press anim-fade-scale"
+              onClick={handleCallUno}
+            >
+              <span>UNO!</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
