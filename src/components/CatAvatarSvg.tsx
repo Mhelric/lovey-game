@@ -131,6 +131,14 @@ export type CatActionAnim =
   | 'eaten'
   | 'ascend';
 
+export type CatEyeExpression =
+  | 'normal'
+  | 'happy'
+  | 'wink'
+  | 'heart'
+  | 'surprised'
+  | 'dizzy';
+
 interface CatAvatarSvgProps {
   breed: CatBreedId;
   accessory?: CatAccessoryId;
@@ -144,6 +152,7 @@ interface CatAvatarSvgProps {
   isPetting?: boolean;
   isAngryPet?: boolean;
   actionAnim?: CatActionAnim;
+  expression?: CatEyeExpression;
 }
 
 const TAIL_D =
@@ -170,10 +179,18 @@ export function CatAvatarSvg({
   isPetting = false,
   isAngryPet = false,
   actionAnim = 'none',
+  expression,
 }: CatAvatarSvgProps) {
   const meta = getCatBreedMeta(breed);
   const effectiveAccessory: CatAccessoryId = crownOverride ? 'crown' : accessory;
-  const squintActive = (happySquint || isPetting) && !isAngryPet;
+  const effectiveExpression: CatEyeExpression = expression
+    ? expression
+    : dizzy
+    ? 'dizzy'
+    : (happySquint || isPetting) && !isAngryPet
+    ? 'happy'
+    : 'normal';
+  const squintActive = effectiveExpression === 'happy';
 
   const actionClass =
     actionAnim !== 'none' ? `cat-action-${actionAnim}` : '';
@@ -347,16 +364,7 @@ export function CatAvatarSvg({
           ))}
 
           {/* Expressive Live Cat Eyes */}
-          {dizzy ? (
-            <g stroke="#432818" strokeWidth="1.8" strokeLinecap="round">
-              {[17.5, 30.5].map((cx) => (
-                <g key={cx}>
-                  <line x1={cx - 2} y1="20.5" x2={cx + 2} y2="24.5" />
-                  <line x1={cx + 2} y1="20.5" x2={cx - 2} y2="24.5" />
-                </g>
-              ))}
-            </g>
-          ) : isAngryPet ? (
+          {isAngryPet ? (
             <g>
               {/* Fierce Narrowed Angry Eyes */}
               <path
@@ -407,7 +415,34 @@ export function CatAvatarSvg({
                 <path d="M -2.6 -1.1 Q -0.9 -0.9 -1.1 -2.6 M 2.6 -1.1 Q 0.9 -0.9 1.1 -2.6 M -2.6 1.1 Q -0.9 0.9 -1.1 2.6 M 2.6 1.1 Q 0.9 0.9 1.1 2.6" />
               </g>
             </g>
-          ) : squintActive ? (
+          ) : effectiveExpression === 'dizzy' ? (
+            <g stroke="#432818" strokeWidth="1.8" strokeLinecap="round">
+              {[17.5, 30.5].map((cx) => (
+                <g key={cx}>
+                  <line x1={cx - 2} y1="20.5" x2={cx + 2} y2="24.5" />
+                  <line x1={cx + 2} y1="20.5" x2={cx - 2} y2="24.5" />
+                </g>
+              ))}
+            </g>
+          ) : effectiveExpression === 'heart' ? (
+            <g>
+              {/* Heart Eyes for Summit Couple */}
+              <path
+                d="M 17.5 20.8 C 15.5 18.2, 13 19.2, 13 21.8 C 13 24.2, 16.5 26.6, 17.5 27.6 C 18.5 26.6, 22 24.2, 22 21.8 C 22 19.2, 19.5 18.2, 17.5 20.8 Z"
+                fill="#ff4d6d"
+                stroke="#432818"
+                strokeWidth="0.8"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M 30.5 20.8 C 28.5 18.2, 26 19.2, 26 21.8 C 26 24.2, 29.5 26.6, 30.5 27.6 C 31.5 26.6, 35 24.2, 35 21.8 C 35 19.2, 32.5 18.2, 30.5 20.8 Z"
+                fill="#ff4d6d"
+                stroke="#432818"
+                strokeWidth="0.8"
+                strokeLinejoin="round"
+              />
+            </g>
+          ) : effectiveExpression === 'happy' ? (
             <g
               fill="none"
               stroke="#432818"
@@ -415,6 +450,46 @@ export function CatAvatarSvg({
               strokeLinecap="round"
             >
               <path d="M 14.5 23.2 Q 17.5 19.2 20.5 23.2 M 27.5 23.2 Q 30.5 19.2 33.5 23.2" />
+            </g>
+          ) : effectiveExpression === 'wink' ? (
+            <g>
+              {/* Left Eye: Open Glossy Anime Sparkle */}
+              <ellipse
+                cx="17.5"
+                cy="22.4"
+                rx="3.05"
+                ry="2.95"
+                fill="#FFFDF9"
+                stroke="#432818"
+                strokeWidth="0.6"
+              />
+              <circle cx="17.5" cy="22.4" r="2.55" fill={meta.eyeColor} />
+              <circle cx="16.6" cy="21.3" r="1.05" fill="#ffffff" />
+              <circle
+                cx="18.3"
+                cy="23.3"
+                r="0.48"
+                fill="#ffffff"
+                opacity="0.85"
+              />
+              {/* Right Eye: Happy Winking Squint */}
+              <path
+                d="M 27.5 23.2 Q 30.5 19.2 33.5 23.2"
+                fill="none"
+                stroke="#432818"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </g>
+          ) : effectiveExpression === 'surprised' ? (
+            <g>
+              {[17.5, 30.5].map((cx) => (
+                <g key={cx}>
+                  <circle cx={cx} cy="22.4" r="3.2" fill="#FFFDF9" stroke="#432818" strokeWidth="0.7" />
+                  <circle cx={cx} cy="22.4" r="2.4" fill="#432818" />
+                  <circle cx={cx - 0.9} cy="21.3" r="1.1" fill="#ffffff" />
+                </g>
+              ))}
             </g>
           ) : (
             <g className={animateIdle ? 'cat-eye-blink' : undefined}>
@@ -448,7 +523,7 @@ export function CatAvatarSvg({
             </g>
           )}
 
-          {/* Cute Button Nose & Cat Mouth (Smile or Feisty Angry Fangs!) */}
+          {/* Cute Button Nose & Cat Mouth (Smile, Surprised 'o', or Feisty Angry Fangs!) */}
           <ellipse cx="24" cy="24.8" rx="1.7" ry="1.2" fill={meta.noseColor} />
           {isAngryPet ? (
             <g>
@@ -463,6 +538,8 @@ export function CatAvatarSvg({
               <polygon points="21.8,27.1 22.5,28.5 23.1,27.0" fill="#ffffff" />
               <polygon points="26.2,27.1 25.5,28.5 24.9,27.0" fill="#ffffff" />
             </g>
+          ) : effectiveExpression === 'surprised' ? (
+            <circle cx="24" cy="27.4" r="1.6" fill="#432818" />
           ) : (
             <>
               {squintActive && (

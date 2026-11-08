@@ -6916,6 +6916,23 @@ body {
   }
 }
 
+.chibi-middle-wiggle {
+  transform-origin: center bottom;
+  animation: chibiMiddleCatMove 1.4s ease-in-out infinite 0.7s alternate;
+}
+
+@keyframes chibiMiddleCatMove {
+  0% {
+    transform: translate3d(-14px, 0, 0) rotate(-6deg);
+  }
+  50% {
+    transform: translate3d(0, -3px, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(14px, 0, 0) rotate(6deg);
+  }
+}
+
 .chibi-heart-burst {
   transform-origin: center;
   animation: chibiHeartBurst 0.6s cubic-bezier(0.34, 1.6, 0.64, 1) 1.25s both;
