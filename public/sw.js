@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lovey-cat-arcade-v10';
+const CACHE_NAME = 'lovey-cat-arcade-v11';
 const ASSETS = ['/', '/index.html', '/manifest.json', '/cat-icon.svg'];
 
 self.addEventListener('install', (event) => {
