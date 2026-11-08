@@ -21,7 +21,7 @@ import {
   playUnoCall,
   playVictoryFanfare,
 } from '../services/soundEffects';
-import { SparkleIcon } from './ArcadeIcons';
+import { PawIcon, SparkleIcon } from './ArcadeIcons';
 import { CatAvatarSvg } from './CatAvatarSvg';
 
 interface UnoBoardViewProps {
@@ -100,8 +100,8 @@ export function UnoBoardView({
     avatar: CatAvatarConfig;
   } | null>(null);
 
-  // Auto-sort toggle state
-  const [isSorted, setIsSorted] = useState(false);
+  // One-tap auto-sort feedback state
+  const [justSorted, setJustSorted] = useState(false);
 
   // Flying deal animation state
   const [flyingDeals, setFlyingDeals] = useState<FlyingDeal[]>([]);
@@ -119,7 +119,7 @@ export function UnoBoardView({
   const prevMyHandCount = useRef(rawMyHand.length);
   const prevOppHandCount = useRef(opponentHand.length);
 
-  const myHand = isSorted ? sortUnoCards(rawMyHand) : rawMyHand;
+  const myHand = rawMyHand;
 
   useEffect(() => {
     setPendingWildCardId(null);
@@ -245,9 +245,17 @@ export function UnoBoardView({
     onCommitState(next);
   };
 
-  const handleToggleSort = () => {
+  const handleSortHand = () => {
     playTapPop();
-    setIsSorted((prev) => !prev);
+    const sorted = sortUnoCards(rawMyHand);
+    const next: UnoGameState = {
+      ...gameState,
+      p1Hand: isP1 ? sorted : gameState.p1Hand,
+      p2Hand: !isP1 ? sorted : gameState.p2Hand,
+    };
+    onCommitState(next);
+    setJustSorted(true);
+    window.setTimeout(() => setJustSorted(false), 800);
   };
 
   const topDiscard = gameState.discardPile[gameState.discardPile.length - 1];
@@ -312,50 +320,63 @@ export function UnoBoardView({
 
         {/* Center Arena: Draw Pile + Discard Pile + Active Color Aura */}
         <div className="uno-center-arena">
-          {/* Draw Pile Button */}
-          <button
-            type="button"
-            className={`uno-draw-pile-btn sticker-press ${
-              isPenaltyActive && isMyTurn
-                ? 'pulse-danger-draw'
-                : isMyTurn && !canPlayAny && !gameState.justDrew
-                ? 'pulse-need-draw'
-                : ''
-            }`}
-            onClick={handleDrawCard}
-            disabled={!isMyTurn || gameState.winner !== null || (gameState.justDrew && gameState.stackCount === 0)}
-            title={
-              isPenaltyActive && isMyTurn
-                ? `Take +${gameState.stackCount} Penalty Cards`
-                : 'Tap to draw from deck'
-            }
-          >
-            <div className="uno-deck-shadow-lip" />
-            <div className="uno-deck-top-card">
-              <span className="uno-draw-label">DRAW</span>
-              <span className="uno-deck-count-badge">
-                {gameState.deck.length}
+          {/* Stacking Attack/Penalty Banner with Direct Action Prompt (in normal layout flow above piles) */}
+          {isPenaltyActive && (
+            <div className="uno-stack-toast attack-active anim-fade-scale">
+              <span>
+                {isMyTurn
+                  ? `Draw +${gameState.stackCount} Cards or Counter with +2 / +4!`
+                  : `Waiting for ${opponentAvatar.name} to draw +${gameState.stackCount} or counter...`}
               </span>
             </div>
+          )}
 
-            {/* Pulsing Red Attack Badge on Draw Pile button */}
-            {isPenaltyActive && isMyTurn && (
-              <span className="uno-deck-attack-badge">
-                Take +{gameState.stackCount}
-              </span>
-            )}
-          </button>
+          <div className="uno-piles-row">
+            {/* Draw Pile Button */}
+            <button
+              type="button"
+              className={`uno-draw-pile-btn sticker-press ${
+                isPenaltyActive && isMyTurn
+                  ? 'pulse-danger-draw'
+                  : isMyTurn && !canPlayAny && !gameState.justDrew
+                  ? 'pulse-need-draw'
+                  : ''
+              }`}
+              onClick={handleDrawCard}
+              disabled={!isMyTurn || gameState.winner !== null || (gameState.justDrew && gameState.stackCount === 0)}
+              title={
+                isPenaltyActive && isMyTurn
+                  ? `Take +${gameState.stackCount} Penalty Cards`
+                  : 'Tap to draw from deck'
+              }
+            >
+              <div className="uno-deck-shadow-lip" />
+              <div className="uno-deck-top-card">
+                <span className="uno-draw-label">DRAW</span>
+                <span className="uno-deck-count-badge">
+                  {gameState.deck.length}
+                </span>
+              </div>
 
-          {/* Discard Pile with Active Color Glow Ring */}
-          <div
-            className="uno-discard-pile-wrap"
-            style={{
-              boxShadow: `0 0 0 5px ${COLOR_MAP[gameState.activeColor]?.bg || '#EF4444'}55`,
-            }}
-          >
-            {topDiscard && (
-              <UnoCardView card={topDiscard} isDiscardTop />
-            )}
+              {/* Pulsing Red Attack Badge on Draw Pile button */}
+              {isPenaltyActive && isMyTurn && (
+                <span className="uno-deck-attack-badge">
+                  Take +{gameState.stackCount}
+                </span>
+              )}
+            </button>
+
+            {/* Discard Pile with Active Color Glow Ring */}
+            <div
+              className="uno-discard-pile-wrap"
+              style={{
+                boxShadow: `0 0 0 5px ${COLOR_MAP[gameState.activeColor]?.bg || '#EF4444'}55`,
+              }}
+            >
+              {topDiscard && (
+                <UnoCardView card={topDiscard} isDiscardTop />
+              )}
+            </div>
           </div>
 
           {/* Active Color Name Indicator (Red, Blue, Yellow, Green) */}
@@ -370,25 +391,6 @@ export function UnoBoardView({
               {COLOR_MAP[gameState.activeColor]?.label}
             </span>
           </div>
-
-          {/* Stacking Attack/Penalty Banner with Direct Action Prompt */}
-          {isPenaltyActive && (
-            <div className="uno-stack-toast attack-active anim-fade-scale">
-              <span>
-                {isMyTurn
-                  ? `Draw +${gameState.stackCount} Cards or Counter with +2 / +4!`
-                  : `Waiting for ${opponentAvatar.name} to draw +${gameState.stackCount} or counter...`}
-              </span>
-            </div>
-          )}
-
-          {/* Center Action Event Toast */}
-          {toastMessage && (
-            <div className="uno-event-toast anim-fade-scale">
-              <SparkleIcon size={14} />
-              <span>{toastMessage}</span>
-            </div>
-          )}
         </div>
 
         {/* 3. Player Section (Bottom of table) */}
@@ -406,14 +408,14 @@ export function UnoBoardView({
                 {rawMyHand.length} cards
               </span>
 
-              {/* Auto-Organizer Card Sorter Button */}
+              {/* Auto-Organizer Card Sorter Button (One-tap immediate sort) */}
               <button
                 type="button"
                 className="uno-sort-btn sticker-press"
-                onClick={handleToggleSort}
+                onClick={handleSortHand}
                 title="Sort cards: Wilds first, then Colors and Numbers"
               >
-                <span>{isSorted ? 'Sorted' : 'Sort'}</span>
+                <span>{justSorted ? 'Sorted!' : 'Sort'}</span>
               </button>
             </div>
 
@@ -492,24 +494,35 @@ export function UnoBoardView({
           </div>
         )}
 
-        {/* 5. 4-Color Wild Chooser Modal */}
+        {/* 5. Action Event Modal Banner (Skip, Reverse, Swap, Stack Attacks) */}
+        {toastMessage && (
+          <div className="uno-modal-event-overlay" aria-live="polite">
+            <div className="uno-modal-event-card">
+              <SparkleIcon size={16} />
+              <span>{toastMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* 6. Tactile 4-Color Wild Chooser Modal */}
         {pendingWildCardId && (
           <div className="uno-wild-modal-backdrop anim-fade-scale">
             <div className="uno-wild-modal-card">
-              <h4 className="uno-wild-title">Choose Wild Color</h4>
+              <div className="uno-wild-modal-header">
+                <SparkleIcon size={18} />
+                <h4 className="uno-wild-title">Pick a Wild Color!</h4>
+              </div>
+              <p className="uno-wild-subtitle">Choose the color for the next player</p>
               <div className="uno-wild-color-grid">
                 {(['red', 'blue', 'yellow', 'green'] as const).map((color) => (
                   <button
                     key={color}
                     type="button"
-                    className="uno-wild-color-petal sticker-press"
-                    style={{
-                      backgroundColor: COLOR_MAP[color].bg,
-                      borderColor: COLOR_MAP[color].border,
-                    }}
+                    className={`uno-wild-color-card card-${color} sticker-press`}
                     onClick={() => handleSelectWildColor(color)}
                   >
-                    <span>{COLOR_MAP[color].label}</span>
+                    <PawIcon size={20} />
+                    <span className="uno-wild-color-label">{COLOR_MAP[color].label}</span>
                   </button>
                 ))}
               </div>
