@@ -153,6 +153,7 @@ interface CatAvatarSvgProps {
   isAngryPet?: boolean;
   actionAnim?: CatActionAnim;
   expression?: CatEyeExpression;
+  hidePaw?: 'none' | 'left' | 'right' | 'both';
 }
 
 const TAIL_D =
@@ -180,6 +181,7 @@ export function CatAvatarSvg({
   isAngryPet = false,
   actionAnim = 'none',
   expression,
+  hidePaw = 'none',
 }: CatAvatarSvgProps) {
   const meta = getCatBreedMeta(breed);
   const effectiveAccessory: CatAccessoryId = crownOverride ? 'crown' : accessory;
@@ -575,25 +577,28 @@ export function CatAvatarSvg({
 
           {/* Cute Chubby Front Paws Resting on Chest */}
           {([
-            [18.2, 14, 'cat-paw-left-wave'],
-            [29.8, -14, 'cat-paw-right-wave'],
-          ] as const).map(([cx, rot, cls]) => (
-            <g
-              key={cx}
-              className={isPetting || isAngryPet ? cls : undefined}
-            >
-              <ellipse
-                cx={cx}
-                cy="35.5"
-                rx="3.6"
-                ry="2.5"
-                transform={`rotate(${rot} ${cx} 35.5)`}
-                fill={meta.fur}
-                stroke={meta.secondaryFur}
-                strokeWidth="0.95"
-              />
-            </g>
-          ))}
+            [18.2, 14, 'cat-paw-left-wave', 'left'],
+            [29.8, -14, 'cat-paw-right-wave', 'right'],
+          ] as const).map(([cx, rot, cls, side]) => {
+            if (hidePaw === side || hidePaw === 'both') return null;
+            return (
+              <g
+                key={cx}
+                className={isPetting || isAngryPet ? cls : undefined}
+              >
+                <ellipse
+                  cx={cx}
+                  cy="35.5"
+                  rx="3.6"
+                  ry="2.5"
+                  transform={`rotate(${rot} ${cx} 35.5)`}
+                  fill={meta.fur}
+                  stroke={meta.secondaryFur}
+                  strokeWidth="0.95"
+                />
+              </g>
+            );
+          })}
 
           {/* Accessories / Outfits */}
           {effectiveAccessory === 'crown' && (
@@ -871,11 +876,32 @@ export function CoupleCatsSceneSvg({
 
   const catsToRender = isJoined
     ? [
-        { slot: 'p1' as const, breed: p1Breed, acc: p1Accessory, x: 24, size: 72 },
-        { slot: 'p2' as const, breed: p2Breed, acc: p2Accessory, x: 84, size: 72 },
+        {
+          slot: 'p1' as const,
+          breed: p1Breed,
+          acc: p1Accessory,
+          x: 24,
+          size: 72,
+          hidePaw: 'right' as const,
+        },
+        {
+          slot: 'p2' as const,
+          breed: p2Breed,
+          acc: p2Accessory,
+          x: 84,
+          size: 72,
+          hidePaw: 'left' as const,
+        },
       ]
     : [
-        { slot: 'p1' as const, breed: soloBreed, acc: soloAcc, x: 51, size: 78 },
+        {
+          slot: 'p1' as const,
+          breed: soloBreed,
+          acc: soloAcc,
+          x: 51,
+          size: 78,
+          hidePaw: 'none' as const,
+        },
       ];
 
   return (
@@ -957,6 +983,7 @@ export function CoupleCatsSceneSvg({
               animateIdle={true}
               isPetting={active && reaction.emotion === 'happy'}
               isAngryPet={active && reaction.emotion === 'angry'}
+              hidePaw={c.hidePaw}
             />
             {active && (
               <PetReactionOverlaySvg
@@ -972,27 +999,107 @@ export function CoupleCatsSceneSvg({
 
       {isJoined && (
         <>
-          {/* Cozy Hugging Paws Meeting in the Middle */}
-          <ellipse
-            cx="84"
-            cy="86"
-            rx="6.2"
-            ry="4.2"
-            transform="rotate(14 84 86)"
-            fill={m1.fur}
-            stroke="#5B2A4E"
-            strokeWidth="2"
-          />
-          <ellipse
-            cx="96"
-            cy="86"
-            rx="6.2"
-            ry="4.2"
-            transform="rotate(-14 96 86)"
-            fill={m2.fur}
-            stroke="#5B2A4E"
-            strokeWidth="2"
-          />
+          <g className="couple-holding-hands">
+            {/* P2's Arm reaching from right flank to center (Under) */}
+            <path
+              d="M 106 79.5
+                 C 100 81, 95 82.5, 92 84
+                 C 88.5 85.5, 86.5 88, 88.5 90
+                 C 90.5 91.5, 93.5 90, 96 88
+                 C 99 86, 102.5 84.5, 106 84 Z"
+              fill={m2.fur}
+            />
+            <path
+              d="M 106 79.5
+                 C 100 81, 95 82.5, 92 84
+                 C 88.5 85.5, 86.5 88, 88.5 90
+                 C 90.5 91.5, 93.5 90, 96 88
+                 C 99 86, 102.5 84.5, 106 84"
+              fill="none"
+              stroke="#5B2A4E"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+
+            {/* P1's Arm reaching from left flank to center, clasping over P2 (Over) */}
+            <path
+              d="M 74 79.5
+                 C 80 81, 85 82.5, 88 84
+                 C 91.5 85.5, 93.5 88, 91.5 90
+                 C 89.5 91.5, 86.5 90, 84 88
+                 C 81 86, 77.5 84.5, 74 84 Z"
+              fill={m1.fur}
+            />
+            <path
+              d="M 74 79.5
+                 C 80 81, 85 82.5, 88 84
+                 C 91.5 85.5, 93.5 88, 91.5 90
+                 C 89.5 91.5, 86.5 90, 84 88
+                 C 81 86, 77.5 84.5, 74 84"
+              fill="none"
+              stroke="#5B2A4E"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+
+            {/* Sweet Interlocking Paw Creases / Fingers Clasping */}
+            <path
+              d="M 89 84.5 C 91 85.8, 91 88, 89.2 89.5"
+              fill="none"
+              stroke="#5B2A4E"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 90.8 84.8 C 92.5 86, 92.2 88, 90.5 89.5"
+              fill="none"
+              stroke="#5B2A4E"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 87.5 86 C 89 87, 90.5 87, 92 86"
+              fill="none"
+              stroke="#5B2A4E"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+
+            {/* Cute Soft Highlights on the clasped paws */}
+            <ellipse
+              cx="86.8"
+              cy="84"
+              rx="2.2"
+              ry="1.1"
+              transform="rotate(-15 86.8 84)"
+              fill="rgba(255, 255, 255, 0.45)"
+            />
+            <ellipse
+              cx="93.2"
+              cy="84"
+              rx="2.2"
+              ry="1.1"
+              transform="rotate(15 93.2 84)"
+              fill="rgba(255, 255, 255, 0.45)"
+            />
+
+            {/* Warm Pink Love Glow Heart between their held hands */}
+            <g transform="translate(90, 76.5)" className="sticker-anim-bob">
+              <path
+                d="M 0 3.2 C -0.8 2.4, -3.2 0.5, -3.2 -1.4 A 1.8 1.8 0 0 1 0 -2.3 A 1.8 1.8 0 0 1 3.2 -1.4 C 3.2 0.5, 0.8 2.4, 0 3.2 Z"
+                fill="#FF4D6D"
+                stroke="#5B2A4E"
+                strokeWidth="0.95"
+                strokeLinejoin="round"
+              />
+            </g>
+
+            {/* Subtle warm blushing sparkles next to hands */}
+            <circle cx="83" cy="78.5" r="1.1" fill="#FF8DA1" opacity="0.8" />
+            <circle cx="97" cy="78.5" r="1.1" fill="#FF8DA1" opacity="0.8" />
+          </g>
 
           {/* Center Floating Glossy Love Heart / Trophy Badge Between Couple Cats */}
           <g transform="translate(90, 20)">
