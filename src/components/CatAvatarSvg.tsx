@@ -1000,105 +1000,37 @@ export function CoupleCatsSceneSvg({
       {isJoined && (
         <>
           <g className="couple-holding-hands">
-            {/* P2's Arm reaching from right flank to center (Under) */}
-            <path
-              d="M 106 79.5
-                 C 100 81, 95 82.5, 92 84
-                 C 88.5 85.5, 86.5 88, 88.5 90
-                 C 90.5 91.5, 93.5 90, 96 88
-                 C 99 86, 102.5 84.5, 106 84 Z"
+            {/* P2's Holding Paw (Right Cat - Circle) */}
+            <circle
+              cx="93.8"
+              cy="82.5"
+              r="5.2"
               fill={m2.fur}
-            />
-            <path
-              d="M 106 79.5
-                 C 100 81, 95 82.5, 92 84
-                 C 88.5 85.5, 86.5 88, 88.5 90
-                 C 90.5 91.5, 93.5 90, 96 88
-                 C 99 86, 102.5 84.5, 106 84"
-              fill="none"
               stroke="#5B2A4E"
               strokeWidth="1.8"
-              strokeLinejoin="round"
-              strokeLinecap="round"
             />
-
-            {/* P1's Arm reaching from left flank to center, clasping over P2 (Over) */}
-            <path
-              d="M 74 79.5
-                 C 80 81, 85 82.5, 88 84
-                 C 91.5 85.5, 93.5 88, 91.5 90
-                 C 89.5 91.5, 86.5 90, 84 88
-                 C 81 86, 77.5 84.5, 74 84 Z"
+            {/* P1's Holding Paw (Left Cat - Circle, overlapping lovingly) */}
+            <circle
+              cx="86.2"
+              cy="82.5"
+              r="5.2"
               fill={m1.fur}
-            />
-            <path
-              d="M 74 79.5
-                 C 80 81, 85 82.5, 88 84
-                 C 91.5 85.5, 93.5 88, 91.5 90
-                 C 89.5 91.5, 86.5 90, 84 88
-                 C 81 86, 77.5 84.5, 74 84"
-              fill="none"
               stroke="#5B2A4E"
               strokeWidth="1.8"
-              strokeLinejoin="round"
-              strokeLinecap="round"
             />
-
-            {/* Sweet Interlocking Paw Creases / Fingers Clasping */}
-            <path
-              d="M 89 84.5 C 91 85.8, 91 88, 89.2 89.5"
-              fill="none"
-              stroke="#5B2A4E"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 90.8 84.8 C 92.5 86, 92.2 88, 90.5 89.5"
-              fill="none"
-              stroke="#5B2A4E"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 87.5 86 C 89 87, 90.5 87, 92 86"
-              fill="none"
-              stroke="#5B2A4E"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-            />
-
-            {/* Cute Soft Highlights on the clasped paws */}
-            <ellipse
-              cx="86.8"
-              cy="84"
-              rx="2.2"
-              ry="1.1"
-              transform="rotate(-15 86.8 84)"
+            {/* Cute glossy specular highlights on circle paws */}
+            <circle
+              cx="85"
+              cy="80.8"
+              r="1.3"
               fill="rgba(255, 255, 255, 0.45)"
             />
-            <ellipse
-              cx="93.2"
-              cy="84"
-              rx="2.2"
-              ry="1.1"
-              transform="rotate(15 93.2 84)"
+            <circle
+              cx="95"
+              cy="80.8"
+              r="1.3"
               fill="rgba(255, 255, 255, 0.45)"
             />
-
-            {/* Warm Pink Love Glow Heart between their held hands */}
-            <g transform="translate(90, 76.5)" className="sticker-anim-bob">
-              <path
-                d="M 0 3.2 C -0.8 2.4, -3.2 0.5, -3.2 -1.4 A 1.8 1.8 0 0 1 0 -2.3 A 1.8 1.8 0 0 1 3.2 -1.4 C 3.2 0.5, 0.8 2.4, 0 3.2 Z"
-                fill="#FF4D6D"
-                stroke="#5B2A4E"
-                strokeWidth="0.95"
-                strokeLinejoin="round"
-              />
-            </g>
-
-            {/* Subtle warm blushing sparkles next to hands */}
-            <circle cx="83" cy="78.5" r="1.1" fill="#FF8DA1" opacity="0.8" />
-            <circle cx="97" cy="78.5" r="1.1" fill="#FF8DA1" opacity="0.8" />
           </g>
 
           {/* Center Floating Glossy Love Heart / Trophy Badge Between Couple Cats */}
