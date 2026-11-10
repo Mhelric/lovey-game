@@ -285,8 +285,64 @@ export function UnoBoardView({
         </div>
       </div>
 
-      {/* 2. Main Full-Height Table Stage Box */}
+      {/* 2. Main Table Stage Box */}
       <div className="board-stage sticker-board-frame uno-table-stage">
+        {/* Sliced Cross-Diagonal Uno Felt Background: Red (Top), Blue (Right), Yellow (Bottom), Green (Left) */}
+        <svg
+          className="uno-table-bg-cross"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <defs>
+            <radialGradient id="unoFeltGlow" cx="50%" cy="50%" r="52%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
+              <stop offset="60%" stop-color="#ffffff" stop-opacity="0.06" />
+              <stop offset="100%" stop-color="#2E1D27" stop-opacity="0.22" />
+            </radialGradient>
+          </defs>
+          {/* Top Slice: Red */}
+          <polygon points="0,0 100,0 50,50" fill="#EF4444" />
+          {/* Right Slice: Blue */}
+          <polygon points="100,0 100,100 50,50" fill="#0EA5E9" />
+          {/* Bottom Slice: Yellow */}
+          <polygon points="100,100 0,100 50,50" fill="#F59E0B" />
+          {/* Left Slice: Green */}
+          <polygon points="0,100 0,0 50,50" fill="#10B981" />
+          {/* Cross Diagonal Seams */}
+          <line
+            x1="0"
+            y1="0"
+            x2="100"
+            y2="100"
+            stroke="#2E1D27"
+            stroke-width="1.8"
+            opacity="0.32"
+            vector-effect="non-scaling-stroke"
+          />
+          <line
+            x1="100"
+            y1="0"
+            x2="0"
+            y2="100"
+            stroke="#2E1D27"
+            stroke-width="1.8"
+            opacity="0.32"
+            vector-effect="non-scaling-stroke"
+          />
+          {/* Subtle Ambient Vignette & Center Spotlight */}
+          <rect x="0" y="0" width="100" height="100" fill="url(#unoFeltGlow)" />
+          <circle
+            cx="50"
+            cy="50"
+            r="16"
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.4)"
+            stroke-width="1.5"
+            stroke-dasharray="2.5 2.5"
+          />
+        </svg>
+
         {/* Flying Deal Animation Cards */}
         {flyingDeals.map((deal) => (
           <div
