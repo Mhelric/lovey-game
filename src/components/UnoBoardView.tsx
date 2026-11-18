@@ -15,7 +15,6 @@ import {
   playCardDraw,
   playCardPlay,
   playColorSelect,
-  playHandSwap,
   playTapPop,
   playTurnBannerPop,
   playUnoCall,
@@ -159,9 +158,6 @@ export function UnoBoardView({
   useEffect(() => {
     if (gameState.lastAction) {
       setToastMessage(gameState.lastAction.message);
-      if (gameState.lastAction.eventKind === 'swap7') {
-        playHandSwap();
-      }
       const t = window.setTimeout(() => setToastMessage(null), 2200);
       return () => window.clearTimeout(t);
     }
@@ -501,7 +497,7 @@ export function UnoBoardView({
           </div>
         )}
 
-        {/* 5. Action Event Modal Banner (Skip, Reverse, Swap, Stack Attacks) */}
+        {/* 5. Action Event Modal Banner (Skip, Reverse, Stack Attacks) */}
         {toastMessage && (
           <div className="uno-modal-event-overlay" aria-live="polite">
             <div className="uno-modal-event-card">
@@ -652,13 +648,6 @@ function UnoCardView({
               <span className="quad q-yellow" />
               <span className="quad q-green" />
             </div>
-          </div>
-        );
-      case '7':
-        return (
-          <div className="uno-card-7-swap">
-            <span className="uno-symbol-num">7</span>
-            <span className="uno-swap-badge">SWAP</span>
           </div>
         );
       default:

@@ -811,7 +811,7 @@ export function CatCustomizerModal({
                       Cat Uno (2-Player + Extra Rules)
                     </h3>
                     <span className="rules-section-sub">
-                      Stacking +2/+4 • The "7" Hand Swap • No Jump-In
+                      Stacking +2/+4 • 2-Player Combos • No Jump-In
                     </span>
                   </div>
                 </div>
@@ -832,8 +832,8 @@ export function CatCustomizerModal({
                   <RuleRow
                     color="gold"
                     icon={<PawIcon size={16} />}
-                    title="Stacking & The '7' Hand Swap"
-                    desc="Stack +2 on +2 and +4 on +4 to pass higher penalty cards to your partner! Play any 7 to swap your entire hand!"
+                    title="Stacking Penalties"
+                    desc="Stack +2 on +2 and +4 on +4 to pass higher penalty cards to your partner! The player who cannot counter must draw all stacked penalty cards!"
                   />
                 </div>
               </div>

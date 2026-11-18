@@ -38,7 +38,6 @@ export interface UnoTurnAnimation {
     | 'draw2'
     | 'wild'
     | 'wild4'
-    | 'swap7'
     | 'stack'
     | 'uno_call';
   message: string;
@@ -210,7 +209,6 @@ function ensureDeckHasCards(
  * Pure turn resolver for playing a card in 2-Player UNO.
  * Includes:
  * - Stacking (+2 on +2, +4 on +4)
- * - The "7" Hand Swap
  * - Official 2-Player rules: Skip skips opponent (you go again!), Reverse acts like Skip (bounces back to you!).
  * - Jump-In is NOT included.
  */
@@ -233,8 +231,8 @@ export function applyPlayCard(
   // Remove card from player hand
   hand.splice(cardIndex, 1);
 
-  let nextP1Hand = roller === 'p1' ? hand : [...state.p1Hand];
-  let nextP2Hand = roller === 'p2' ? hand : [...state.p2Hand];
+  const nextP1Hand = roller === 'p1' ? hand : [...state.p1Hand];
+  const nextP2Hand = roller === 'p2' ? hand : [...state.p2Hand];
   const nextDiscard = [...state.discardPile, card];
 
   let nextActiveColor: UnoPlayableColor =
@@ -249,14 +247,8 @@ export function applyPlayCard(
   let eventKind: UnoTurnAnimation['eventKind'] = 'play';
   let message = `Played ${card.color.toUpperCase()} ${card.value.toUpperCase()}`;
 
-  // Check 7 Hand Swap rule
-  if (card.value === '7') {
-    const temp = nextP1Hand;
-    nextP1Hand = nextP2Hand;
-    nextP2Hand = temp;
-    eventKind = 'swap7';
-    message = `Catnap Swap! Swapped hands with partner!`;
-  } else if (card.value === 'skip') {
+  // Check special cards
+  if (card.value === 'skip') {
     // In 2-Player: Skip skips opponent, so turn returns to active player!
     nextTurn = roller;
     eventKind = 'skip';

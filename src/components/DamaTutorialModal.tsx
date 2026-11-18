@@ -89,9 +89,9 @@ const UNO_STEPS: readonly TutorialStep[] = [
   },
   {
     badge: 'Cat Uno • Step 3 of 3',
-    title: 'Stacking & 7-Hand Swap!',
+    title: 'Stacking Penalties!',
     description:
-      'Stack +2 on +2 and +4 on +4 to pass higher penalties back to your partner! Play any 7 to swap your entire hand with your opponent!',
+      'Stack +2 on +2 and +4 on +4 to pass higher penalties back to your partner! The player who cannot counter must draw all stacked penalty cards!',
     tip: 'When you are down to 1 card, hit the UNO! button before playing to win!',
   },
 ];

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lovey-cat-arcade-v21';
+const CACHE_NAME = 'lovey-cat-arcade-v22';
 const ASSETS = ['/', '/index.html', '/manifest.json', '/cat-icon.svg', '/doodle-words.json'];
 
 self.addEventListener('install', (event) => {

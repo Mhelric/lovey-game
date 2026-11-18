@@ -358,11 +358,6 @@ export function playColorSelect(): void {
   playTone(880.0, 1046.5, 0.1, 'triangle', 0.45, 0.06);
 }
 
-export function playHandSwap(): void {
-  playTone(783.99, 392.0, 0.16, 'sine', 0.45, 0);
-  playTone(392.0, 880.0, 0.18, 'triangle', 0.48, 0.1);
-}
-
 export function playDoodleStrokePop(): void {
   playTone(480, 580, 0.04, 'triangle', 0.35, 0);
 }

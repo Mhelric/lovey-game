@@ -776,7 +776,7 @@ export function HomeMenuView({
               >
                 <UnoCardsIcon size={26} />
                 <span className="role-main-label">Cat Uno</span>
-                <span className="role-sub-label">2P Stacking &amp; 7-Swap</span>
+                <span className="role-sub-label">2P Stacking Rules</span>
               </button>
 
               {/* 3. Doodle Clash Card */}
