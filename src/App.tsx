@@ -80,9 +80,17 @@ import {
   playShuffleTick,
   playTapPop,
   playTimerTick,
+  playTurnBannerPop,
   setBgMusicTrack,
   setSoundMuted,
 } from './services/soundEffects';
+
+const GAME_DISPLAY_NAMES: Record<GameMode, string> = {
+  dama: 'Cat Dama',
+  snakes: 'Snakes & Ladders',
+  uno: 'Cat Uno',
+  doodle: 'Doodle Clash',
+};
 
 /**
  * Persistent registry of matches that already ran the First-Turn Shuffle Roulette
@@ -613,6 +621,11 @@ export function App() {
   });
 
   const [partnerLeftModalOpen, setPartnerLeftModalOpen] = useState<boolean>(false);
+  const [gameSwitchAlert, setGameSwitchAlert] = useState<{
+    id: number;
+    mode: GameMode;
+    title: string;
+  } | null>(null);
   const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
   const [externalRollingSignal, setExternalRollingSignal] = useState<{
     roller: PlayerSlot;
@@ -1020,8 +1033,22 @@ export function App() {
           if (inDoodle && typeof inDoodle.matchSeed === 'number') {
             setDoodleState((prev) => mergeDoodleSavestate(prev, inDoodle, isLive));
           }
-          // Only sync room mode from snapshot if we are on the menu, so an active match is never hijacked
+          // If the Host is in active match ('play'), automatically hop straight onto the active board (Instant Rejoin)
           if (
+            event.isPlaying &&
+            activeScreenRef.current === 'menu' &&
+            (event.currentMode === 'dama' ||
+              event.currentMode === 'snakes' ||
+              event.currentMode === 'uno' ||
+              event.currentMode === 'doodle')
+          ) {
+            setRoomData((prev) => ({
+              ...prev,
+              current_mode: event.currentMode,
+            }));
+            setActiveScreen('play');
+            setPartnerLeftModalOpen(false);
+          } else if (
             (event.currentMode === 'dama' ||
               event.currentMode === 'snakes' ||
               event.currentMode === 'uno' ||
@@ -1041,6 +1068,15 @@ export function App() {
           setActiveScreen('play');
           setPartnerLeftModalOpen(false);
           checkAutoOpenTutorial(event.mode);
+          if (mySlotRef.current === 'p2') {
+            setGameSwitchAlert({
+              id: Date.now(),
+              mode: event.mode,
+              title: GAME_DISPLAY_NAMES[event.mode] || 'New Game',
+            });
+            playTurnBannerPop();
+            window.setTimeout(() => setGameSwitchAlert(null), 2800);
+          }
         } else if (event.type === 'match_sync') {
           setPartnerLeftModalOpen(false);
           if (event.gameMode === 'dama') {
@@ -1219,6 +1255,30 @@ export function App() {
     }
 
     await updatePlayerAvatarInDb(cleaned, 'p2', myCurrentAv);
+
+    // Instant Rejoin: Check if an active match is already in progress in this room
+    const activeMatch = await fetchActiveMatch<unknown>(cleaned);
+    if (activeMatch && !activeMatch.winner && activeMatch.game_mode && activeMatch.state_json) {
+      const mode = activeMatch.game_mode as GameMode;
+      setRoomData((prev) => ({
+        ...prev,
+        current_mode: mode,
+      }));
+      if (mode === 'dama') {
+        const d = activeMatch.state_json as DamaGameState;
+        if (Array.isArray(d.board)) setDamaState(d);
+      } else if (mode === 'snakes') {
+        const s = activeMatch.state_json as SnakesGameState;
+        if (typeof s.boardSeed === 'number') setSnakesState(s);
+      } else if (mode === 'uno') {
+        const u = activeMatch.state_json as UnoGameState;
+        if (Array.isArray(u.deck)) setUnoState(u);
+      } else if (mode === 'doodle') {
+        const dl = activeMatch.state_json as DoodleGameState;
+        if (dl && typeof dl.matchSeed === 'number') setDoodleState(dl);
+      }
+      setActiveScreen('play');
+    }
 
     window.setTimeout(() => {
       channelRef.current?.updateSlot('p2');
@@ -2601,6 +2661,29 @@ export function App() {
                 <span>Understood</span>
                 <PawIcon size={15} />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Host Game Switch Alert Banner for Partner */}
+      {gameSwitchAlert && (
+        <div
+          className="game-switch-alert-overlay"
+          aria-live="polite"
+          onClick={() => {
+            playTapPop();
+            setGameSwitchAlert(null);
+          }}
+        >
+          <div className="game-switch-alert-card anim-fade-scale">
+            <div className="game-switch-alert-icon">
+              <SparkleIcon size={20} />
+            </div>
+            <div className="game-switch-alert-body">
+              <span className="game-switch-alert-sub">Host Picked a Game!</span>
+              <span className="game-switch-alert-title">
+                Switching to <strong>{gameSwitchAlert.title}</strong>
+              </span>
             </div>
           </div>
         </div>

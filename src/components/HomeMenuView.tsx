@@ -259,21 +259,27 @@ export function HomeMenuView({
       <div className="menu-center-stage">
         <div className="menu-cats-showcase">
           <CoupleCatsSceneSvg
-            p1Breed={roomData.p1_avatar.breed}
-            p2Breed={roomData.p2_avatar.breed}
-            p1Accessory={roomData.p1_avatar.accessory}
-            p2Accessory={roomData.p2_avatar.accessory}
-            p1Name={roomData.p1_avatar.name}
-            p2Name={roomData.p2_avatar.name}
+            p1Breed={isHost ? roomData.p1_avatar.breed : roomData.p2_avatar.breed}
+            p2Breed={isHost ? roomData.p2_avatar.breed : roomData.p1_avatar.breed}
+            p1Accessory={isHost ? roomData.p1_avatar.accessory : roomData.p2_avatar.accessory}
+            p2Accessory={isHost ? roomData.p2_avatar.accessory : roomData.p1_avatar.accessory}
+            p1Name={isHost ? roomData.p1_avatar.name : roomData.p2_avatar.name}
+            p2Name={isHost ? roomData.p2_avatar.name : roomData.p1_avatar.name}
+            p1Role={isHost ? 'Host' : 'Invited'}
+            p2Role={isHost ? 'Invited' : 'Host'}
             soloAvatar={myAvatar}
             isJoined={isJoined}
             showRoleLabels={isJoined}
             interactive={true}
             showTrophy={
-              roomData.p1_dama_wins +
-                roomData.p2_dama_wins +
-                roomData.p1_snakes_wins +
-                roomData.p2_snakes_wins >
+              (roomData.p1_dama_wins || 0) +
+                (roomData.p2_dama_wins || 0) +
+                (roomData.p1_snakes_wins || 0) +
+                (roomData.p2_snakes_wins || 0) +
+                ((roomData.p1_uno_wins as number) || 0) +
+                ((roomData.p2_uno_wins as number) || 0) +
+                ((roomData.p1_doodle_wins as number) || 0) +
+                ((roomData.p2_doodle_wins as number) || 0) >
               0
             }
             size={206}

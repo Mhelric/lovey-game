@@ -818,6 +818,8 @@ export function CoupleCatsSceneSvg({
   p2Accessory = 'ribbon',
   p1Name = 'Lovey 1',
   p2Name = 'Lovey 2',
+  p1Role = 'Host',
+  p2Role = 'Invited',
   soloAvatar,
   isJoined = true,
   showRoleLabels = false,
@@ -831,6 +833,8 @@ export function CoupleCatsSceneSvg({
   p2Accessory?: CatAccessoryId;
   p1Name?: string;
   p2Name?: string;
+  p1Role?: string;
+  p2Role?: string;
   soloAvatar?: CatAvatarConfig;
   isJoined?: boolean;
   showRoleLabels?: boolean;
@@ -1087,11 +1091,11 @@ export function CoupleCatsSceneSvg({
             </g>
           </g>
 
-          {/* Role Indicator Pills Below Each Cat: Host & Invited */}
+          {/* Role Indicator Pills Below Each Cat: Left Cat & Right Cat */}
           {showRoleLabels && (
             [
-              { x: 54, bg: '#FF6B9A', txt: `${p1Name.slice(0, 8)} • Host` },
-              { x: 126, bg: '#38BDF8', txt: `${p2Name.slice(0, 8)} • Invited` },
+              { x: 54, bg: p1Role === 'Host' ? '#FF6B9A' : '#38BDF8', txt: `${p1Name.slice(0, 8)} • ${p1Role}` },
+              { x: 126, bg: p2Role === 'Invited' ? '#38BDF8' : '#FF6B9A', txt: `${p2Name.slice(0, 8)} • ${p2Role}` },
             ].map(({ x, bg, txt }) => (
               <g key={x} transform={`translate(${x}, 113)`}>
                 <rect
