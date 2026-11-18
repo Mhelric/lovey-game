@@ -688,18 +688,6 @@ export function App() {
     }
   }, [tutorialOpen, TutorialModalComp]);
 
-  // Intro Stacking Cats Animation on Website Load
-  const [introActive, setIntroActive] = useState(true);
-  const [IntroStackComp, setIntroStackComp] = useState<any>(null);
-
-  useEffect(() => {
-    if (introActive && !IntroStackComp) {
-      import('./components/IntroStackAnimation').then((m) => {
-        setIntroStackComp(() => m.IntroStackAnimation);
-      });
-    }
-  }, [introActive, IntroStackComp]);
-
   const [DamaBoardComp, setDamaBoardComp] = useState<any>(null);
   const [SnakesBoardComp, setSnakesBoardComp] = useState<any>(null);
   const [UnoBoardComp, setUnoBoardComp] = useState<any>(null);
@@ -2616,11 +2604,6 @@ export function App() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Intro Cats Stacking Full-Screen Animation on Website Load */}
-      {introActive && IntroStackComp && (
-        <IntroStackComp onComplete={() => setIntroActive(false)} />
       )}
     </main>
   );
