@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import {
   applyAddDoodleStroke,
@@ -9,7 +9,6 @@ import {
   applySubmitDoodleGuess,
   applyTickDoodleTimer,
   applyUndoDoodleStroke,
-  DOODLE_MAX_GUESSES,
   DOODLE_PALETTE,
   DOODLE_ROUND_TIME_SEC,
   DOODLE_STROKE_WIDTHS,
@@ -18,6 +17,7 @@ import {
   DoodleStroke,
   getDoodleDifficultyInfo,
   getMaskedWordDisplay,
+  getMaxGuessesForDifficulty,
   recordUsedDoodleWords,
 } from '../engines/doodleEngine';
 import {
@@ -76,6 +76,33 @@ function pointsToSvgPath(points: DoodlePoint[]): string {
   return d;
 }
 
+interface BatchedStrokePath {
+  key: string;
+  color: string;
+  width: number;
+  d: string;
+}
+
+function groupDoodleStrokes(strokes: readonly DoodleStroke[]): BatchedStrokePath[] {
+  const groups: BatchedStrokePath[] = [];
+  for (const stroke of strokes) {
+    const pathD = pointsToSvgPath(stroke.points);
+    if (!pathD) continue;
+    const last = groups[groups.length - 1];
+    if (last && last.color === stroke.color && last.width === stroke.width) {
+      last.d += ` ${pathD}`;
+    } else {
+      groups.push({
+        key: stroke.id,
+        color: stroke.color,
+        width: stroke.width,
+        d: pathD,
+      });
+    }
+  }
+  return groups;
+}
+
 export function DoodleBoardView({
   gameState,
   mySlot,
@@ -110,7 +137,12 @@ export function DoodleBoardView({
   const guesserName = guesserAvatar.name || (gameState.guesserSlot === 'p1' ? 'Lovey 1' : 'Lovey 2');
 
   const diffInfo = getDoodleDifficultyInfo(gameState.round);
-  const guessesLeft = gameState.guessesLeft ?? DOODLE_MAX_GUESSES;
+  const maxGuesses = getMaxGuessesForDifficulty(diffInfo.id);
+  const guessesLeft = gameState.guessesLeft ?? maxGuesses;
+  const batchedStrokes = useMemo(
+    () => groupDoodleStrokes(gameState.strokes),
+    [gameState.strokes]
+  );
 
   // 1-Phone Handover Privacy Curtain before Drawing & Alarm states
   const [prePickHandoverActive, setPrePickHandoverActive] = useState<boolean>(
@@ -404,7 +436,7 @@ export function DoodleBoardView({
               )}
               {gameState.phase === 'guessing' && (
                 <div className="doodle-tries-pill">
-                  {[0, 1, 2].map((idx) => (
+                  {Array.from({ length: maxGuesses }, (_, idx) => (
                     <span
                       key={idx}
                       className={`doodle-try-heart ${idx < guessesLeft ? 'active' : 'spent'}`}
@@ -438,7 +470,7 @@ export function DoodleBoardView({
                 ) : (
                   <div className="doodle-result-badge timeout">
                     <DoodleClashIcon size={18} />
-                    <span>STUMPED ALL 3 GUESSES!</span>
+                    <span>STUMPED ALL {maxGuesses} GUESSES!</span>
                   </div>
                 )}
 
@@ -556,13 +588,13 @@ export function DoodleBoardView({
                     rx="14"
                   />
 
-                  {/* Committed Vector Strokes */}
-                  {gameState.strokes.map((stroke) => (
+                  {/* Committed Vector Strokes (consecutive matching strokes batched for minimal DOM nodes) */}
+                  {batchedStrokes.map((batch) => (
                     <path
-                      key={stroke.id}
-                      d={pointsToSvgPath(stroke.points)}
-                      stroke={stroke.color}
-                      strokeWidth={stroke.width}
+                      key={batch.key}
+                      d={batch.d}
+                      stroke={batch.color}
+                      strokeWidth={batch.width}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       fill="none"
@@ -661,7 +693,7 @@ export function DoodleBoardView({
                 {/* Guesser Floating Guesses Stream */}
                 {gameState.guesses.length > 0 && (
                   <div className="doodle-guesses-ribbon" aria-live="polite">
-                    {gameState.guesses.slice(0, 3).map((g) => (
+                    {gameState.guesses.slice(0, maxGuesses).map((g) => (
                       <span
                         key={g.id}
                         className={`doodle-guess-chip ${g.isCorrect ? 'correct' : 'wrong'}`}
@@ -771,12 +803,12 @@ export function DoodleBoardView({
                   <div className="doodle-phase-status-bar">
                     <PencilIcon size={15} />
                     <span>
-                      <strong>{drawerName}</strong> is drawing ({gameState.roundSecondsLeft}s left)... You&apos;ll get 3 guesses when they finish!
+                      <strong>{drawerName}</strong> is drawing ({gameState.roundSecondsLeft}s left)... You&apos;ll get {maxGuesses} guesses when they finish!
                     </span>
                   </div>
                 )
               ) : (
-                /* 'guessing' phase: Drawer is done, Guesser gets 3 guesses! */
+                /* 'guessing' phase: Drawer is done, Guesser gets 3 (Easy/Med) or 5 (Hard/Final) guesses! */
                 isGuesser ? (
                   <div className="doodle-guesser-deck">
                     <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
@@ -804,7 +836,7 @@ export function DoodleBoardView({
                   <div className="doodle-phase-status-bar guessing-mode">
                     <SparkleIcon size={15} />
                     <span>
-                      Drawing complete! Waiting for <strong>{guesserName}</strong> to guess ({guessesLeft}/3 tries left)...
+                      Drawing complete! Waiting for <strong>{guesserName}</strong> to guess ({guessesLeft}/{maxGuesses} tries left)...
                     </span>
                   </div>
                 )
@@ -883,7 +915,7 @@ export function DoodleBoardView({
             </div>
             <h3 className="doodle-handover-title">Hand phone to {guesserName}!</h3>
             <p className="doodle-handover-desc">
-              Drawing phase is finished! {guesserName} has <strong>3 tries</strong> to guess what was drawn!
+              Drawing phase is finished! {guesserName} has <strong>{maxGuesses} tries</strong> to guess what was drawn!
             </p>
             <div className="popup-btn-row stacked">
               <button

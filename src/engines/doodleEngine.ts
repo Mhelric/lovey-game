@@ -110,6 +110,10 @@ export function getDoodleDifficultyInfo(round: number): {
   return { id: 'final', label: 'Final' };
 }
 
+export function getMaxGuessesForDifficulty(difficulty: DoodleDifficulty): number {
+  return difficulty === 'hard' || difficulty === 'final' ? 5 : 3;
+}
+
 const RAW_DOODLE_WORDS: Record<DoodleDifficulty, string> = {
   easy: 'ACORN|ANCHOR|BALLOON|BANANA|CACTUS|CAMERA|CANDLE|COMPASS|COOKIE|CROWN|DONUT|GUITAR|IGLOO|LANTERN|MUSHROOM|PRETZEL',
   medium:
@@ -335,7 +339,7 @@ export function createInitialDoodleState(
     usedWords: [wordUpper],
     strokes: [],
     guesses: [],
-    guessesLeft: DOODLE_MAX_GUESSES,
+    guessesLeft: getMaxGuessesForDifficulty(difficulty),
     roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
     revealedHintIndices: [],
     p1Score: 0,
@@ -373,7 +377,7 @@ export function applySelectDoodleWord(
     usedWords: nextUsed,
     strokes: [],
     guesses: [],
-    guessesLeft: DOODLE_MAX_GUESSES,
+    guessesLeft: getMaxGuessesForDifficulty(state.difficulty),
     roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
     revealedHintIndices: [],
   };
@@ -384,14 +388,10 @@ export function applyAddDoodleStroke(
   stroke: DoodleStroke
 ): DoodleGameState {
   if (state.phase !== 'drawing') return state;
-  // Guard max 45 strokes to strictly respect hardware constraints
-  const updatedStrokes = state.strokes.length >= 45
-    ? [...state.strokes.slice(1), stroke]
-    : [...state.strokes, stroke];
 
   return {
     ...state,
-    strokes: updatedStrokes,
+    strokes: [...state.strokes, stroke],
   };
 }
 
@@ -412,7 +412,7 @@ export function applyClearDoodleStrokes(state: DoodleGameState): DoodleGameState
 }
 
 /**
- * Transitions from 'drawing' (60s) to 'guessing' (3 guesses for the guesser).
+ * Transitions from 'drawing' (60s) to 'guessing' (3 or 5 guesses for the guesser).
  * Called either when the drawer taps "Done Drawing" or when the 60s timer hits 0.
  */
 export function applyFinishDoodleDrawing(state: DoodleGameState): DoodleGameState {
@@ -422,7 +422,7 @@ export function applyFinishDoodleDrawing(state: DoodleGameState): DoodleGameStat
     ...state,
     phase: 'guessing',
     turn: state.guesserSlot,
-    guessesLeft: DOODLE_MAX_GUESSES,
+    guessesLeft: getMaxGuessesForDifficulty(state.difficulty),
     roundSecondsLeft: 0,
   };
 }
@@ -465,7 +465,8 @@ export function applySubmitDoodleGuess(
   if (!cleanGuess) return state;
 
   const isCorrect = checkWordMatch(cleanGuess, state.selectedWord);
-  const currentGuessesLeft = state.guessesLeft ?? DOODLE_MAX_GUESSES;
+  const maxGuesses = getMaxGuessesForDifficulty(state.difficulty);
+  const currentGuessesLeft = state.guessesLeft ?? maxGuesses;
 
   const newAttempt: DoodleGuessAttempt = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -483,7 +484,7 @@ export function applySubmitDoodleGuess(
     const drawerPts = 1;
     const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesserPts : drawerPts);
     const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesserPts : drawerPts);
-    const triesUsed = DOODLE_MAX_GUESSES - currentGuessesLeft + 1;
+    const triesUsed = maxGuesses - currentGuessesLeft + 1;
 
     return {
       ...state,
@@ -498,7 +499,7 @@ export function applySubmitDoodleGuess(
         guesserGuessedCorrectly: true,
         pointsAwardedGuesser: guesserPts,
         pointsAwardedDrawer: drawerPts,
-        summaryMessage: `Guessed on try ${triesUsed}/${DOODLE_MAX_GUESSES}! (+2 Guesser, +1 Drawer)`,
+        summaryMessage: `Guessed on try ${triesUsed}/${maxGuesses}! (+2 Guesser, +1 Drawer)`,
       },
     };
   }
@@ -525,24 +526,35 @@ export function applySubmitDoodleGuess(
         guesserGuessedCorrectly: false,
         pointsAwardedGuesser: guesserPts,
         pointsAwardedDrawer: drawerPts,
-        summaryMessage: 'All 3 guesses used! Drawer earns +2 pts!',
+        summaryMessage: `All ${maxGuesses} guesses used! Drawer earns +2 pts!`,
       },
     };
   }
 
-  // Reveal a helpful letter hint after each wrong guess (1st letter after 1st miss, middle letter after 2nd miss)
+  // Reveal a helpful letter hint after wrong guesses (1st letter, middle letter, and last letter on 5-life rounds)
   let revealed = state.revealedHintIndices;
   const wordChars = state.selectedWord.split('');
   const nonSpaceIndices = wordChars
     .map((c, i) => (c !== ' ' ? i : -1))
     .filter((i) => i !== -1);
+  const missesSoFar = maxGuesses - nextGuessesLeft;
 
-  if (nextGuessesLeft === 2 && revealed.length === 0 && nonSpaceIndices.length > 2) {
+  if (missesSoFar >= 1 && revealed.length === 0 && nonSpaceIndices.length > 2) {
     revealed = [nonSpaceIndices[0]];
-  } else if (nextGuessesLeft === 1 && revealed.length <= 1 && nonSpaceIndices.length > 4) {
+  } else if (missesSoFar >= 2 && revealed.length <= 1 && nonSpaceIndices.length > 4) {
     const nextHintIdx = nonSpaceIndices[Math.floor(nonSpaceIndices.length / 2)];
     if (!revealed.includes(nextHintIdx)) {
       revealed = [...revealed, nextHintIdx];
+    }
+  } else if (
+    maxGuesses === 5 &&
+    nextGuessesLeft <= 2 &&
+    revealed.length === 2 &&
+    nonSpaceIndices.length > 6
+  ) {
+    const lastHintIdx = nonSpaceIndices[nonSpaceIndices.length - 1];
+    if (!revealed.includes(lastHintIdx)) {
+      revealed = [...revealed, lastHintIdx];
     }
   }
 
@@ -617,7 +629,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
     usedWords: Array.from(new Set([...priorUsed, wordUpper])),
     strokes: [],
     guesses: [],
-    guessesLeft: DOODLE_MAX_GUESSES,
+    guessesLeft: getMaxGuessesForDifficulty(nextDifficulty),
     roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
     revealedHintIndices: [],
     lastRoundOutcome: undefined,

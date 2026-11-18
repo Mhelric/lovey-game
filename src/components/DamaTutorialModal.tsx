@@ -106,9 +106,9 @@ const DOODLE_STEPS: readonly TutorialStep[] = [
   },
   {
     badge: 'Doodle Clash • Step 2 of 3',
-    title: '3 Guesses After Drawing Ends',
+    title: '3 Lives (Easy/Med) • 5 Lives (Hard/Final)',
     description:
-      'Once the Drawer finishes their masterpiece, the Guesser gets 3 tries to guess the secret word!',
+      'Once the Drawer finishes, the Guesser gets 3 tries on Easy/Medium and 5 tries on Hard/Final to guess the secret word!',
     tip: 'Missing a try unlocks a helpful letter hint in the word blanks.',
   },
   {
