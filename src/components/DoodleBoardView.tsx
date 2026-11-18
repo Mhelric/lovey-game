@@ -11,13 +11,14 @@ import {
   applyUndoDoodleStroke,
   DOODLE_MAX_GUESSES,
   DOODLE_PALETTE,
+  DOODLE_ROUND_TIME_SEC,
   DOODLE_STROKE_WIDTHS,
   DoodleGameState,
   DoodlePoint,
   DoodleStroke,
-  DoodleWordOption,
   getDoodleDifficultyInfo,
   getMaskedWordDisplay,
+  recordUsedDoodleWords,
 } from '../engines/doodleEngine';
 import {
   ClearCanvasIcon,
@@ -111,14 +112,40 @@ export function DoodleBoardView({
   const diffInfo = getDoodleDifficultyInfo(gameState.round);
   const guessesLeft = gameState.guessesLeft ?? DOODLE_MAX_GUESSES;
 
-  // 1-Phone Handover Pause before Word Selection & Alarm states
+  // 1-Phone Handover Privacy Curtain before Drawing & Alarm states
   const [prePickHandoverActive, setPrePickHandoverActive] = useState<boolean>(
-    () => passAndPlay && gameState.phase === 'word_selection'
+    () =>
+      passAndPlay &&
+      (gameState.phase === 'word_selection' ||
+        (gameState.phase === 'drawing' &&
+          gameState.strokes.length === 0 &&
+          gameState.roundSecondsLeft === DOODLE_ROUND_TIME_SEC))
   );
   const [prePickCountdown, setPrePickCountdown] = useState<number>(10);
   const [guesserHandoverModal, setGuesserHandoverModal] = useState<boolean>(false);
   const prevPhaseRef = useRef(gameState.phase);
-  const prevRoundRef = useRef(gameState.round);
+  const prevMatchRoundRef = useRef(`${gameState.matchSeed}-${gameState.round}`);
+
+  // Record every seen word on both Drawer and Guesser devices to prevent repeats
+  useEffect(() => {
+    if (gameState.matchSeed === 202612) return;
+    recordUsedDoodleWords([
+      gameState.selectedWord,
+      ...(gameState.usedWords ?? []),
+    ]);
+  }, [gameState.matchSeed, gameState.selectedWord, gameState.usedWords]);
+
+  // Legacy savestate safeguard: auto-advance any saved match stuck in 'word_selection'
+  useEffect(() => {
+    if (gameState.phase === 'word_selection' && gameState.wordChoices.length > 0) {
+      const isAuthoritative = passAndPlay
+        ? mySlot === 'p1'
+        : mySlot === gameState.drawerSlot;
+      if (isAuthoritative) {
+        onCommitState(applySelectDoodleWord(gameState, gameState.wordChoices[0]));
+      }
+    }
+  }, [gameState, passAndPlay, mySlot, onCommitState]);
 
   // In 2-Phone Live Mode (!passAndPlay), ensure handover popups never display
   useEffect(() => {
@@ -128,20 +155,30 @@ export function DoodleBoardView({
     }
   }, [passAndPlay]);
 
-  // Trigger 10s handover privacy curtain for Drawer when starting word_selection in 1-Phone Pass & Play
+  // Trigger 10s handover privacy curtain for Drawer when starting a fresh round in 1-Phone Pass & Play
   useEffect(() => {
+    const matchRoundKey = `${gameState.matchSeed}-${gameState.round}`;
     if (
       passAndPlay &&
-      gameState.phase === 'word_selection' &&
-      (prevPhaseRef.current !== 'word_selection' || prevRoundRef.current !== gameState.round)
+      gameState.phase === 'drawing' &&
+      gameState.strokes.length === 0 &&
+      gameState.roundSecondsLeft === DOODLE_ROUND_TIME_SEC &&
+      prevMatchRoundRef.current !== matchRoundKey
     ) {
       setPrePickHandoverActive(true);
       setPrePickCountdown(10);
     } else if (!passAndPlay) {
       setPrePickHandoverActive(false);
     }
-    prevRoundRef.current = gameState.round;
-  }, [passAndPlay, gameState.phase, gameState.round]);
+    prevMatchRoundRef.current = matchRoundKey;
+  }, [
+    passAndPlay,
+    gameState.matchSeed,
+    gameState.phase,
+    gameState.round,
+    gameState.strokes.length,
+    gameState.roundSecondsLeft,
+  ]);
 
   // Decrement 10s pre-pick countdown (paused while first-turn shuffle is loading/playing)
   useEffect(() => {
@@ -175,9 +212,16 @@ export function DoodleBoardView({
     prevPhaseRef.current = gameState.phase;
   }, [gameState.phase, passAndPlay]);
 
-  // 60s Drawing Timer tick effect: Drawer ticks the timer (or P1 in passAndPlay)
+  // 60s Drawing Timer tick effect: paused during shuffle roulette or 1-Phone handover curtain
   useEffect(() => {
-    if (gameState.phase !== 'drawing' || isPaused) return;
+    if (
+      gameState.phase !== 'drawing' ||
+      isPaused ||
+      isShuffling ||
+      (passAndPlay && prePickHandoverActive)
+    ) {
+      return;
+    }
     const isMasterTick = passAndPlay ? mySlot === 'p1' : mySlot === gameState.drawerSlot;
     if (!isMasterTick) return;
 
@@ -186,7 +230,15 @@ export function DoodleBoardView({
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [gameState, mySlot, passAndPlay, isPaused, onCommitState]);
+  }, [
+    gameState,
+    mySlot,
+    passAndPlay,
+    isPaused,
+    isShuffling,
+    prePickHandoverActive,
+    onCommitState,
+  ]);
 
   // Clear active touch state if phase leaves 'drawing'
   useEffect(() => {
@@ -292,12 +344,6 @@ export function DoodleBoardView({
     onCommitState(next);
   };
 
-  const handleWordSelect = (option: DoodleWordOption) => {
-    playTapPop();
-    const next = applySelectDoodleWord(gameState, option);
-    onCommitState(next);
-  };
-
   const handleGuessSubmit = (e?: Event) => {
     e?.preventDefault();
     const text = guessInputText.trim();
@@ -380,44 +426,7 @@ export function DoodleBoardView({
             </div>
           </div>
 
-          {/* Phase 1: Word Selection - Main Board View */}
-          {gameState.phase === 'word_selection' ? (
-            <div className="doodle-phase-card anim-fade-scale">
-              <div className="doodle-waiting-box">
-                <div className="doodle-waiting-avatar-bounce">
-                  <CatAvatarSvg
-                    breed={drawerAvatar.breed}
-                    accessory={drawerAvatar.accessory}
-                    size={56}
-                  />
-                </div>
-                <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
-                  Round {gameState.round}: {diffInfo.label} Stage
-                </span>
-                <h3 className="doodle-waiting-title">
-                  {isDrawer
-                    ? `Pick your secret word, ${drawerName}!`
-                    : `${drawerName} is picking a secret word...`}
-                </h3>
-                <p className="doodle-waiting-sub">
-                  Drawer gets 60s to draw, then guesser gets 3 guesses!
-                </p>
-                {isDrawer && !prePickHandoverActive && (
-                  <button
-                    type="button"
-                    className="vibrant-play-btn doodle-reopen-pick-btn sticker-press"
-                    onClick={() => {
-                      // Modal is open by default
-                    }}
-                    style={{ marginTop: '8px', minWidth: '160px', height: '38px', fontSize: '12px' }}
-                  >
-                    <PencilIcon size={14} />
-                    <span>Choose Word</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : gameState.phase === 'round_summary' ? (
+          {gameState.phase === 'round_summary' ? (
             /* Phase 3: Round Summary */
             <div className="doodle-phase-card anim-fade-scale">
               <div className="doodle-summary-content">
@@ -482,7 +491,9 @@ export function DoodleBoardView({
                     <div className="doodle-drawer-word-wrap">
                       <span className="doodle-banner-label">DRAW:</span>
                       <strong className="doodle-banner-word">
-                        {gameState.selectedWord}
+                        {passAndPlay && (prePickHandoverActive || isShuffling)
+                          ? '???'
+                          : gameState.selectedWord}
                       </strong>
                     </div>
                     <button
@@ -805,7 +816,7 @@ export function DoodleBoardView({
 
       {/* Full-Screen Modals (placed outside table-stage so they cover the entire viewport & block background clicks) */}
 
-      {/* 1-Phone Mode Privacy Handover Curtain before Word Selection (hidden while shuffle roulette is active) */}
+      {/* 1-Phone Mode Privacy Handover Curtain before Drawing (hidden while shuffle roulette is active) */}
       {passAndPlay && prePickHandoverActive && !isShuffling && (
         <div
           className="modal-backdrop doodle-handover-modal-backdrop"
@@ -830,7 +841,7 @@ export function DoodleBoardView({
               Pass Phone to {drawerName}!
             </h3>
             <p className="doodle-handover-desc">
-              {drawerName} is picking the secret word for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
+              A random secret word is ready for Round {gameState.round}. Keep the screen hidden from {guesserName}! Starting in <strong>{prePickCountdown}s</strong>...
             </p>
             <div className="popup-btn-row stacked">
               <button
@@ -842,58 +853,9 @@ export function DoodleBoardView({
                 }}
                 autoFocus
               >
-                <span>I am {drawerName} — Pick Secret Word</span>
+                <span>I am {drawerName} — Show Secret Word &amp; Draw</span>
                 <PencilIcon size={16} />
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Dedicated Word Selection Popup Modal (waits for shuffle roulette to finish!) */}
-      {gameState.phase === 'word_selection' && !prePickHandoverActive && isDrawer && !isShuffling && (
-        <div
-          className="modal-backdrop doodle-word-modal-backdrop"
-          onClick={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-        >
-          <div
-            className="doodle-word-picker-modal anim-fade-scale"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="doodle-modal-cat-ring">
-              <CatAvatarSvg
-                breed={drawerAvatar.breed}
-                accessory={drawerAvatar.accessory}
-                size={50}
-              />
-            </div>
-            <div className="doodle-modal-heading">
-              <span className={`doodle-diff-stage-pill diff-${diffInfo.id}`}>
-                Round {gameState.round}: {diffInfo.label} Stage
-              </span>
-              <h3 className="doodle-modal-title">Pick a Secret Word!</h3>
-              <p className="doodle-modal-desc">
-                You get 60s to draw it before {guesserName} gets 3 guesses.
-              </p>
-            </div>
-
-            <div className="doodle-word-choices-modal-grid">
-              {gameState.wordChoices.map((opt) => (
-                <button
-                  key={opt.word}
-                  type="button"
-                  className="doodle-word-choice-card sticker-press"
-                  onClick={() => handleWordSelect(opt)}
-                >
-                  <span className="doodle-word-text">{opt.word}</span>
-                  <span className="doodle-word-hint-text">
-                    {opt.word.replace(/ /g, '').length} letters
-                  </span>
-                </button>
-              ))}
             </div>
           </div>
         </div>

@@ -99,9 +99,9 @@ const UNO_STEPS: readonly TutorialStep[] = [
 const DOODLE_STEPS: readonly TutorialStep[] = [
   {
     badge: 'Doodle Clash • Step 1 of 3',
-    title: '60s to Draw Your Secret Word',
+    title: '60s to Draw Your Random Word',
     description:
-      'Pick 1 of 3 words for the round (Easy → Medium → Hard → Final) and sketch it in 60 seconds using the touch dot guide!',
+      'Get a surprise random secret word each round (Easy → Medium → Hard → Final) and sketch it in 60 seconds using the touch dot guide!',
     tip: 'Tap the green Done button anytime to finish drawing early and pass to the Guesser.',
   },
   {

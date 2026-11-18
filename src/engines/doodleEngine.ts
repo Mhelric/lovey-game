@@ -1,12 +1,24 @@
 import { PlayerSlot } from '../types/arcade';
 
-function mulberry32(seed: number): () => number {
-  return function () {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+const STORAGE_USED_WORDS_KEY = 'lovey_doodle_used_words_v1';
+const MAX_STORED_USED_WORDS = 600;
+
+function cryptoRandomFloat(): number {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    return buf[0] / 4294967296;
+  }
+  return Math.random();
+}
+
+function shuffleWithCrypto<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(cryptoRandomFloat() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 export type DoodleDifficulty = 'easy' | 'medium' | 'hard' | 'final';
@@ -49,6 +61,7 @@ export interface DoodleGameState {
   turn: PlayerSlot;
   wordChoices: DoodleWordOption[];
   selectedWord: string | null;
+  usedWords?: string[];
   strokes: DoodleStroke[];
   guesses: DoodleGuessAttempt[];
   guessesLeft: number; // 3 guesses per round in 'guessing' phase
@@ -98,37 +111,201 @@ export function getDoodleDifficultyInfo(round: number): {
 }
 
 const RAW_DOODLE_WORDS: Record<DoodleDifficulty, string> = {
-  easy: 'APPLE|SUN|MOON|STAR|TREE|EGG|DONUT|PIZZA|FLOWER|CLOUD|HEART|BALLOON|BOOK|HAT|COOKIE|CANDLE|KEY|LOLLIPOP|BANANA|MUSHROOM|FISH|LEAF|CUP|SPOON|FORK|SOCK|SHOE|DOOR|HOUSE|CAR|BOAT|BONE|BELL|GIFT|RING|CHERRY|PEAR|GRAPES|CARROT|BREAD|CHEESE|PENCIL|BROOM|LADDER|BOW|CHAIR|BED|LAMP|BALL|CORN|CAKE|PIE|BOWL|SOAP|COMB|BOOT|COAT|GLOVE|DRUM|FLAG|COIN|WORM|BIRD|ANT|PIG|COW|HEN|DOG|MOUSE|KITE|CROWN|CLOCK',
+  easy: 'ACORN|ANCHOR|BALLOON|BANANA|CACTUS|CAMERA|CANDLE|COMPASS|COOKIE|CROWN|DONUT|GUITAR|IGLOO|LANTERN|MUSHROOM|PRETZEL',
   medium:
-    'BURGER|ICE CREAM|WATERMELON|TACO|RABBIT|TURTLE|DUCK|SNAIL|BUTTERFLY|UMBRELLA|GUITAR|SUNGLASSES|RAINBOW|SNOWMAN|CACTUS|ROCKET|CAMERA|PANCAKE|CUPCAKE|PRETZEL|PINEAPPLE|STRAWBERRY|AVOCADO|CROISSANT|FROG|BEE|LADYBUG|OWL|SHARK|WHALE|CRAB|STARFISH|ANCHOR|COMPASS|LANTERN|TROPHY|MAGNET|HAMMER|WRENCH|FEATHER|IGLOO|TENT|WAFFLE|NOODLES|HOTDOG|MUFFIN|COCONUT|LEMON|PEACH|MONKEY|SHEEP|HORSE|SNAKE|SPIDER|PIANO|VIOLIN|TRUMPET|TEAPOT|FRYING PAN|MITTENS|SCARF|NECKTIE|DIAMOND|SHIELD|SWORD|BOW AND ARROW|SKULL|GHOST|ROBOT|UFO',
-  hard: 'ELEPHANT|GIRAFFE|PENGUIN|OCTOPUS|DOLPHIN|PANDA|BICYCLE|HELICOPTER|SAILBOAT|VOLCANO|ISLAND|CAMPFIRE|BACKPACK|SCISSORS|POPCORN|SUSHI|HEADPHONES|TELESCOPE|FLAMINGO|KANGAROO|CROCODILE|PEACOCK|SEAHORSE|JELLYFISH|SCORPION|CHAMELEON|HEDGEHOG|KOALA|UNICORN|TRACTOR|AMBULANCE|FIRE TRUCK|SKATEBOARD|PARACHUTE|BINOCULARS|MICROSCOPE|HOURGLASS|STETHOSCOPE|LIGHTBULB|PINECONE|WINDMILL|SNOWFLAKE|TORNADO|LOBSTER|SQUIRREL|RACCOON|BAT|CAMEL|ZEBRA|RHINO|HIPPO|GORILLA|OSTRICH|PELICAN|TOUCAN|PORCUPINE|SLOTH|PLATYPUS|NARWHAL|WALRUS|TYPEWRITER|SEWING MACHINE|BOOMBOX|JOYSTICK|ROLLER SKATES|SURFBOARD|SNOWBOARD|ANCHOR CHAIN|CUCKOO CLOCK|GLOBE',
+    'AIRPLANE|AVOCADO|BACKPACK|BICYCLE|BINOCULARS|BOOMERANG|BUTTERFLY|CAMPFIRE|CHAMELEON|CROISSANT|CUPCAKE|DINOSAUR|DOLPHIN|FLAMINGO|HAMMOCK|PINEAPPLE',
+  hard: 'ACCORDION|ASTRONAUT|BATTLESHIP|BLACKSMITH|CATAPULT|CHANDELIER|CLAW MACHINE|CUCKOO CLOCK|DREAMCATCHER|EXCAVATOR|FIRE HYDRANT|GRAMOPHONE|HELICOPTER|JELLYFISH|MICROSCOPE|SEAHORSE',
   final:
-    'DINOSAUR|DRAGON|MERMAID|ASTRONAUT|CASTLE|LIGHTHOUSE|TREEHOUSE|ROLLERCOASTER|TREASURE CHEST|HOT AIR BALLOON|SUBMARINE|TIME MACHINE|WATERFALL|CHANDELIER|SANDCASTLE|FERRIS WHEEL|PIRATE SHIP|SPACE STATION|ALIEN UFO|SCARECROW|GINGERBREAD HOUSE|SNOW GLOBE|CAROUSEL|SOLAR SYSTEM|BOWLING ALLEY|ESPRESSO MACHINE|GRAND PIANO|GRAMOPHONE|VENDING MACHINE|CLAW MACHINE|MAGIC CARPET|WISHING WELL|SUSPENSION BRIDGE|EGYPTIAN PYRAMID|DEEP SEA DIVER|HAUNTED HOUSE|LOG CABIN|SKYSCRAPER|COLOSSEUM|EIFFEL TOWER|STATUE OF LIBERTY|GREAT WALL|TAJ MAHAL|MOUNT RUSHMORE|TROJAN HORSE|LOCH NESS MONSTER|YETI|PHOENIX|PEGASUS|GRIFFIN|CENTAUR|WEREWOLF|VAMPIRE|WIZARD TOWER|ALCHEMIST LAB|STEAM TRAIN|CABLE CAR|ZEPPELIN|HOVERCRAFT|MOON ROVER',
+    'ALCHEMIST LAB|AURORA BOREALIS|CAROUSEL HORSE|COLOSSEUM|DEEP SEA DIVER|EGYPTIAN PYRAMID|EIFFEL TOWER|FERRIS WHEEL|GINGERBREAD HOUSE|HOT AIR BALLOON|LOCH NESS|MAGIC CARPET|PIRATE SHIP|ROLLERCOASTER|SPACE STATION|TREASURE CHEST',
 };
 
-export const DOODLE_WORDS: readonly DoodleWordOption[] = (
-  ['easy', 'medium', 'hard', 'final'] as const
-).flatMap((difficulty) =>
-  RAW_DOODLE_WORDS[difficulty].split('|').map((word) => ({
+const TIERS: readonly DoodleDifficulty[] = ['easy', 'medium', 'hard', 'final'];
+
+const runtimeWordPools: Record<DoodleDifficulty, string[]> = {
+  easy: RAW_DOODLE_WORDS.easy.split('|'),
+  medium: RAW_DOODLE_WORDS.medium.split('|'),
+  hard: RAW_DOODLE_WORDS.hard.split('|'),
+  final: RAW_DOODLE_WORDS.final.split('|'),
+};
+
+export let DOODLE_WORDS: DoodleWordOption[] = TIERS.flatMap((difficulty) =>
+  runtimeWordPools[difficulty].map((word) => ({
     word,
     difficulty,
   }))
 );
 
+let externalDictReady = false;
+let externalDictPromise: Promise<void> | null = null;
+
+export function loadExternalDoodleDictionary(): Promise<void> {
+  if (externalDictReady || typeof window === 'undefined' || typeof fetch !== 'function') {
+    return Promise.resolve();
+  }
+  if (externalDictPromise) {
+    return externalDictPromise;
+  }
+
+  externalDictPromise = (async () => {
+    try {
+      const res = await fetch('/doodle-words.json');
+      if (!res.ok) return;
+      const data = (await res.json()) as Partial<Record<DoodleDifficulty, unknown>>;
+      const seen = new Set<string>();
+
+      for (const tier of TIERS) {
+        const existing = runtimeWordPools[tier];
+        const incoming = Array.isArray(data[tier]) ? data[tier] : [];
+        const merged: string[] = [];
+
+        for (const raw of [...incoming, ...existing]) {
+          if (typeof raw !== 'string') continue;
+          const clean = raw.trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/\s+/g, ' ');
+          if (!clean || seen.has(clean)) continue;
+          seen.add(clean);
+          merged.push(clean);
+        }
+
+        if (merged.length > 0) {
+          runtimeWordPools[tier] = merged;
+        }
+      }
+
+      DOODLE_WORDS = TIERS.flatMap((difficulty) =>
+        runtimeWordPools[difficulty].map((word) => ({
+          word,
+          difficulty,
+        }))
+      );
+      externalDictReady = true;
+    } catch {
+      // Silent fallback to built-in emergency dictionary when offline/unavailable
+    } finally {
+      externalDictPromise = null;
+    }
+  })();
+
+  return externalDictPromise;
+}
+
+if (typeof window !== 'undefined' && typeof fetch === 'function') {
+  void loadExternalDoodleDictionary();
+}
+
+function loadUsedWordsHistory(): string[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_USED_WORDS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
+      .map((w) => w.trim().toUpperCase());
+  } catch {
+    return [];
+  }
+}
+
+function saveUsedWordsHistory(words: string[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(
+      STORAGE_USED_WORDS_KEY,
+      JSON.stringify(words.slice(-MAX_STORED_USED_WORDS))
+    );
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function recordUsedDoodleWords(
+  words: readonly (string | null | undefined)[]
+): void {
+  const incoming = words
+    .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
+    .map((w) => w.trim().toUpperCase());
+  if (incoming.length === 0) return;
+
+  const existing = loadUsedWordsHistory();
+  const seen = new Set(existing);
+  let changed = false;
+
+  for (const w of incoming) {
+    if (!seen.has(w)) {
+      seen.add(w);
+      existing.push(w);
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    saveUsedWordsHistory(existing);
+  }
+}
+
+export function pickRandomUniqueWord(
+  difficulty: DoodleDifficulty = 'easy',
+  matchUsedWords: readonly string[] = [],
+  persist = true
+): DoodleWordOption {
+  const matchUsedSet = new Set(
+    matchUsedWords
+      .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
+      .map((w) => w.trim().toUpperCase())
+  );
+
+  const historyList = loadUsedWordsHistory();
+  const historySet = new Set(historyList);
+  const tierPool = runtimeWordPools[difficulty] ?? [];
+
+  let candidates = tierPool.filter(
+    (w) => !matchUsedSet.has(w) && !historySet.has(w)
+  );
+
+  if (candidates.length === 0) {
+    // All words in this tier were seen across previous matches; reset this tier's cross-match history while strictly preserving current matchUsedSet
+    const tierSet = new Set(tierPool);
+    const prunedHistory = historyList.filter((w) => !tierSet.has(w) || matchUsedSet.has(w));
+    if (persist) {
+      saveUsedWordsHistory(prunedHistory);
+    }
+    candidates = tierPool.filter((w) => !matchUsedSet.has(w));
+  }
+
+  if (candidates.length === 0) {
+    const allWords = TIERS.flatMap((t) => runtimeWordPools[t]);
+    candidates = allWords.filter((w) => !matchUsedSet.has(w));
+    if (candidates.length === 0) {
+      candidates = allWords;
+    }
+  }
+
+  const shuffled = shuffleWithCrypto(candidates);
+  const chosenWord = shuffled[Math.floor(cryptoRandomFloat() * shuffled.length)];
+
+  if (persist && chosenWord) {
+    recordUsedDoodleWords([chosenWord]);
+  }
+
+  return {
+    word: chosenWord,
+    difficulty,
+  };
+}
+
 export function pickRandomWords(
-  seed: number,
+  _seed: number,
   count = 3,
   difficulty: DoodleDifficulty = 'easy'
 ): DoodleWordOption[] {
-  const rand = mulberry32(seed);
-  const filtered = DOODLE_WORDS.filter((w) => w.difficulty === difficulty);
-  const pool = filtered.length >= count ? [...filtered] : [...DOODLE_WORDS];
   const selected: DoodleWordOption[] = [];
+  const pickedSoFar: string[] = [];
 
-  for (let i = 0; i < count && pool.length > 0; i++) {
-    const idx = Math.floor(rand() * pool.length);
-    selected.push(pool[idx]);
-    pool.splice(idx, 1);
+  for (let i = 0; i < count; i++) {
+    const next = pickRandomUniqueWord(difficulty, pickedSoFar, false);
+    selected.push(next);
+    pickedSoFar.push(next.word);
   }
 
   return selected;
@@ -139,7 +316,9 @@ export function createInitialDoodleState(
   startingDrawer: PlayerSlot = 'p1'
 ): DoodleGameState {
   const difficulty: DoodleDifficulty = 'easy';
-  const choices = pickRandomWords(seed, 3, difficulty);
+  const shouldPersist = seed !== 202612;
+  const chosen = pickRandomUniqueWord(difficulty, [], shouldPersist);
+  const wordUpper = chosen.word.toUpperCase();
   const guesser = startingDrawer === 'p1' ? 'p2' : 'p1';
 
   return {
@@ -147,12 +326,13 @@ export function createInitialDoodleState(
     round: 1,
     totalRounds: DOODLE_TOTAL_ROUNDS,
     difficulty,
-    phase: 'word_selection',
+    phase: 'drawing',
     drawerSlot: startingDrawer,
     guesserSlot: guesser,
     turn: startingDrawer,
-    wordChoices: choices,
-    selectedWord: null,
+    wordChoices: [chosen],
+    selectedWord: wordUpper,
+    usedWords: [wordUpper],
     strokes: [],
     guesses: [],
     guessesLeft: DOODLE_MAX_GUESSES,
@@ -168,7 +348,6 @@ export function isDoodleInProgress(state: DoodleGameState | null | undefined): b
   if (!state || state.winner) return false;
   return Boolean(
     state.round > 1 ||
-    state.phase !== 'word_selection' ||
     state.strokes.length > 0 ||
     state.guesses.length > 0 ||
     state.p1Score > 0 ||
@@ -181,12 +360,17 @@ export function applySelectDoodleWord(
   wordOption: DoodleWordOption
 ): DoodleGameState {
   if (state.phase !== 'word_selection') return state;
+  const wordUpper = wordOption.word.trim().toUpperCase();
+  const nextUsed = Array.from(
+    new Set([...(state.usedWords ?? []), wordUpper].filter(Boolean))
+  );
 
   return {
     ...state,
     phase: 'drawing',
     turn: state.drawerSlot,
-    selectedWord: wordOption.word.toUpperCase(),
+    selectedWord: wordUpper,
+    usedWords: nextUsed,
     strokes: [],
     guesses: [],
     guessesLeft: DOODLE_MAX_GUESSES,
@@ -407,19 +591,30 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
   const nextDifficulty = getDoodleDifficultyInfo(nextRound).id;
   const nextDrawer: PlayerSlot = state.drawerSlot === 'p1' ? 'p2' : 'p1';
   const nextGuesser: PlayerSlot = nextDrawer === 'p1' ? 'p2' : 'p1';
-  const nextSeed = (state.matchSeed + nextRound * 7919) % 1000000;
-  const nextChoices = pickRandomWords(nextSeed, 3, nextDifficulty);
+  const priorUsed = Array.from(
+    new Set(
+      [
+        ...(state.usedWords ?? []),
+        ...(state.selectedWord ? [state.selectedWord] : []),
+      ]
+        .map((w) => w.trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
+  const chosen = pickRandomUniqueWord(nextDifficulty, priorUsed, true);
+  const wordUpper = chosen.word.toUpperCase();
 
   return {
     ...state,
     round: nextRound,
     difficulty: nextDifficulty,
-    phase: 'word_selection',
+    phase: 'drawing',
     drawerSlot: nextDrawer,
     guesserSlot: nextGuesser,
     turn: nextDrawer,
-    wordChoices: nextChoices,
-    selectedWord: null,
+    wordChoices: [chosen],
+    selectedWord: wordUpper,
+    usedWords: Array.from(new Set([...priorUsed, wordUpper])),
     strokes: [],
     guesses: [],
     guessesLeft: DOODLE_MAX_GUESSES,

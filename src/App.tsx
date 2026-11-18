@@ -58,6 +58,7 @@ import {
   createInitialDoodleState,
   DoodleGameState,
   DoodleStroke,
+  loadExternalDoodleDictionary,
 } from './engines/doodleEngine';
 import {
   checkCoupleRoomExists,
@@ -416,7 +417,6 @@ function isDoodleMatchActive(s: DoodleGameState | null | undefined): boolean {
   return Boolean(
     s.matchSeed !== 202612 ||
     s.round > 1 ||
-    s.selectedWord ||
     (s.strokes && s.strokes.length > 0) ||
     (s.guesses && s.guesses.length > 0) ||
     s.p1Score > 0 ||
@@ -1379,6 +1379,7 @@ export function App() {
         setUnoState(nextUno);
         saveLocalGameSavestate('', 'uno', nextUno, true);
       } else {
+        await loadExternalDoodleDictionary();
         const saved = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
         const nextDoodle = !forceNewMatch && saved && isDoodleMatchActive(saved)
           ? saved
@@ -1407,6 +1408,7 @@ export function App() {
       setUnoState(nextUno);
       broadcastAndPersistMatch('uno', nextUno.turn, nextUno.matchSeed, nextUno, nextUno.winner);
     } else {
+      await loadExternalDoodleDictionary();
       const nextDoodle = !forceNewMatch && isDoodleMatchActive(doodleState)
         ? doodleState
         : createInitialDoodleState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
@@ -1580,6 +1582,7 @@ export function App() {
   };
 
   const handleResetDoodleMatch = async () => {
+    await loadExternalDoodleDictionary();
     const newSeed = Math.floor(100000 + Math.random() * 899999);
     const fresh = createInitialDoodleState(newSeed, pickFairStartingTurn());
     setDoodleState(fresh);
@@ -2181,7 +2184,8 @@ export function App() {
                     unoState.discardPile.length === 1
                   : roomData.current_mode === 'doodle'
                   ? doodleState.round === 1 &&
-                    doodleState.phase === 'word_selection' &&
+                    doodleState.strokes.length === 0 &&
+                    doodleState.guesses.length === 0 &&
                     !doodleState.winner &&
                     doodleState.p1Score === 0 &&
                     doodleState.p2Score === 0
