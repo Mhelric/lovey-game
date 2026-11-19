@@ -114,6 +114,13 @@ export function HomeMenuView({
     (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
       ?.isNativePlatform?.()
   );
+  const isEmbedded = (() => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
   const [hotspotTabActive, setHotspotTabActive] = useState(hotspotMode !== 'none');
   const isHotspotView = hotspotTabActive || hotspotMode !== 'none';
   const [HotspotPanelComp, setHotspotPanelComp] = useState<any>(null);
@@ -126,7 +133,7 @@ export function HomeMenuView({
     }
   }, [isHotspotView, HotspotPanelComp]);
   const [apkModalOpen, setApkModalOpen] = useState<boolean>(() => {
-    if (isNativeApk) return false;
+    if (isNativeApk || isEmbedded) return false;
     try {
       return localStorage.getItem('lovey_apk_promo_dismissed') !== '1';
     } catch {
