@@ -318,11 +318,7 @@ export function HomeMenuView({
             }}
             aria-label="Download Android APK"
             title="Download Android APK"
-            style={{
-              background: '#fff0f5',
-              border: '2px solid #ff8fab',
-              color: '#d90429',
-            }}
+            style={{ color: '#FF5C8F' }}
           >
             <svg
               width="20"

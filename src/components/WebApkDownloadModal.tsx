@@ -132,24 +132,15 @@ export default function WebApkDownloadModal({ onClose }: WebApkDownloadModalProp
             href={apkUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-primary"
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              fontSize: '0.85rem',
-              textAlign: 'center',
-              textDecoration: 'none',
-              display: 'block',
-              boxSizing: 'border-box',
-            }}
+            className="vibrant-play-btn compact sticker-press"
+            style={{ textDecoration: 'none' }}
             onClick={onClose}
           >
             Download LoveyGame.apk ({sizeLabel})
           </a>
           <button
             type="button"
-            className="btn-secondary"
-            style={{ width: '100%', padding: '8px 14px', fontSize: '0.78rem' }}
+            className="saved-confirm-fresh-btn sticker-press"
             onClick={onClose}
           >
             Continue on Web

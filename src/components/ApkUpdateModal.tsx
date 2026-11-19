@@ -211,16 +211,14 @@ export default function ApkUpdateModal() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
             type="button"
-            className="btn-primary"
-            style={{ width: '100%', padding: '10px 14px', fontSize: '0.85rem' }}
+            className="vibrant-play-btn compact sticker-press"
             onClick={() => void Browser.open({ url: updateInfo.apkUrl })}
           >
             Download &amp; Install Update
           </button>
           <button
             type="button"
-            className="btn-secondary"
-            style={{ width: '100%', padding: '8px 14px', fontSize: '0.78rem' }}
+            className="saved-confirm-fresh-btn sticker-press"
             onClick={() => setModalOpen(false)}
           >
             Later

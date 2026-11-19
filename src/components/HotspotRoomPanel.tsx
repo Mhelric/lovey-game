@@ -41,8 +41,7 @@ export default function HotspotRoomPanel({
           </span>
           <button
             type="button"
-            className="btn-secondary"
-            style={{ padding: '5px 12px', fontSize: '0.72rem' }}
+            className="leave-room-mini-btn sticker-press"
             onClick={() => {
               playTapPop();
               onLeaveHotspotMode?.();
@@ -68,8 +67,7 @@ export default function HotspotRoomPanel({
           </span>
           <button
             type="button"
-            className="btn-secondary"
-            style={{ padding: '5px 12px', fontSize: '0.72rem' }}
+            className="leave-room-mini-btn sticker-press"
             onClick={() => {
               playTapPop();
               onLeaveHotspotMode?.();
@@ -95,16 +93,16 @@ export default function HotspotRoomPanel({
           <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
             <button
               type="button"
-              className="btn-primary sticker-press"
-              style={{ flex: 1, padding: '8px 10px', fontSize: '0.78rem' }}
+              className="vibrant-play-btn compact sticker-press"
+              style={{ flex: 1, minHeight: '38px', fontSize: '13px' }}
               onClick={() => onStartHotspotHost?.()}
             >
               Host Hotspot
             </button>
             <button
               type="button"
-              className="btn-secondary sticker-press"
-              style={{ flex: 1, padding: '8px 10px', fontSize: '0.78rem' }}
+              className="saved-confirm-fresh-btn sticker-press"
+              style={{ flex: 1, minHeight: '38px', fontSize: '13px' }}
               onClick={() => onJoinHotspotHost?.()}
             >
               Join Hotspot
