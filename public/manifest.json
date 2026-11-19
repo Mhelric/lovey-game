@@ -10,9 +10,9 @@
   "theme_color": "#ff758f",
   "icons": [
     {
-      "src": "/cat-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/game-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

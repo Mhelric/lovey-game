@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./public/cat-icon.svg" alt="Lovey Game Cat Avatar Logo" width="110" />
+<img src="./public/game-icon.png" alt="Lovey Game Cat Avatar Logo" width="128" />
 
 # 🐾 Lovey Game — Cartoon Cat Couple's Arcade 👑
 

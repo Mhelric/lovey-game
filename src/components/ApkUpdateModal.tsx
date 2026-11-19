@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
-import { CatAvatarSvg } from './CatAvatarSvg';
-import { DEFAULT_P1_AVATAR } from '../types/arcade';
 
 export interface AppVersionInfo {
   version: string;
@@ -136,25 +134,19 @@ export default function ApkUpdateModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-          <div
+          <img
+            src="/game-icon.png"
+            alt="Lovey Game Logo"
+            width={44}
+            height={44}
             style={{
               width: '44px',
               height: '44px',
               borderRadius: '14px',
-              background: '#fff0f5',
-              border: '2px solid #ff8fab',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              objectFit: 'cover',
               flexShrink: 0,
             }}
-          >
-            <CatAvatarSvg
-              breed={DEFAULT_P1_AVATAR.breed}
-              accessory={DEFAULT_P1_AVATAR.accessory}
-              size={36}
-            />
-          </div>
+          />
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2
               style={{

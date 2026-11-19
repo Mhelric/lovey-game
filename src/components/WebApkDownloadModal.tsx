@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'preact/hooks';
-import { CatAvatarSvg } from './CatAvatarSvg';
-import { DEFAULT_P1_AVATAR } from '../types/arcade';
 
 const LATEST_APK_FALLBACK_URL =
   'https://github.com/Mhelric/lovey-game/releases/latest/download/LoveyGame.apk';
@@ -63,25 +61,19 @@ export default function WebApkDownloadModal({ onClose }: WebApkDownloadModalProp
             marginBottom: '10px',
           }}
         >
-          <div
+          <img
+            src="/game-icon.png"
+            alt="Lovey Game Logo"
+            width={46}
+            height={46}
             style={{
               width: '46px',
               height: '46px',
               borderRadius: '14px',
-              background: '#fff0f5',
-              border: '2px solid #ff8fab',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              objectFit: 'cover',
               flexShrink: 0,
             }}
-          >
-            <CatAvatarSvg
-              breed={DEFAULT_P1_AVATAR.breed}
-              accessory={DEFAULT_P1_AVATAR.accessory}
-              size={38}
-            />
-          </div>
+          />
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2
               style={{
