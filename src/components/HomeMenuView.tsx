@@ -98,6 +98,37 @@ export function HomeMenuView({
   );
   const [copied, setCopied] = useState(false);
 
+  const isNativeApk = Boolean(
+    (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+      ?.isNativePlatform?.()
+  );
+  const [apkModalOpen, setApkModalOpen] = useState<boolean>(() => {
+    if (isNativeApk) return false;
+    try {
+      return localStorage.getItem('lovey_apk_promo_dismissed') !== '1';
+    } catch {
+      return false;
+    }
+  });
+  const [WebApkModalComp, setWebApkModalComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (apkModalOpen && !WebApkModalComp) {
+      void import('./WebApkDownloadModal').then((m) => {
+        setWebApkModalComp(() => m.default);
+      });
+    }
+  }, [apkModalOpen, WebApkModalComp]);
+
+  const handleCloseApkModal = () => {
+    setApkModalOpen(false);
+    try {
+      localStorage.setItem('lovey_apk_promo_dismissed', '1');
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   // Lazy Player 2 setup modal for 1-Phone mode
   const [p2SetupOpen, setP2SetupOpen] = useState(false);
   const [P2SetupComp, setP2SetupComp] = useState<any>(null);
@@ -252,7 +283,41 @@ export function HomeMenuView({
           <LoveyLogoWordmarkSvg />
         </div>
 
-        <div className="menu-top-spacer" aria-hidden="true" />
+        {isNativeApk ? (
+          <div className="menu-top-spacer" aria-hidden="true" />
+        ) : (
+          <button
+            type="button"
+            className="icon-circle-btn sticker-press"
+            onClick={() => {
+              playTapPop();
+              setApkModalOpen(true);
+            }}
+            aria-label="Download Android APK"
+            title="Download Android APK"
+            style={{
+              background: '#fff0f5',
+              border: '2px solid #ff8fab',
+              color: '#d90429',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3v12" />
+              <path d="m7 11 5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+          </button>
+        )}
       </header>
 
       {/* Center Stage: Clickable Cat(s) + Editable Room Code + Join Textbox + Play Flow */}
@@ -973,6 +1038,10 @@ export function HomeMenuView({
           onSendReaction={onSendReaction}
         />
       </footer>
+
+      {apkModalOpen && WebApkModalComp && (
+        <WebApkModalComp onClose={handleCloseApkModal} />
+      )}
     </section>
   );
 }
