@@ -68,6 +68,10 @@
 
 ## 📝 Update Logs
 
+### Offline Android Hotspot Multiplayer (`v1.0.4+`)
+- Added **Total Offline Hotspot Mode** (`HotspotSyncPlugin.java` + `hotspotService.ts`) in the Android APK: Host opens Wi-Fi Hotspot and taps **Host Hotspot**; Invited connects to the hotspot and taps **Join Hotspot** — zero room codes needed (defaults to `LOVEY`), with auto-discovery and an isolated offline `localStorage` scoreboard.
+- Added the 3-way **Online | Hotspot | 1-Phone** mode pill on the Android home screen.
+
 ### `v1.0.1` — Lightweight Android APK & In-App Self-Updater
 - Wrapped Lovey Game as a compact **`1.86 MB`** signed Capacitor Android APK (`io.loveygames.app`) tailored for low-storage devices like the Samsung Galaxy J2 Pro.
 - Added the Hugging Cartoon Cat Avatars as the Android launcher & adaptive app icon.

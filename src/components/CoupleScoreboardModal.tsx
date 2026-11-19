@@ -16,12 +16,14 @@ import { fetchMatchHistory } from '../services/supabaseService';
 interface CoupleScoreboardModalProps {
   isOpen: boolean;
   roomData: CoupleRoomRow;
+  isHotspot?: boolean;
   onClose: () => void;
 }
 
 export function CoupleScoreboardModal({
   isOpen,
   roomData,
+  isHotspot = false,
   onClose,
 }: CoupleScoreboardModalProps) {
   const [history, setHistory] = useState<MatchHistoryRow[]>([]);
@@ -30,10 +32,16 @@ export function CoupleScoreboardModal({
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
+    if (isHotspot) {
+      import('../services/hotspotService')
+        .then((m) => setHistory(m.loadHotspotHistory().slice(0, 6)))
+        .finally(() => setLoading(false));
+      return;
+    }
     fetchMatchHistory(roomData.room_code, 6)
       .then((rows) => setHistory(rows))
       .finally(() => setLoading(false));
-  }, [isOpen, roomData.room_code]);
+  }, [isOpen, roomData.room_code, isHotspot]);
 
   if (!isOpen) return null;
 

@@ -756,7 +756,20 @@ export function App() {
   const timerDurationSecRef = useRef<number>(timerDurationSec);
   timerDurationSecRef.current = timerDurationSec;
 
-  const channelRef = useRef<CoupleRealtimeChannel | null>(null);
+  const channelRef = useRef<{
+    sendBroadcast: (event: RealtimeBroadcastEvent) => void;
+    updateSlot?: (slot: PlayerSlot) => void;
+    destroy: () => void;
+  } | null>(null);
+  const [hotspotMode, setHotspotMode] = useState<'none' | 'host' | 'guest'>('none');
+  const [hotspotStatus, setHotspotStatus] = useState<
+    'idle' | 'waiting' | 'connecting' | 'connected' | 'error'
+  >('idle');
+  const [hotspotError, setHotspotError] = useState<string | null>(null);
+  const hotspotModeRef = useRef<'none' | 'host' | 'guest'>('none');
+  hotspotModeRef.current = hotspotMode;
+  const hotspotChannelRef = useRef<import('./services/hotspotService').HotspotChannel | null>(null);
+  const handleBroadcastRef = useRef<(event: RealtimeBroadcastEvent) => void>(() => {});
   const damaStateRef = useRef<DamaGameState>(damaState);
   damaStateRef.current = damaState;
   const snakesStateRef = useRef<SnakesGameState>(snakesState);
@@ -901,27 +914,7 @@ export function App() {
     updatePlayerAvatarInDb(targetRoom, slot, localAv);
 
     if (matchRow && matchRow.state_json) {
-      if (matchRow.game_mode === 'dama') {
-        const maybeDama = matchRow.state_json as DamaGameState;
-        if (Array.isArray(maybeDama.board)) {
-          setDamaState((prev) => mergeDamaSavestate(prev, maybeDama));
-        }
-      } else if (matchRow.game_mode === 'snakes') {
-        const maybeSnakes = matchRow.state_json as SnakesGameState;
-        if (typeof maybeSnakes.boardSeed === 'number') {
-          setSnakesState((prev) => mergeSnakesSavestate(prev, maybeSnakes));
-        }
-      } else if (matchRow.game_mode === 'uno') {
-        const maybeUno = matchRow.state_json as UnoGameState;
-        if (Array.isArray(maybeUno.deck)) {
-          setUnoState((prev) => mergeUnoSavestate(prev, maybeUno));
-        }
-      } else if (matchRow.game_mode === 'doodle') {
-        const maybeDoodle = matchRow.state_json as DoodleGameState;
-        if (maybeDoodle && typeof maybeDoodle.matchSeed === 'number') {
-          setDoodleState((prev) => mergeDoodleSavestate(prev, maybeDoodle));
-        }
-      }
+      applyHotspotMatchSync(matchRow);
     } else if (!localDama && !localSnakes && !localDoodle) {
       // If targetRoom has no local savestate and no database match, reset to fresh initial state
       setDamaState(createInitialDamaState('p1'));
@@ -931,10 +924,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    syncFromDatabase(roomCode);
-
-    const channel = new CoupleRealtimeChannel(roomCode, mySlot, {
-      onBroadcast: (event: RealtimeBroadcastEvent) => {
+    const onBroadcast = (event: RealtimeBroadcastEvent) => {
         if (event.type === 'reaction') {
           spawnFloatingReaction(event.reaction);
         } else if (event.type === 'avatar_update') {
@@ -1158,7 +1148,17 @@ export function App() {
             setAutoMoveNotice((prev) => (prev === notice ? null : prev));
           }, 3500);
         }
-      },
+    };
+    handleBroadcastRef.current = onBroadcast;
+
+    if (hotspotMode !== 'none') {
+      return;
+    }
+
+    syncFromDatabase(roomCode);
+
+    const channel = new CoupleRealtimeChannel(roomCode, mySlot, {
+      onBroadcast,
       onPartnerOnlineChange: (seenMap) => {
         setOnlineSeen(seenMap);
       },
@@ -1211,10 +1211,107 @@ export function App() {
   }, [
     roomCode,
     mySlot,
+    hotspotMode,
     spawnFloatingReaction,
     syncFromDatabase,
     checkAutoOpenTutorial,
   ]);
+
+  const applyHotspotMatchSync = useCallback((matchRow: {
+    game_mode: GameMode;
+    state_json: unknown;
+  }) => {
+    if (matchRow.game_mode === 'dama') {
+      const maybeDama = matchRow.state_json as DamaGameState;
+      if (Array.isArray(maybeDama?.board)) {
+        setDamaState((prev) => mergeDamaSavestate(prev, maybeDama));
+      }
+    } else if (matchRow.game_mode === 'snakes') {
+      const maybeSnakes = matchRow.state_json as SnakesGameState;
+      if (typeof maybeSnakes?.boardSeed === 'number') {
+        setSnakesState((prev) => mergeSnakesSavestate(prev, maybeSnakes));
+      }
+    } else if (matchRow.game_mode === 'uno') {
+      const maybeUno = matchRow.state_json as UnoGameState;
+      if (Array.isArray(maybeUno?.deck)) {
+        setUnoState((prev) => mergeUnoSavestate(prev, maybeUno));
+      }
+    } else if (matchRow.game_mode === 'doodle') {
+      const maybeDoodle = matchRow.state_json as DoodleGameState;
+      if (maybeDoodle && typeof maybeDoodle.matchSeed === 'number') {
+        setDoodleState((prev) => mergeDoodleSavestate(prev, maybeDoodle));
+      }
+    }
+  }, []);
+
+  const handleLeaveHotspotMode = useCallback(() => {
+    hotspotChannelRef.current?.disconnect();
+    hotspotChannelRef.current = null;
+    channelRef.current = null;
+    setHotspotMode('none');
+    setHotspotStatus('idle');
+    setHotspotError(null);
+    setPartnerJoinedSession(false);
+    setPartnerLeftModalOpen(false);
+  }, []);
+
+  const connectHotspotRole = useCallback(
+    async (role: 'host' | 'guest') => {
+      playTapPop();
+      hotspotChannelRef.current?.disconnect();
+      setHotspotError(null);
+      setPassAndPlay(false);
+      setMySlot(role === 'host' ? 'p1' : 'p2');
+      setRoomCode('LOVEY');
+      setHotspotMode(role);
+      setHotspotStatus(role === 'host' ? 'waiting' : 'connecting');
+      setPartnerJoinedSession(false);
+
+      try {
+        const mod = await import('./services/hotspotService');
+        const hsChannel = await mod.startHotspotSession({
+          role,
+          myAvatar: myAvatarRef.current,
+          onBroadcast: (ev) => handleBroadcastRef.current(ev),
+          onRoomUpdate: (r) => setRoomData(r),
+          onMatchUpdate: (m) => applyHotspotMatchSync(m),
+          onPresenceChange: (online) => {
+            setHotspotStatus(online ? 'connected' : role === 'host' ? 'waiting' : 'error');
+            setPartnerJoinedSession(online);
+            const nowTs = Date.now();
+            setOnlineSeen(
+              online
+                ? { p1: nowTs, p2: nowTs }
+                : role === 'host'
+                ? { p1: nowTs, p2: 0 }
+                : { p1: 0, p2: nowTs }
+            );
+            setPartnerLeftModalOpen(!online && activeScreenRef.current === 'play');
+          },
+          onError: (msg) => {
+            setHotspotError(msg);
+            setHotspotStatus('error');
+          },
+        });
+        if (hsChannel) {
+          hotspotChannelRef.current = hsChannel;
+          channelRef.current = {
+            sendBroadcast: (ev) => hsChannel.sendBroadcast(ev),
+            destroy: () => hsChannel.disconnect(),
+          };
+        } else {
+          setHotspotStatus('error');
+        }
+      } catch {
+        setHotspotError('Hotspot connection failed.');
+        setHotspotStatus('error');
+      }
+    },
+    [applyHotspotMatchSync]
+  );
+
+  const handleStartHotspotHost = useCallback(() => void connectHotspotRole('host'), [connectHotspotRole]);
+  const handleJoinHotspotHost = useCallback(() => void connectHotspotRole('guest'), [connectHotspotRole]);
 
   const handleChangeMyRoomCode = async (newCode: string) => {
     playTapPop();
@@ -1293,7 +1390,7 @@ export function App() {
     }
 
     window.setTimeout(() => {
-      channelRef.current?.updateSlot('p2');
+      channelRef.current?.updateSlot?.('p2');
       channelRef.current?.sendBroadcast({
         type: 'partner_joined',
         slot: 'p2',
@@ -1394,6 +1491,18 @@ export function App() {
       winner,
       sender: mySlot,
     });
+    if (hotspotModeRef.current !== 'none') {
+      hotspotChannelRef.current?.syncMatch({
+        room_code: 'LOVEY',
+        game_mode: gameMode,
+        turn,
+        board_seed: boardSeed,
+        state_json: stateJson as Record<string, unknown>,
+        winner,
+        updated_at: new Date().toISOString(),
+      });
+      return;
+    }
     await upsertActiveMatch({
       room_code: roomCode,
       game_mode: gameMode,
@@ -1487,7 +1596,15 @@ export function App() {
       slot: 'p1',
       avatar: myAvatarRef.current,
     });
-    updateRoomModeInDb(roomCode, selectedMode);
+    if (hotspotModeRef.current !== 'none') {
+      hotspotChannelRef.current?.syncRoom({
+        ...roomDataRef.current,
+        current_mode: selectedMode,
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      updateRoomModeInDb(roomCode, selectedMode);
+    }
   };
 
   const commitGameWin = async (
@@ -1500,6 +1617,18 @@ export function App() {
       ...prev,
       [winKey]: ((prev[winKey] as number) || 0) + 1,
     }));
+    if (hotspotModeRef.current !== 'none') {
+      const mod = await import('./services/hotspotService');
+      const updatedHsRoom = mod.recordHotspotMatchWin(winSlot, mode, summary);
+      hotspotChannelRef.current?.syncRoom(updatedHsRoom);
+      setRoomData((prev) => ({
+        ...updatedHsRoom,
+        p1_avatar: prev.p1_avatar,
+        p2_avatar: prev.p2_avatar,
+        current_mode: prev.current_mode || mode,
+      }));
+      return;
+    }
     const updatedRoom = await recordMatchWinInDb(
       roomData,
       mode,
@@ -1722,12 +1851,18 @@ export function App() {
       avatar: newAvatar,
     });
 
+    if (hotspotModeRef.current !== 'none') {
+      hotspotChannelRef.current?.sendAvatarUpdate(mySlot, newAvatar);
+      return;
+    }
+
     await updatePlayerAvatarInDb(roomCode, mySlot, newAvatar);
   };
 
   const now = Date.now();
-  const p1Online = mySlot === 'p1' || now - (onlineSeen.p1 || 0) < 16000;
-  const p2Online = mySlot === 'p2' || now - (onlineSeen.p2 || 0) < 16000;
+  const hotspotLive = hotspotMode !== 'none' && hotspotStatus === 'connected';
+  const p1Online = hotspotLive || mySlot === 'p1' || now - (onlineSeen.p1 || 0) < 16000;
+  const p2Online = hotspotLive || mySlot === 'p2' || now - (onlineSeen.p2 || 0) < 16000;
 
   // Cat is alone on homescreen until a partner joins the room or you join someone's room!
   const isJoinedWithPartner =
@@ -2049,6 +2184,12 @@ export function App() {
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           passAndPlay={passAndPlay}
           onTogglePassAndPlay={handleTogglePassAndPlay}
+          hotspotMode={hotspotMode}
+          hotspotStatus={hotspotStatus}
+          hotspotError={hotspotError}
+          onStartHotspotHost={handleStartHotspotHost}
+          onJoinHotspotHost={handleJoinHotspotHost}
+          onLeaveHotspotMode={handleLeaveHotspotMode}
           onePhoneP2Avatar={onePhoneP2Avatar}
           onSaveOnePhoneP2Avatar={handleSaveOnePhoneP2Avatar}
           hasSaved1PhoneDama={hasSaved1PhoneDama}
@@ -2458,6 +2599,7 @@ export function App() {
       {ScoreboardModalComp && (
         <ScoreboardModalComp
           isOpen={scoreboardOpen}
+          isHotspot={hotspotMode !== 'none'}
           roomData={{
             ...roomData,
             p1_avatar: { ...effectiveP1Avatar, name: p1DisplayName },

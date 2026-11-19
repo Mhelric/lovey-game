@@ -42,6 +42,12 @@ interface HomeMenuViewProps {
   chatMessages: FloatingReaction[];
   passAndPlay?: boolean;
   onTogglePassAndPlay?: (nextVal?: boolean) => void;
+  hotspotMode?: 'none' | 'host' | 'guest';
+  hotspotStatus?: 'idle' | 'waiting' | 'connecting' | 'connected' | 'error';
+  hotspotError?: string | null;
+  onStartHotspotHost?: () => void;
+  onJoinHotspotHost?: () => void;
+  onLeaveHotspotMode?: () => void;
   onePhoneP2Avatar?: CatAvatarConfig;
   onSaveOnePhoneP2Avatar?: (avatar: CatAvatarConfig) => void;
   hasSaved1PhoneDama?: boolean;
@@ -77,6 +83,12 @@ export function HomeMenuView({
   chatMessages,
   passAndPlay = false,
   onTogglePassAndPlay,
+  hotspotMode = 'none',
+  hotspotStatus = 'idle',
+  hotspotError = null,
+  onStartHotspotHost,
+  onJoinHotspotHost,
+  onLeaveHotspotMode,
   onePhoneP2Avatar = { name: 'Lovey 2', breed: 'calico', accessory: 'ribbon' },
   onSaveOnePhoneP2Avatar,
   hasSaved1PhoneDama = false,
@@ -102,6 +114,17 @@ export function HomeMenuView({
     (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
       ?.isNativePlatform?.()
   );
+  const [hotspotTabActive, setHotspotTabActive] = useState(hotspotMode !== 'none');
+  const isHotspotView = hotspotTabActive || hotspotMode !== 'none';
+  const [HotspotPanelComp, setHotspotPanelComp] = useState<any>(null);
+
+  useEffect(() => {
+    if (isHotspotView && !HotspotPanelComp) {
+      void import('./HotspotRoomPanel').then((m) => {
+        setHotspotPanelComp(() => m.default);
+      });
+    }
+  }, [isHotspotView, HotspotPanelComp]);
   const [apkModalOpen, setApkModalOpen] = useState<boolean>(() => {
     if (isNativeApk) return false;
     try {
@@ -364,6 +387,18 @@ export function HomeMenuView({
             [Join a Room] -> smoothly transforms/expands into [Text Box] [Join]
         */}
         <div className="home-room-controls-card">
+          {isHotspotView ? (
+            HotspotPanelComp ? (
+              <HotspotPanelComp
+                hotspotStatus={hotspotStatus}
+                hotspotError={hotspotError}
+                onStartHotspotHost={onStartHotspotHost}
+                onJoinHotspotHost={onJoinHotspotHost}
+                onLeaveHotspotMode={onLeaveHotspotMode}
+              />
+            ) : null
+          ) : (
+            <>
           {/* 1. [Your Room] Label */}
           <div className="room-label-header">
             <span className="room-code-caption">
@@ -645,6 +680,8 @@ export function HomeMenuView({
               </span>
             </div>
           )}
+            </>
+          )}
         </div>
 
         {/* Centered Play Game / Game Picker Flow (No Host/Invited Prompt!) */}
@@ -671,31 +708,64 @@ export function HomeMenuView({
           ) : (
             /* Host clicks Play Game */
             <div className="host-play-actions-stack">
-              {/* 1-Phone Mode Menu Toggle Strip */}
+              {/* 3-Way Mode Pill: Online | Hotspot (APK) | 1-Phone */}
               <div className="home-mode-toggle-strip">
                 <button
                   type="button"
-                  className={`home-mode-toggle-btn ${!passAndPlay ? 'active' : ''}`}
+                  className={`home-mode-toggle-btn ${!passAndPlay && !isHotspotView ? 'active' : ''}`}
                   onClick={() => {
                     playTapPop();
+                    setHotspotTabActive(false);
+                    if (hotspotMode !== 'none') onLeaveHotspotMode?.();
                     onTogglePassAndPlay?.(false);
                   }}
                 >
                   <SparkleIcon size={13} />
-                  <span>2 Phones (Online)</span>
+                  <span>{isNativeApk ? 'Online' : '2 Phones (Online)'}</span>
                 </button>
+                {isNativeApk && (
+                  <button
+                    type="button"
+                    className={`home-mode-toggle-btn ${isHotspotView && !passAndPlay ? 'active' : ''}`}
+                    onClick={() => {
+                      playTapPop();
+                      onTogglePassAndPlay?.(false);
+                      setHotspotTabActive(true);
+                    }}
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                      <line x1="12" y1="20" x2="12.01" y2="20" />
+                    </svg>
+                    <span>Hotspot</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`home-mode-toggle-btn ${passAndPlay ? 'active' : ''}`}
                   onClick={() => {
                     playTapPop();
+                    setHotspotTabActive(false);
+                    if (hotspotMode !== 'none') onLeaveHotspotMode?.();
                     if (!passAndPlay) {
                       setP2SetupOpen(true);
                     }
                   }}
                 >
                   <DevicePhoneIcon size={13} />
-                  <span>1 Phone (Local)</span>
+                  <span>{isNativeApk ? '1-Phone' : '1 Phone (Local)'}</span>
                 </button>
               </div>
 
