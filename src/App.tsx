@@ -528,6 +528,18 @@ function loadSavedMyAvatar(): CatAvatarConfig {
 }
 
 export function App() {
+  const [NativeApkUpdateModal, setNativeApkUpdateModal] = useState<
+    (() => preact.JSX.Element | null) | null
+  >(null);
+
+  useEffect(() => {
+    const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (!cap?.isNativePlatform?.()) return;
+    void import('./components/ApkUpdateModal').then((m) => {
+      setNativeApkUpdateModal(() => m.default);
+    });
+  }, []);
+
   // Persistent Default Character saved on this device (independent of room code)
   const [myAvatar, setMyAvatar] = useState<CatAvatarConfig>(loadSavedMyAvatar);
   const myAvatarRef = useRef<CatAvatarConfig>(myAvatar);
@@ -2688,6 +2700,7 @@ export function App() {
           </div>
         </div>
       )}
+      {NativeApkUpdateModal && <NativeApkUpdateModal />}
     </main>
   );
 }

@@ -7,12 +7,18 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cap:sync": "cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
     "preact": "^10.25.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
     "@preact/preset-vite": "^2.9.1",
     "terser": "^5.51.2",
     "typescript": "~5.7.2",

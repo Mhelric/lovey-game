@@ -1,0 +1,106 @@
+name: Build and Release Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - '.github/workflows/release-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compute release version
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="v1.0.${{ github.run_number }}"
+          fi
+          APP_VER="${TAG#v}"
+          VER_CODE=$((100 + ${{ github.run_number }}))
+          echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${APP_VER}" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=${VER_CODE}" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web bundle
+        env:
+          VITE_APP_VERSION: ${{ env.APP_VERSION }}
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Decode Android signing keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > /tmp/lovey-release.jks
+
+      - name: Build signed Release APK
+        working-directory: android
+        env:
+          LOVEY_KEYSTORE_FILE: /tmp/lovey-release.jks
+          LOVEY_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          LOVEY_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          LOVEY_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASS }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -PappVersionCode=${{ env.VERSION_CODE }} -PappVersionName=${{ env.APP_VERSION }}
+
+      - name: Prepare LoveyGame.apk artifact
+        run: cp android/app/build/outputs/apk/release/app-release.apk LoveyGame.apk
+
+      - name: Build release notes from git log
+        run: |
+          NOTES=$(git log -n 5 --pretty=format:"- %s")
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Lovey Game ${{ env.RELEASE_TAG }}
+          make_latest: true
+          files: LoveyGame.apk
+          body: ${{ env.RELEASE_NOTES }}
