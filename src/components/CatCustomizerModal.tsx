@@ -847,7 +847,7 @@ export function CatCustomizerModal({
                       Doodle Clash (Draw &amp; Guess Duel)
                     </h3>
                     <span className="rules-section-sub">
-                      4 Stages (Easy–Final) • 60s Draw • 3 Guesses
+                      4 Stages (Easy–Final) • Dynamic Timers (1m–2m) • 3–5 Guesses
                     </span>
                   </div>
                 </div>
@@ -857,13 +857,13 @@ export function CatCustomizerModal({
                     color="purple"
                     icon={<DoodleClashIcon size={16} />}
                     title="4 Progressive Stages: Easy → Medium → Hard → Final"
-                    desc="Players alternate drawing across 4 escalating rounds. The Drawer has 60 seconds (or taps Done early) to finish their sketch!"
+                    desc="Players alternate drawing across 4 escalating rounds. Drawing timers scale with difficulty: 1 min (Easy), 1 min 30 secs (Medium), and 2 mins (Hard &amp; Final)! Your secret word is shown for at least 3 seconds before the canvas opens."
                   />
                   <RuleRow
                     color="sky"
                     icon={<LightbulbIcon size={16} />}
-                    title="Sequential Guessing (3 Tries)"
-                    desc="Once the Drawer finishes drawing, the Guesser gets 3 tries to guess the secret word (with letter hints after a miss)."
+                    title="Sequential Guessing (3–5 Tries)"
+                    desc="Once the Drawer finishes drawing, the Guesser gets 3 tries in Easy/Medium and 5 tries in Hard/Final to guess the secret word (with letter hints after a miss)."
                   />
                   <RuleRow
                     color="gold"

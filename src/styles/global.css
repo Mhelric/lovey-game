@@ -6863,6 +6863,134 @@ body {
   line-height: 1.35;
 }
 
+/* Dedicated 3-Second Drawer Secret Word Reveal Popup */
+.doodle-word-reveal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(35, 12, 30, 0.82) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: calc(var(--safe-top) + 16px) calc(var(--safe-right, 0px) + 16px) calc(var(--safe-bottom) + 16px) calc(var(--safe-left, 0px) + 16px) !important;
+  box-sizing: border-box;
+}
+
+.doodle-word-reveal-card {
+  width: 90%;
+  max-width: 320px;
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 32px);
+  background: #FFFDF9;
+  border: 3.5px solid var(--ink);
+  border-radius: 26px;
+  box-shadow: 0 8px 0 var(--ink);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.doodle-popup-cat-badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #FFF0F6;
+  border: 2.5px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doodle-round-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #EDE9FE;
+  color: #5B21B6;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 1.5px 0 var(--ink);
+}
+
+.doodle-popup-prompt-label {
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #7A556B;
+  letter-spacing: 0.05em;
+}
+
+.doodle-popup-word-box {
+  width: 100%;
+  background: #FFF0F5;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  padding: 12px 14px;
+  box-shadow: 0 3px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doodle-popup-secret-word {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: #D9386A;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.doodle-popup-timer-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.doodle-popup-btn-waiting {
+  opacity: 0.85;
+  cursor: not-allowed !important;
+  filter: saturate(0.85);
+}
+
+.doodle-canvas-preparing {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center;
+  background: #FAF5FF;
+}
+
+.doodle-preparing-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 18px;
+}
+
+.doodle-prep-sub {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  color: #7A556B;
+}
+
 /* Pokemon Game Corner Style Powerup Roulette */
 .pokemon-roulette-overlay {
   position: absolute;

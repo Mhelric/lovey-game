@@ -4,6 +4,8 @@ const STORAGE_VOLUME_KEY = 'lovey_arcade_volume';
 let audioCtx: AudioContext | null = null;
 let masterGainNode: GainNode | null = null;
 let compressorNode: DynamicsCompressorNode | null = null;
+let isAppInBackground: boolean = false;
+let wasBgmPlayingBeforeBackground: boolean = false;
 
 let mutedState: boolean = (() => {
   try {
@@ -36,7 +38,7 @@ export function setMasterVolume(vol: number): void {
 }
 
 function getAudioContext(): AudioContext | null {
-  if (mutedState || typeof window === 'undefined') return null;
+  if (mutedState || isAppInBackground || typeof window === 'undefined') return null;
   if (!audioCtx) {
     const Ctx =
       window.AudioContext ||
@@ -180,8 +182,29 @@ export function setBgMusicTrack(track: BgmTrack): void {
   }
 }
 
+export function pauseAudioForBackground(): void {
+  if (isAppInBackground) return;
+  isAppInBackground = true;
+  wasBgmPlayingBeforeBackground = bgmTimer !== null;
+  stopBgMusicLoop();
+  if (audioCtx && audioCtx.state === 'running') {
+    audioCtx.suspend().catch(() => {});
+  }
+}
+
+export function resumeAudioFromBackground(): void {
+  if (!isAppInBackground) return;
+  isAppInBackground = false;
+  if (!mutedState && wasBgmPlayingBeforeBackground) {
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    startBgMusicLoop();
+  }
+}
+
 export function startBgMusicLoop(): void {
-  if (typeof window === 'undefined' || mutedState || bgmTimer !== null) return;
+  if (typeof window === 'undefined' || mutedState || isAppInBackground || bgmTimer !== null) return;
   getAudioContext();
   bgmTimer = window.setInterval(playBgmStep, BGM_CONFIGS[currentBgmTrack].stepMs);
 }
@@ -195,12 +218,41 @@ function stopBgMusicLoop(): void {
 
 if (typeof window !== 'undefined') {
   const unlockAndPlayBgm = () => {
-    if (!mutedState) {
+    if (!mutedState && !isAppInBackground) {
       startBgMusicLoop();
     }
   };
   window.addEventListener('pointerdown', unlockAndPlayBgm, { passive: true });
   window.addEventListener('keydown', unlockAndPlayBgm, { passive: true });
+
+  // Web Visibility API (tab switched, minimized, screen turned off)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      pauseAudioForBackground();
+    } else {
+      resumeAudioFromBackground();
+    }
+  });
+
+  window.addEventListener('pagehide', pauseAudioForBackground);
+  window.addEventListener('pageshow', resumeAudioFromBackground);
+
+  // Native Capacitor App state listener (handles Android Home, App switch, screen lock)
+  try {
+    import('@capacitor/app')
+      .then(({ App }) => {
+        App.addListener('appStateChange', ({ isActive }) => {
+          if (!isActive) {
+            pauseAudioForBackground();
+          } else {
+            resumeAudioFromBackground();
+          }
+        }).catch(() => {});
+      })
+      .catch(() => {});
+  } catch {
+    // Non-capacitor environment fallback
+  }
 }
 
 function playTone(
@@ -211,6 +263,7 @@ function playTone(
   gainPeak = 0.35,
   delaySec = 0
 ): void {
+  if (isAppInBackground) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
