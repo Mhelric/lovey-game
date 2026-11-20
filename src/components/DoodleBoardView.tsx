@@ -286,6 +286,32 @@ export function DoodleBoardView({
     return () => window.clearInterval(t);
   }, [prePickHandoverActive, prePickCountdown, isShuffling]);
 
+  // Play sound when any guess is registered (synchronizes for both Guesser and Drawer)
+  const prevGuessCountRef = useRef<number>(gameState.guesses.length);
+  const prevRoundRef = useRef<number>(gameState.round);
+
+  useEffect(() => {
+    // If round changed, reset count ref without playing sound
+    if (prevRoundRef.current !== gameState.round) {
+      prevRoundRef.current = gameState.round;
+      prevGuessCountRef.current = gameState.guesses.length;
+      return;
+    }
+
+    const currentLen = gameState.guesses.length;
+    if (currentLen > prevGuessCountRef.current) {
+      const latest = gameState.guesses[currentLen - 1];
+      if (latest) {
+        if (latest.isCorrect) {
+          playDoodleCorrectGuess();
+        } else {
+          playDoodleWrongGuess();
+        }
+      }
+    }
+    prevGuessCountRef.current = currentLen;
+  }, [gameState.guesses, gameState.round]);
+
   // Alarm sound & Guesser handover modal when drawing ends and guessing begins
   useEffect(() => {
     if (prevPhaseRef.current === 'drawing' && gameState.phase === 'guessing') {
@@ -440,11 +466,6 @@ export function DoodleBoardView({
     setGuessInputText('');
 
     const next = applySubmitDoodleGuess(gameState, text, effectiveSlot);
-    if (next.lastRoundOutcome?.guesserGuessedCorrectly) {
-      playDoodleCorrectGuess();
-    } else {
-      playDoodleWrongGuess();
-    }
     onCommitState(next);
   };
 
