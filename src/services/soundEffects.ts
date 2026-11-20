@@ -416,43 +416,56 @@ export function playDoodleStrokePop(): void {
 }
 
 export function playDoodleCorrectGuess(): void {
-  // Joyful celebratory victory song for correct guess (~1.55s melody + sparkle cascade)
+  // Joyful celebratory victory song for correct guess (~1.5s melody + sparkle chime)
+  // Radiant ascending C-major arpeggio -> triumphant peak -> sparkle bells -> celebratory cat meow!
   const victoryMelody: readonly [number, number, number, OscillatorType, number][] = [
     // [freqStart, freqEnd, durationSec, type, delaySec]
-    [523.25, 523.25, 0.10, 'triangle', 0.00], // C5
-    [659.25, 659.25, 0.10, 'triangle', 0.09], // E5
-    [783.99, 783.99, 0.10, 'triangle', 0.18], // G5
-    [1046.50, 1046.50, 0.16, 'sine', 0.27],  // C6
-    [987.77, 987.77, 0.10, 'sine', 0.44],    // B5
-    [1046.50, 1046.50, 0.14, 'sine', 0.54],  // C6
-    [1174.66, 1174.66, 0.12, 'sine', 0.68],  // D6
-    [1318.51, 1318.51, 0.28, 'triangle', 0.80], // E6 (High triumphant peak)
-    // Harmonized sparkle chords
-    [783.99, 783.99, 0.35, 'sine', 1.05],    // G5 harmony
-    [1046.50, 1046.50, 0.35, 'triangle', 1.05], // C6 harmony
-    [1318.51, 1318.51, 0.38, 'sine', 1.12],  // E6 sparkle
-    [1567.98, 1567.98, 0.38, 'sine', 1.12],  // G6 sparkle
-    [2093.00, 2093.00, 0.30, 'triangle', 1.25], // C7 bell ring
+    // 1. Upbeat, fast ascending trumpet-like fanfare: C5 -> E5 -> G5 -> C6
+    [523.25, 523.25, 0.09, 'triangle', 0.00], // C5
+    [659.25, 659.25, 0.09, 'triangle', 0.08], // E5
+    [783.99, 783.99, 0.09, 'triangle', 0.16], // G5
+    [1046.50, 1046.50, 0.15, 'triangle', 0.24], // C6
+    // 2. Playful rhythmic bounce: B5 -> C6 -> D6
+    [987.77, 987.77, 0.09, 'sine', 0.40],     // B5
+    [1046.50, 1046.50, 0.12, 'sine', 0.49],   // C6
+    [1174.66, 1174.66, 0.12, 'sine', 0.62],   // D6
+    // 3. Triumphant peak chord: E6 + high G6
+    [1318.51, 1318.51, 0.28, 'triangle', 0.74], // E6
+    [1567.98, 1567.98, 0.28, 'sine', 0.74],     // G6 harmony
+    // 4. Grand sparkle cascade & chime ringing
+    [1046.50, 1046.50, 0.25, 'triangle', 1.02], // C6
+    [1318.51, 1318.51, 0.25, 'sine', 1.08],     // E6
+    [1567.98, 1567.98, 0.25, 'sine', 1.14],     // G6
+    [2093.00, 2093.00, 0.35, 'triangle', 1.20], // C7 chime bell
   ];
 
   victoryMelody.forEach(([start, end, dur, type, delay]) => {
-    playTone(start, end, dur, type, 0.48, delay);
+    playTone(start, end, dur, type, 0.52, delay);
   });
-  playCatMeow();
+
+  // Cheerful kitten victory "Mew!" timed right as the sparkle bells finish
+  if (typeof window !== 'undefined') {
+    window.setTimeout(() => {
+      playCatMeow();
+    }, 1320);
+  }
 }
 
 export function playDoodleWrongGuess(): void {
-  // Comical bouncy "try again / wrong guess" motif (~0.55s)
-  const wrongMotif: readonly [number, number, number, OscillatorType, number][] = [
-    // [freqStart, freqEnd, durationSec, type, delaySec]
-    [329.63, 311.13, 0.11, 'sawtooth', 0.00], // E4 -> Eb4
-    [277.18, 261.63, 0.12, 'sawtooth', 0.10], // C#4 -> C4
-    [246.94, 233.08, 0.14, 'triangle', 0.21], // B3 -> Bb3
-    [220.00, 196.00, 0.22, 'triangle', 0.34], // A3 -> G3 slide
-  ];
+  // Quick, gentle cartoon "uh-oh / boop-bloop" cue (~0.17s) - distinct from any song/jingle
+  playTone(260, 240, 0.07, 'triangle', 0.36, 0);
+  playTone(200, 180, 0.09, 'sine', 0.32, 0.08);
+}
 
-  wrongMotif.forEach(([start, end, dur, type, delay]) => {
-    playTone(start, end, dur, type, 0.42, delay);
+export function playDoodleStumpedRound(): void {
+  // Gentle comical cartoon slide played only if guesser runs out of all guesses (~0.42s)
+  const stumpedMotif: readonly [number, number, number, OscillatorType, number][] = [
+    [329.63, 293.66, 0.11, 'triangle', 0.00], // E4 -> D4
+    [261.63, 246.94, 0.11, 'triangle', 0.10], // C4 -> B3
+    [220.00, 174.61, 0.20, 'sine', 0.21],     // A3 -> F3 slide
+  ];
+  stumpedMotif.forEach(([start, end, dur, type, delay]) => {
+    playTone(start, end, dur, type, 0.38, delay);
   });
 }
 

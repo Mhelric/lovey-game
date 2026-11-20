@@ -46,6 +46,7 @@ import {
   playDoodleClear,
   playDoodleCorrectGuess,
   playDoodleStrokePop,
+  playDoodleStumpedRound,
   playDoodleWrongGuess,
   playTapPop,
   playTimesUpAlarm,
@@ -287,30 +288,48 @@ export function DoodleBoardView({
   }, [prePickHandoverActive, prePickCountdown, isShuffling]);
 
   // Play sound when any guess is registered (synchronizes for both Guesser and Drawer)
-  const prevGuessCountRef = useRef<number>(gameState.guesses.length);
-  const prevRoundRef = useRef<number>(gameState.round);
+  // gameState.guesses prepends new attempts at index 0, so index 0 is always the latest attempt!
+  const lastHandledGuessIdRef = useRef<string>(gameState.guesses[0]?.id || '');
+  const lastHandledRoundRef = useRef<number>(gameState.round);
+  const lastHandledOutcomeIdRef = useRef<string>(gameState.lastRoundOutcome?.id || '');
 
   useEffect(() => {
-    // If round changed, reset count ref without playing sound
-    if (prevRoundRef.current !== gameState.round) {
-      prevRoundRef.current = gameState.round;
-      prevGuessCountRef.current = gameState.guesses.length;
+    // If round changed, reset tracking refs without playing old sounds
+    if (lastHandledRoundRef.current !== gameState.round) {
+      lastHandledRoundRef.current = gameState.round;
+      lastHandledGuessIdRef.current = gameState.guesses[0]?.id || '';
+      lastHandledOutcomeIdRef.current = gameState.lastRoundOutcome?.id || '';
       return;
     }
 
-    const currentLen = gameState.guesses.length;
-    if (currentLen > prevGuessCountRef.current) {
-      const latest = gameState.guesses[currentLen - 1];
-      if (latest) {
-        if (latest.isCorrect) {
-          playDoodleCorrectGuess();
+    const latestGuess = gameState.guesses[0];
+    if (latestGuess && latestGuess.id !== lastHandledGuessIdRef.current) {
+      lastHandledGuessIdRef.current = latestGuess.id;
+      if (latestGuess.isCorrect) {
+        playDoodleCorrectGuess();
+      } else {
+        playDoodleWrongGuess();
+      }
+    }
+  }, [gameState.guesses, gameState.round]);
+
+  // Round summary outcome sound: fallback victory song if guessed, or comical stumped cue if failed
+  useEffect(() => {
+    if (gameState.phase === 'round_summary' && gameState.lastRoundOutcome) {
+      if (gameState.lastRoundOutcome.id !== lastHandledOutcomeIdRef.current) {
+        lastHandledOutcomeIdRef.current = gameState.lastRoundOutcome.id;
+        if (gameState.lastRoundOutcome.guesserGuessedCorrectly) {
+          // If latest guess audio didn't trigger, guarantee victory song plays
+          if (!gameState.guesses[0]?.isCorrect || lastHandledGuessIdRef.current !== gameState.guesses[0]?.id) {
+            playDoodleCorrectGuess();
+          }
         } else {
-          playDoodleWrongGuess();
+          // Guesser failed to guess the word (stumped)
+          playDoodleStumpedRound();
         }
       }
     }
-    prevGuessCountRef.current = currentLen;
-  }, [gameState.guesses, gameState.round]);
+  }, [gameState.phase, gameState.lastRoundOutcome, gameState.guesses]);
 
   // Alarm sound & Guesser handover modal when drawing ends and guessing begins
   useEffect(() => {
