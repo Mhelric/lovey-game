@@ -83,6 +83,26 @@ export interface DoodleGameState {
 export const DOODLE_ROUND_TIME_SEC = 60;
 export const DOODLE_MAX_GUESSES = 3;
 
+/**
+ * Dynamic Round Timers based on difficulty level:
+ * - Easy (Rounds 1-2): 60s (1 min)
+ * - Medium (Rounds 3-4): 90s (1 min and 30 secs)
+ * - Hard (Rounds 5-6): 120s (2 mins)
+ * - Final (Rounds 7-8): 120s (2 mins)
+ */
+export function getDoodleRoundTimeSec(difficulty: DoodleDifficulty): number {
+  switch (difficulty) {
+    case 'medium':
+      return 90;
+    case 'hard':
+    case 'final':
+      return 120;
+    case 'easy':
+    default:
+      return 60;
+  }
+}
+
 export const DOODLE_PALETTE: readonly string[] = [
   '#5B2A4E', // Ink Purple
   '#FF4D6D', // Sweet Berry
@@ -340,7 +360,7 @@ export function createInitialDoodleState(
     strokes: [],
     guesses: [],
     guessesLeft: getMaxGuessesForDifficulty(difficulty),
-    roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
+    roundSecondsLeft: getDoodleRoundTimeSec(difficulty),
     revealedHintIndices: [],
     p1Score: 0,
     p2Score: 0,
@@ -378,7 +398,7 @@ export function applySelectDoodleWord(
     strokes: [],
     guesses: [],
     guessesLeft: getMaxGuessesForDifficulty(state.difficulty),
-    roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
+    roundSecondsLeft: getDoodleRoundTimeSec(state.difficulty),
     revealedHintIndices: [],
   };
 }
@@ -630,7 +650,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
     strokes: [],
     guesses: [],
     guessesLeft: getMaxGuessesForDifficulty(nextDifficulty),
-    roundSecondsLeft: DOODLE_ROUND_TIME_SEC,
+    roundSecondsLeft: getDoodleRoundTimeSec(nextDifficulty),
     revealedHintIndices: [],
     lastRoundOutcome: undefined,
   };

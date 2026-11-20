@@ -10,16 +10,25 @@ import {
   applyTickDoodleTimer,
   applyUndoDoodleStroke,
   DOODLE_PALETTE,
-  DOODLE_ROUND_TIME_SEC,
   DOODLE_STROKE_WIDTHS,
   DoodleGameState,
   DoodlePoint,
   DoodleStroke,
   getDoodleDifficultyInfo,
+  getDoodleRoundTimeSec,
   getMaskedWordDisplay,
   getMaxGuessesForDifficulty,
   recordUsedDoodleWords,
 } from '../engines/doodleEngine';
+
+function formatDoodleTimer(seconds: number): string {
+  if (seconds >= 60) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }
+  return `${seconds}s`;
+}
 import {
   ClearCanvasIcon,
   DoodleClashIcon,
@@ -137,12 +146,18 @@ export function DoodleBoardView({
   const guesserName = guesserAvatar.name || (gameState.guesserSlot === 'p1' ? 'Lovey 1' : 'Lovey 2');
 
   const diffInfo = getDoodleDifficultyInfo(gameState.round);
+  const currentMaxRoundTime = getDoodleRoundTimeSec(diffInfo.id);
   const maxGuesses = getMaxGuessesForDifficulty(diffInfo.id);
   const guessesLeft = gameState.guessesLeft ?? maxGuesses;
   const batchedStrokes = useMemo(
     () => groupDoodleStrokes(gameState.strokes),
     [gameState.strokes]
   );
+
+  // Dedicated 3-Second Secret Word Popup for Drawer before canvas displays
+  const [drawerWordPopupActive, setDrawerWordPopupActive] = useState<boolean>(false);
+  const [drawerWordCountdown, setDrawerWordCountdown] = useState<number>(3);
+  const wordPopupShownRef = useRef<string>('');
 
   // 1-Phone Handover Privacy Curtain before Drawing & Alarm states
   const [prePickHandoverActive, setPrePickHandoverActive] = useState<boolean>(
@@ -151,7 +166,7 @@ export function DoodleBoardView({
       (gameState.phase === 'word_selection' ||
         (gameState.phase === 'drawing' &&
           gameState.strokes.length === 0 &&
-          gameState.roundSecondsLeft === DOODLE_ROUND_TIME_SEC))
+          gameState.roundSecondsLeft === currentMaxRoundTime))
   );
   const [prePickCountdown, setPrePickCountdown] = useState<number>(10);
   const [guesserHandoverModal, setGuesserHandoverModal] = useState<boolean>(false);
@@ -194,7 +209,7 @@ export function DoodleBoardView({
       passAndPlay &&
       gameState.phase === 'drawing' &&
       gameState.strokes.length === 0 &&
-      gameState.roundSecondsLeft === DOODLE_ROUND_TIME_SEC &&
+      gameState.roundSecondsLeft === currentMaxRoundTime &&
       prevMatchRoundRef.current !== matchRoundKey
     ) {
       setPrePickHandoverActive(true);
@@ -210,7 +225,47 @@ export function DoodleBoardView({
     gameState.round,
     gameState.strokes.length,
     gameState.roundSecondsLeft,
+    currentMaxRoundTime,
   ]);
+
+  // Trigger 3s Secret Word Popup for Drawer before revealing the drawing canvas
+  useEffect(() => {
+    const matchRoundKey = `${gameState.matchSeed}-${gameState.round}`;
+    if (
+      gameState.phase === 'drawing' &&
+      isDrawer &&
+      (!passAndPlay || !prePickHandoverActive) &&
+      !isShuffling &&
+      wordPopupShownRef.current !== matchRoundKey
+    ) {
+      wordPopupShownRef.current = matchRoundKey;
+      setDrawerWordPopupActive(true);
+      setDrawerWordCountdown(3);
+    }
+  }, [
+    gameState.phase,
+    gameState.matchSeed,
+    gameState.round,
+    isDrawer,
+    passAndPlay,
+    prePickHandoverActive,
+    isShuffling,
+  ]);
+
+  // Countdown timer for 3s Secret Word Popup
+  useEffect(() => {
+    if (!drawerWordPopupActive) return;
+    if (drawerWordCountdown <= 0) {
+      const autoClose = window.setTimeout(() => {
+        setDrawerWordPopupActive(false);
+      }, 500);
+      return () => window.clearTimeout(autoClose);
+    }
+    const timer = window.setInterval(() => {
+      setDrawerWordCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [drawerWordPopupActive, drawerWordCountdown]);
 
   // Decrement 10s pre-pick countdown (paused while first-turn shuffle is loading/playing)
   useEffect(() => {
@@ -244,13 +299,14 @@ export function DoodleBoardView({
     prevPhaseRef.current = gameState.phase;
   }, [gameState.phase, passAndPlay]);
 
-  // 60s Drawing Timer tick effect: paused during shuffle roulette or 1-Phone handover curtain
+  // Drawing Timer tick effect: paused during shuffle roulette, 1-Phone handover curtain, or 3s drawer word popup
   useEffect(() => {
     if (
       gameState.phase !== 'drawing' ||
       isPaused ||
       isShuffling ||
-      (passAndPlay && prePickHandoverActive)
+      (passAndPlay && prePickHandoverActive) ||
+      drawerWordPopupActive
     ) {
       return;
     }
@@ -269,6 +325,7 @@ export function DoodleBoardView({
     isPaused,
     isShuffling,
     prePickHandoverActive,
+    drawerWordPopupActive,
     onCommitState,
   ]);
 
@@ -431,7 +488,7 @@ export function DoodleBoardView({
                   }`}
                 >
                   <TimerClockIcon size={12} />
-                  <span>{isPaused ? 'PAUSED' : `${gameState.roundSecondsLeft}s`}</span>
+                  <span>{isPaused ? 'PAUSED' : formatDoodleTimer(gameState.roundSecondsLeft)}</span>
                 </div>
               )}
               {gameState.phase === 'guessing' && (
@@ -803,7 +860,15 @@ export function DoodleBoardView({
                   <div className="doodle-phase-status-bar">
                     <PencilIcon size={15} />
                     <span>
-                      <strong>{drawerName}</strong> is drawing ({gameState.roundSecondsLeft}s left)... You&apos;ll get {maxGuesses} guesses when they finish!
+                      {gameState.strokes.length === 0 && gameState.roundSecondsLeft === currentMaxRoundTime ? (
+                        <>
+                          <strong>{drawerName}</strong> is studying their secret word ({formatDoodleTimer(currentMaxRoundTime)} timer will start shortly)...
+                        </>
+                      ) : (
+                        <>
+                          <strong>{drawerName}</strong> is drawing ({formatDoodleTimer(gameState.roundSecondsLeft)} left)... You&apos;ll get {maxGuesses} guesses when they finish!
+                        </>
+                      )}
                     </span>
                   </div>
                 )
@@ -911,7 +976,7 @@ export function DoodleBoardView({
             </div>
             <div className="doodle-times-up-pill">
               <TimerClockIcon size={14} />
-              <span>TIME&apos;S UP! 60s ALARM</span>
+              <span>TIME&apos;S UP! {formatDoodleTimer(currentMaxRoundTime)} ALARM</span>
             </div>
             <h3 className="doodle-handover-title">Hand phone to {guesserName}!</h3>
             <p className="doodle-handover-desc">
@@ -929,6 +994,74 @@ export function DoodleBoardView({
               >
                 <span>I am {guesserName} — Ready to Guess</span>
                 <SparkleIcon size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3-Second Secret Word Popup Modal for Drawer before Canvas is shown */}
+      {drawerWordPopupActive && isDrawer && (
+        <div
+          className="modal-backdrop doodle-word-reveal-backdrop"
+          style={{ zIndex: 160 }}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <div
+            className="modal-card doodle-word-reveal-card anim-fade-scale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="doodle-popup-cat-badge">
+              <CatAvatarSvg
+                breed={drawerAvatar.breed}
+                accessory={drawerAvatar.accessory}
+                size={62}
+                animateIdle
+              />
+            </div>
+
+            <div className="doodle-round-pill">
+              <span>
+                Round {gameState.round} of {gameState.totalRounds} • {diffInfo.label} Stage
+              </span>
+            </div>
+
+            <span className="doodle-popup-prompt-label">YOUR SECRET WORD TO DRAW:</span>
+
+            <div className="doodle-popup-word-box">
+              <strong className="doodle-popup-secret-word">
+                {gameState.selectedWord}
+              </strong>
+            </div>
+
+            <div className="doodle-popup-timer-info">
+              <TimerClockIcon size={14} />
+              <span>Drawing time: <strong>{formatDoodleTimer(currentMaxRoundTime)}</strong></span>
+            </div>
+
+            <div className="popup-btn-row stacked" style={{ marginTop: '4px' }}>
+              <button
+                type="button"
+                className={`popup-btn-primary ${drawerWordCountdown > 0 ? 'doodle-popup-btn-waiting' : ''}`}
+                onClick={() => {
+                  if (drawerWordCountdown === 0) {
+                    playTapPop();
+                    setDrawerWordPopupActive(false);
+                  }
+                }}
+                disabled={drawerWordCountdown > 0}
+              >
+                {drawerWordCountdown > 0 ? (
+                  <span>Ready to Draw in {drawerWordCountdown}...</span>
+                ) : (
+                  <>
+                    <span>Start Drawing Now!</span>
+                    <PencilIcon size={16} />
+                  </>
+                )}
               </button>
             </div>
           </div>
