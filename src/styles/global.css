@@ -15,6 +15,12 @@
   --font-body: 'Quicksand', system-ui, -apple-system, sans-serif;
   --safe-top: 0px;
   --safe-bottom: 0px;
+  --safe-left: 0px;
+  --safe-right: 0px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --app-height: 100%;
   --board-size: calc(100vw - 20px);
 }
@@ -23,6 +29,8 @@
   :root {
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
   }
 }
 
@@ -1083,6 +1091,11 @@ body {
   align-items: center;
   justify-content: center;
   padding: 16px;
+  padding-top: calc(var(--safe-top) + 16px);
+  padding-bottom: calc(var(--safe-bottom) + 16px);
+  padding-left: calc(var(--safe-left, 0px) + 16px);
+  padding-right: calc(var(--safe-right, 0px) + 16px);
+  box-sizing: border-box;
   z-index: 99999;
   touch-action: manipulation;
 }
@@ -1090,6 +1103,7 @@ body {
 .kicked-popup-card {
   width: 90%;
   max-width: 320px;
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 32px);
   background: #ffffff;
   border: 3.5px solid var(--ink);
   border-radius: 24px;
@@ -1101,6 +1115,8 @@ body {
   align-items: center;
   gap: 12px;
   user-select: none;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .kicked-popup-icon-wrap {
@@ -1587,6 +1603,11 @@ body {
   align-items: center;
   justify-content: center;
   padding: 12px;
+  padding-top: calc(var(--safe-top) + 12px);
+  padding-bottom: calc(var(--safe-bottom) + 12px);
+  padding-left: calc(var(--safe-left, 0px) + 12px);
+  padding-right: calc(var(--safe-right, 0px) + 12px);
+  box-sizing: border-box;
   z-index: 40;
 }
 
@@ -1599,6 +1620,7 @@ body {
   max-width: 364px;
   max-height: calc(100vh - 24px);
   max-height: calc(100dvh - 24px);
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 24px);
   background: #FFF8F4;
   border: 3.5px solid var(--ink);
   border-radius: 28px;
@@ -1610,6 +1632,7 @@ body {
   gap: 12px;
   overflow-x: hidden;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .confetti-strip {
@@ -1650,6 +1673,7 @@ body {
   max-width: 364px;
   max-height: calc(100vh - 24px);
   max-height: calc(100dvh - 24px);
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 24px);
   background: #FFF8F4;
   border: 3.5px solid var(--ink);
   border-radius: 28px;
@@ -1661,6 +1685,7 @@ body {
   gap: 14px;
   overflow-x: hidden;
   overflow-y: hidden;
+  box-sizing: border-box;
 }
 
 .cozy-modal-top {
@@ -4439,6 +4464,7 @@ body {
   max-width: 338px;
   max-height: calc(100vh - 36px);
   max-height: calc(100dvh - 36px);
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 36px);
   background: #FFFDF9;
   border: 3px solid var(--ink);
   border-radius: 24px;
@@ -4447,6 +4473,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-sizing: border-box;
 }
 
 .game-picker-modal-header {
@@ -4746,6 +4773,10 @@ body {
 
 .modal-backdrop.p2-setup-backdrop {
   padding: 8px;
+  padding-top: calc(var(--safe-top) + 8px);
+  padding-bottom: calc(var(--safe-bottom) + 8px);
+  padding-left: calc(var(--safe-left, 0px) + 8px);
+  padding-right: calc(var(--safe-right, 0px) + 8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4758,6 +4789,7 @@ body {
   max-width: 344px;
   max-height: calc(100vh - 20px);
   max-height: calc(100dvh - 20px);
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 20px);
   background: #ffffff;
   border: 3.5px solid var(--ink);
   border-radius: 24px;
@@ -6378,11 +6410,16 @@ body {
   justify-content: center !important;
   z-index: 150 !important;
   padding: 16px !important;
+  padding-top: calc(var(--safe-top) + 16px) !important;
+  padding-bottom: calc(var(--safe-bottom) + 16px) !important;
+  padding-left: calc(var(--safe-left, 0px) + 16px) !important;
+  padding-right: calc(var(--safe-right, 0px) + 16px) !important;
   border-radius: 0 !important;
   pointer-events: all !important;
   touch-action: none;
   user-select: none;
   animation: fadeIn 0.18s ease-out;
+  box-sizing: border-box;
 }
 
 .doodle-word-picker-modal {
@@ -6402,6 +6439,7 @@ body {
   user-select: none;
   max-height: calc(100vh - 36px);
   max-height: calc(100dvh - 36px);
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 36px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -6742,16 +6780,22 @@ body {
   justify-content: center !important;
   z-index: 150 !important;
   padding: 16px !important;
+  padding-top: calc(var(--safe-top) + 16px) !important;
+  padding-bottom: calc(var(--safe-bottom) + 16px) !important;
+  padding-left: calc(var(--safe-left, 0px) + 16px) !important;
+  padding-right: calc(var(--safe-right, 0px) + 16px) !important;
   border-radius: 0 !important;
   pointer-events: all !important;
   touch-action: none;
   user-select: none;
   animation: fadeIn 0.18s ease-out;
+  box-sizing: border-box;
 }
 
 .doodle-handover-card {
   width: 100%;
   max-width: 280px;
+  max-height: calc(var(--app-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 32px);
   background: #FFFDF9;
   border: 3px solid var(--ink);
   border-radius: 20px;
@@ -6760,6 +6804,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
+  overflow-y: auto;
   text-align: center;
   gap: 10px;
 }
