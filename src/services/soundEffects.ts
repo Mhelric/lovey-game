@@ -469,6 +469,13 @@ export function playDoodleStumpedRound(): void {
   });
 }
 
+export function playDoodleHeartSacrifice(): void {
+  // Gentle magical heart sacrifice sparkle (sweet dip + twinkling chime) (~0.22s)
+  playTone(523.25, 440.0, 0.08, 'sine', 0.38, 0);
+  playTone(880.0, 1174.66, 0.12, 'triangle', 0.42, 0.07);
+  playTone(1760.0, 1760.0, 0.14, 'sine', 0.35, 0.13);
+}
+
 export function playDoodleClear(): void {
   playTone(640, 320, 0.14, 'sine', 0.45, 0);
 }

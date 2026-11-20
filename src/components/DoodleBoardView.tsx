@@ -5,6 +5,7 @@ import {
   applyClearDoodleStrokes,
   applyFinishDoodleDrawing,
   applyNextDoodleRound,
+  applySacrificeHeartForHint,
   applySelectDoodleWord,
   applySubmitDoodleGuess,
   applyTickDoodleTimer,
@@ -45,6 +46,7 @@ import { CatAvatarSvg } from './CatAvatarSvg';
 import {
   playDoodleClear,
   playDoodleCorrectGuess,
+  playDoodleHeartSacrifice,
   playDoodleStrokePop,
   playDoodleStumpedRound,
   playDoodleWrongGuess,
@@ -331,6 +333,16 @@ export function DoodleBoardView({
     }
   }, [gameState.phase, gameState.lastRoundOutcome, gameState.guesses]);
 
+  // Synchronized heart sacrifice sound (plays on both Drawer and Guesser devices)
+  const prevSacrificedCountRef = useRef<number>(gameState.sacrificedHeartsCount ?? 0);
+  useEffect(() => {
+    const currentSacrificed = gameState.sacrificedHeartsCount ?? 0;
+    if (currentSacrificed > prevSacrificedCountRef.current) {
+      playDoodleHeartSacrifice();
+    }
+    prevSacrificedCountRef.current = currentSacrificed;
+  }, [gameState.sacrificedHeartsCount]);
+
   // Alarm sound & Guesser handover modal when drawing ends and guessing begins
   useEffect(() => {
     if (prevPhaseRef.current === 'drawing' && gameState.phase === 'guessing') {
@@ -478,6 +490,19 @@ export function DoodleBoardView({
     onCommitState(next);
   };
 
+  const allLettersRevealed = (() => {
+    if (!gameState.selectedWord) return false;
+    const nonSpaceCount = gameState.selectedWord.replace(/ /g, '').length;
+    return (gameState.revealedHintIndices?.length ?? 0) >= nonSpaceCount;
+  })();
+
+  const handleSacrificeHeart = () => {
+    if (guessesLeft <= 1 || gameState.phase !== 'guessing' || allLettersRevealed) return;
+    playDoodleHeartSacrifice();
+    const next = applySacrificeHeartForHint(gameState);
+    onCommitState(next);
+  };
+
   const handleGuessSubmit = (e?: Event) => {
     e?.preventDefault();
     const text = guessInputText.trim();
@@ -567,7 +592,7 @@ export function DoodleBoardView({
                 ) : (
                   <div className="doodle-result-badge timeout">
                     <DoodleClashIcon size={18} />
-                    <span>STUMPED ALL {maxGuesses} GUESSES!</span>
+                    <span>OUT OF HEARTS!</span>
                   </div>
                 )}
 
@@ -586,8 +611,17 @@ export function DoodleBoardView({
                   <div className="doodle-point-award-pill">
                     <span>{drawerName} (Drawer)</span>
                     <strong>+{gameState.lastRoundOutcome?.pointsAwardedDrawer ?? 0} pts</strong>
+                    <small className="doodle-pill-sub">
+                      ({gameState.lastRoundOutcome?.drawerPointsFromMisses ?? gameState.lastRoundOutcome?.pointsAwardedDrawer ?? 0} from misses)
+                    </small>
                   </div>
                 </div>
+
+                {(gameState.lastRoundOutcome?.sacrificedHearts ?? 0) > 0 && (
+                  <div className="doodle-sacrificed-pill">
+                    <span>💡 {gameState.lastRoundOutcome?.sacrificedHearts} ❤️ sacrificed for clues (0 pts to Drawer)</span>
+                  </div>
+                )}
 
                 <button
                   type="button"
@@ -916,6 +950,31 @@ export function DoodleBoardView({
                 /* 'guessing' phase: Drawer is done, Guesser gets 3 (Easy/Med) or 5 (Hard/Final) guesses! */
                 isGuesser ? (
                   <div className="doodle-guesser-deck">
+                    <div className="doodle-hint-sacrifice-row">
+                      <button
+                        type="button"
+                        className="doodle-sacrifice-btn sticker-press"
+                        disabled={guessesLeft <= 1 || allLettersRevealed}
+                        onClick={handleSacrificeHeart}
+                        title={
+                          guessesLeft <= 1
+                            ? 'Must keep your final heart to guess!'
+                            : allLettersRevealed
+                            ? 'All letters already revealed!'
+                            : 'Sacrifice 1 ❤️ to unlock a letter without giving points to Drawer!'
+                        }
+                      >
+                        <HeartIcon size={12} className="heart-sacrifice-icon" />
+                        <span>
+                          {guessesLeft <= 1
+                            ? 'Final ❤️ Reserved for Guess'
+                            : allLettersRevealed
+                            ? 'All Letters Revealed'
+                            : 'Sacrifice 1 ❤️ for Letter Clue'}
+                        </span>
+                      </button>
+                    </div>
+
                     <form className="doodle-guesser-form" onSubmit={handleGuessSubmit}>
                       <input
                         type="text"
@@ -941,7 +1000,7 @@ export function DoodleBoardView({
                   <div className="doodle-phase-status-bar guessing-mode">
                     <SparkleIcon size={15} />
                     <span>
-                      Drawing complete! Waiting for <strong>{guesserName}</strong> to guess ({guessesLeft}/{maxGuesses} tries left)...
+                      Drawing complete! Waiting for <strong>{guesserName}</strong> to guess ({guessesLeft}/{maxGuesses} ❤️ left)...
                     </span>
                   </div>
                 )

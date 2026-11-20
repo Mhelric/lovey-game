@@ -64,9 +64,11 @@ export interface DoodleGameState {
   usedWords?: string[];
   strokes: DoodleStroke[];
   guesses: DoodleGuessAttempt[];
-  guessesLeft: number; // 3 guesses per round in 'guessing' phase
-  roundSecondsLeft: number; // 60 seconds in 'drawing' phase
+  guessesLeft: number; // 3 hearts (Easy/Med) or 5 hearts (Hard/Final)
+  roundSecondsLeft: number; // seconds in 'drawing' phase
   revealedHintIndices: number[];
+  roundWrongGuessesCount?: number;
+  sacrificedHeartsCount?: number;
   p1Score: number;
   p2Score: number;
   lastRoundOutcome?: {
@@ -76,6 +78,8 @@ export interface DoodleGameState {
     pointsAwardedGuesser: number;
     pointsAwardedDrawer: number;
     summaryMessage: string;
+    drawerPointsFromMisses?: number;
+    sacrificedHearts?: number;
   };
   winner: PlayerSlot | 'draw' | null;
 }
@@ -444,6 +448,8 @@ export function applyFinishDoodleDrawing(state: DoodleGameState): DoodleGameStat
     turn: state.guesserSlot,
     guessesLeft: getMaxGuessesForDifficulty(state.difficulty),
     roundSecondsLeft: 0,
+    roundWrongGuessesCount: 0,
+    sacrificedHeartsCount: 0,
   };
 }
 
@@ -474,6 +480,62 @@ export function getMaskedWordDisplay(
     .join(' ');
 }
 
+/**
+ * Smart Progressive Hint Revealer:
+ * 1. Unlocks the 1st letter of the secret word if it's currently hidden.
+ * 2. If the 1st letter is already unlocked, randomly picks from remaining hidden letters.
+ */
+export function revealNextLetterHint(
+  word: string | null,
+  currentIndices: number[]
+): number[] {
+  if (!word) return currentIndices;
+
+  const nonSpaceIndices = word
+    .split('')
+    .map((c, i) => (c !== ' ' ? i : -1))
+    .filter((i) => i !== -1);
+
+  if (nonSpaceIndices.length === 0) return currentIndices;
+
+  const currentSet = new Set(currentIndices);
+  const unrevealed = nonSpaceIndices.filter((idx) => !currentSet.has(idx));
+  if (unrevealed.length === 0) return currentIndices;
+
+  // 1. Reveal first letter of the word if it's currently hidden
+  const firstLetterIdx = nonSpaceIndices[0];
+  if (!currentSet.has(firstLetterIdx)) {
+    return [...currentIndices, firstLetterIdx];
+  }
+
+  // 2. Otherwise, pick a random unrevealed letter index
+  const randomUnrevealed = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+  return [...currentIndices, randomUnrevealed];
+}
+
+/**
+ * Sacrifices 1 Guesser Heart in exchange for a progressive letter clue.
+ * Strategic Trade-Off: Drawer earns 0 points from sacrificed hearts!
+ * Requires at least 2 hearts left (preserves at least 1 heart to submit the final guess).
+ */
+export function applySacrificeHeartForHint(state: DoodleGameState): DoodleGameState {
+  if (state.phase !== 'guessing' || !state.selectedWord) return state;
+
+  const maxGuesses = getMaxGuessesForDifficulty(state.difficulty);
+  const currentGuessesLeft = state.guessesLeft ?? maxGuesses;
+
+  if (currentGuessesLeft <= 1) return state;
+
+  const nextRevealed = revealNextLetterHint(state.selectedWord, state.revealedHintIndices);
+
+  return {
+    ...state,
+    guessesLeft: currentGuessesLeft - 1,
+    revealedHintIndices: nextRevealed,
+    sacrificedHeartsCount: (state.sacrificedHeartsCount ?? 0) + 1,
+  };
+}
+
 export function applySubmitDoodleGuess(
   state: DoodleGameState,
   guessText: string,
@@ -487,6 +549,7 @@ export function applySubmitDoodleGuess(
   const isCorrect = checkWordMatch(cleanGuess, state.selectedWord);
   const maxGuesses = getMaxGuessesForDifficulty(state.difficulty);
   const currentGuessesLeft = state.guessesLeft ?? maxGuesses;
+  const currentMisses = state.roundWrongGuessesCount ?? 0;
 
   const newAttempt: DoodleGuessAttempt = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -499,12 +562,11 @@ export function applySubmitDoodleGuess(
   const updatedGuesses = [newAttempt, ...state.guesses.slice(0, 19)];
 
   if (isCorrect) {
-    // Guesser gets 2 points, Drawer gets 1 point!
-    const guesserPts = 2;
-    const drawerPts = 1;
-    const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesserPts : drawerPts);
-    const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesserPts : drawerPts);
-    const triesUsed = maxGuesses - currentGuessesLeft + 1;
+    // Guesser gets +3 pts (Easy/Med) or +5 pts (Hard/Final)!
+    // Drawer gets 0 bonus points on solve (Drawer only keeps points earned from previous wrong guesses)
+    const guesserPts = state.difficulty === 'hard' || state.difficulty === 'final' ? 5 : 3;
+    const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesserPts : 0);
+    const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesserPts : 0);
 
     return {
       ...state,
@@ -518,21 +580,27 @@ export function applySubmitDoodleGuess(
         word: state.selectedWord,
         guesserGuessedCorrectly: true,
         pointsAwardedGuesser: guesserPts,
-        pointsAwardedDrawer: drawerPts,
-        summaryMessage: `Guessed on try ${triesUsed}/${maxGuesses}! (+2 Guesser, +1 Drawer)`,
+        pointsAwardedDrawer: currentMisses,
+        summaryMessage: currentMisses > 0
+          ? `Guessed correctly! (+${guesserPts} Guesser, +${currentMisses} Drawer from misses)`
+          : `Guessed on try 1! Flawless +${guesserPts} pts for Guesser!`,
+        drawerPointsFromMisses: currentMisses,
+        sacrificedHearts: state.sacrificedHeartsCount ?? 0,
       },
     };
   }
 
+  // Wrong guess! Guesser loses 1 heart, Drawer immediately receives +1 pt live!
   const nextGuessesLeft = currentGuessesLeft - 1;
+  const nextMisses = currentMisses + 1;
+  const nextP1 = state.p1Score + (state.drawerSlot === 'p1' ? 1 : 0);
+  const nextP2 = state.p2Score + (state.drawerSlot === 'p2' ? 1 : 0);
+
+  // Wrong guess also unlocks a letter via Smart Progressive Hint!
+  const nextRevealed = revealNextLetterHint(state.selectedWord, state.revealedHintIndices);
 
   if (nextGuessesLeft <= 0) {
-    // Out of guesses! Drawer gets 2 points, Guesser gets 0 points.
-    const guesserPts = 0;
-    const drawerPts = 2;
-    const nextP1 = state.p1Score + (state.guesserSlot === 'p1' ? guesserPts : drawerPts);
-    const nextP2 = state.p2Score + (state.guesserSlot === 'p2' ? guesserPts : drawerPts);
-
+    // Out of guesses! Guesser gets 0 pts. Drawer keeps the points from wrong guesses.
     return {
       ...state,
       phase: 'round_summary',
@@ -540,49 +608,29 @@ export function applySubmitDoodleGuess(
       guessesLeft: 0,
       p1Score: nextP1,
       p2Score: nextP2,
+      revealedHintIndices: nextRevealed,
+      roundWrongGuessesCount: nextMisses,
       lastRoundOutcome: {
         id: `out-of-guesses-${Date.now()}`,
         word: state.selectedWord,
         guesserGuessedCorrectly: false,
-        pointsAwardedGuesser: guesserPts,
-        pointsAwardedDrawer: drawerPts,
-        summaryMessage: `All ${maxGuesses} guesses used! Drawer earns +2 pts!`,
+        pointsAwardedGuesser: 0,
+        pointsAwardedDrawer: nextMisses,
+        summaryMessage: `All ${maxGuesses} hearts spent! Drawer earned +${nextMisses} pts from misses!`,
+        drawerPointsFromMisses: nextMisses,
+        sacrificedHearts: state.sacrificedHeartsCount ?? 0,
       },
     };
-  }
-
-  // Reveal a helpful letter hint after wrong guesses (1st letter, middle letter, and last letter on 5-life rounds)
-  let revealed = state.revealedHintIndices;
-  const wordChars = state.selectedWord.split('');
-  const nonSpaceIndices = wordChars
-    .map((c, i) => (c !== ' ' ? i : -1))
-    .filter((i) => i !== -1);
-  const missesSoFar = maxGuesses - nextGuessesLeft;
-
-  if (missesSoFar >= 1 && revealed.length === 0 && nonSpaceIndices.length > 2) {
-    revealed = [nonSpaceIndices[0]];
-  } else if (missesSoFar >= 2 && revealed.length <= 1 && nonSpaceIndices.length > 4) {
-    const nextHintIdx = nonSpaceIndices[Math.floor(nonSpaceIndices.length / 2)];
-    if (!revealed.includes(nextHintIdx)) {
-      revealed = [...revealed, nextHintIdx];
-    }
-  } else if (
-    maxGuesses === 5 &&
-    nextGuessesLeft <= 2 &&
-    revealed.length === 2 &&
-    nonSpaceIndices.length > 6
-  ) {
-    const lastHintIdx = nonSpaceIndices[nonSpaceIndices.length - 1];
-    if (!revealed.includes(lastHintIdx)) {
-      revealed = [...revealed, lastHintIdx];
-    }
   }
 
   return {
     ...state,
     guesses: updatedGuesses,
     guessesLeft: nextGuessesLeft,
-    revealedHintIndices: revealed,
+    p1Score: nextP1,
+    p2Score: nextP2,
+    revealedHintIndices: nextRevealed,
+    roundWrongGuessesCount: nextMisses,
   };
 }
 
@@ -653,5 +701,7 @@ export function applyNextDoodleRound(state: DoodleGameState): DoodleGameState {
     roundSecondsLeft: getDoodleRoundTimeSec(nextDifficulty),
     revealedHintIndices: [],
     lastRoundOutcome: undefined,
+    roundWrongGuessesCount: 0,
+    sacrificedHeartsCount: 0,
   };
 }

@@ -108,14 +108,14 @@ const DOODLE_STEPS: readonly TutorialStep[] = [
     badge: 'Doodle Clash • Step 2 of 3',
     title: '3 Lives (Easy/Med) • 5 Lives (Hard/Final)',
     description:
-      'Once the Drawer finishes, the Guesser gets 3 tries on Easy/Medium and 5 tries on Hard/Final to guess the secret word!',
-    tip: 'Missing a try unlocks a helpful letter hint in the word blanks.',
+      'Guesser has 3 Hearts (Easy/Med) or 5 Hearts (Hard/Final). Missing a guess unlocks a letter and awards Drawer +1 pt! You can also sacrifice 1 ❤️ for a letter without giving points to the Drawer.',
+    tip: 'Keep at least 1 heart to submit your final guess!',
   },
   {
     badge: 'Doodle Clash • Step 3 of 3',
     title: 'Win the Cat Doodle Trophy',
     description:
-      'Correct guess within 3 tries: Guesser gets +2 pts & Drawer gets +1 pt. If all 3 guesses miss: Drawer gets +2 pts!',
+      'Solving the word awards Guesser +3 pts (Easy/Med) or +5 pts (Hard/Final)! Drawer earns +1 pt per wrong guess during the round.',
     tip: 'Highest score after all 8 rounds (2 Easy, 2 Medium, 2 Hard, 2 Final) wins the Cat Doodle Trophy!',
   },
 ];

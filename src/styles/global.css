@@ -6244,6 +6244,54 @@ body {
   flex-direction: column;
   width: 100%;
   flex-shrink: 0;
+  gap: 4px;
+}
+
+.doodle-hint-sacrifice-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.doodle-sacrifice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1.8px solid var(--ink);
+  background: linear-gradient(180deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2px 0 var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 0.08s ease, opacity 0.12s ease;
+}
+
+.doodle-sacrifice-btn:active:not(:disabled) {
+  transform: translate3d(0, 1.5px, 0);
+  box-shadow: 0 0.5px 0 var(--ink);
+}
+
+.doodle-sacrifice-btn:disabled {
+  opacity: 0.5;
+  background: #F3F4F6;
+  color: #9CA3AF;
+  border-color: #9CA3AF;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.heart-sacrifice-icon {
+  color: #EF4444;
+  fill: #EF4444;
 }
 
 .doodle-guesser-form {
@@ -6577,6 +6625,31 @@ body {
   font-size: 11px;
   font-weight: 900;
   color: #7C3AED;
+}
+
+.doodle-pill-sub {
+  font-size: 8.5px;
+  font-weight: 700;
+  opacity: 0.75;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-top: 1px;
+}
+
+.doodle-sacrificed-pill {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3px 6px;
+  background: #FFFBEB;
+  border: 1.5px dashed #D97706;
+  border-radius: 8px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #B45309;
+  box-sizing: border-box;
 }
 
 .doodle-next-btn {

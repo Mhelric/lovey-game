@@ -862,14 +862,14 @@ export function CatCustomizerModal({
                   <RuleRow
                     color="sky"
                     icon={<LightbulbIcon size={16} />}
-                    title="Sequential Guessing (3–5 Tries)"
-                    desc="Once the Drawer finishes drawing, the Guesser gets 3 tries in Easy/Medium and 5 tries in Hard/Final to guess the secret word (with letter hints after a miss)."
+                    title="Hearts &amp; Sacrifice Clues (3–5 Hearts)"
+                    desc="Guesser gets 3 Hearts (Easy/Med) or 5 Hearts (Hard/Final). Wrong guesses reveal a letter and give Drawer +1 pt! Guesser can also sacrifice 1 ❤️ for a letter clue without giving points to the Drawer."
                   />
                   <RuleRow
                     color="gold"
                     icon={<SparkleIcon size={16} />}
-                    title="+2 / +1 Point Duel for the Cat Doodle Trophy"
-                    desc="If the Guesser gets it right in 3 tries: Guesser +2 pts, Drawer +1 pt. If all 3 tries miss: Drawer +2 pts! Highest score after 8 rounds (2 Easy, 2 Medium, 2 Hard, 2 Final) wins the trophy."
+                    title="Points Duel for the Cat Doodle Trophy"
+                    desc="Solve the word to earn +3 pts (Easy/Med) or +5 pts (Hard/Final)! Drawer earns +1 pt per wrong guess. Highest score after 8 rounds wins the Cat Doodle Trophy!"
                   />
                 </div>
               </div>
