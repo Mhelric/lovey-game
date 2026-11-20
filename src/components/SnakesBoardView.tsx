@@ -588,11 +588,27 @@ export function SnakesBoardView({
         timers.push(
           window.setTimeout(() => setActionSlotAnim(null), 1300)
         );
+      } else if (anim.eventKind === 'shield_saved') {
+        playPowerupReveal();
+        setActionSlotAnim({ slot: anim.roller, anim: 'powerup' });
+        timers.push(window.setTimeout(() => setActionSlotAnim(null), 1200));
+        setTwistPopup({
+          id: anim.id,
+          kind: 'shield_saved',
+          title: 'Shield Saved You!',
+          desc: anim.eventMessage,
+        });
+        timers.push(
+          window.setTimeout(
+            () =>
+              setTwistPopup((prev) => (prev?.id === anim.id ? null : prev)),
+            2400
+          )
+        );
       } else if (
         anim.eventKind === 'double_dice' ||
         anim.eventKind === 'boost' ||
         anim.eventKind === 'shield_gain' ||
-        anim.eventKind === 'shield_saved' ||
         anim.eventKind === 'extra_roll' ||
         anim.eventKind === 'swap'
       ) {
@@ -727,6 +743,7 @@ export function SnakesBoardView({
 
   const handleRollDice = () => {
     if (!canRoll || isPaused) return;
+    setDiceLanded(null);
     playDiceRattle();
     setRolling(true);
     onBroadcastDiceRolling?.(gameState.turn, hasDoubleDiceActive);
@@ -1029,12 +1046,18 @@ export function SnakesBoardView({
             >
               <DiceFaceSvg
                 value={rolling ? previewDice1 : diceLanded?.d1 ?? previewDice1}
-                size={hasDoubleDiceActive || diceLanded?.d2 ? 72 : 86}
+                size={
+                  (rolling ? hasDoubleDiceActive : Boolean(diceLanded?.d2))
+                    ? 72
+                    : 86
+                }
                 tint={
-                  hasDoubleDiceActive || diceLanded?.d2 ? '#FFE08A' : '#ffffff'
+                  (rolling ? hasDoubleDiceActive : Boolean(diceLanded?.d2))
+                    ? '#FFE08A'
+                    : '#ffffff'
                 }
               />
-              {(hasDoubleDiceActive || diceLanded?.d2) && (
+              {(rolling ? hasDoubleDiceActive : Boolean(diceLanded?.d2)) && (
                 <DiceFaceSvg
                   value={rolling ? previewDice2 : diceLanded?.d2 ?? previewDice2}
                   size={72}

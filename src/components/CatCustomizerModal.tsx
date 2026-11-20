@@ -18,7 +18,6 @@ import {
   CrownIcon,
   DiceFaceSvg,
   DoodleClashIcon,
-  DoubleDiceIcon,
   LightbulbIcon,
   PawIcon,
   PowerupIllustrationSvg,
@@ -93,10 +92,11 @@ function RuleRow({
 }
 
 const POWERUP_CHIPS = [
-  ['boost', 'Catnip Zoomies', '(+4 Tiles)'],
-  ['shield_gain', 'Bubble Shield', '(Blocks Snake)'],
-  ['extra_roll', 'Lucky Paw', '(Extra Roll)'],
-  ['swap', 'Switcheroo', '(Swap Places)'],
+  ['double_dice', 'Twin Paw 2x Dice', '(Roll 2 Dice for 2 Turns)'],
+  ['boost', 'Catnip Zoomies', '(Leap +4 & Activate Traps)'],
+  ['shield_gain', 'Bubble Shield', '(Blocks 1 Snake Bite)'],
+  ['extra_roll', 'Lucky Paw', '(Instant Extra Roll)'],
+  ['swap', 'Switcheroo', '(Fair Swap When Trailing)'],
 ] as const;
 
 export function CatCustomizerModal({
@@ -783,9 +783,9 @@ export function CatCustomizerModal({
                   />
                   <RuleRow
                     color="purple"
-                    icon={<DoubleDiceIcon size={18} />}
-                    title="New! Twin Paw 2x Dice (2 Turns)"
-                    desc="Hold 2 dice in your paw and roll both at once on a single turn for your next 2 turns!"
+                    icon={<SparkleIcon size={16} />}
+                    title="Purple Star Mystery Powerups"
+                    desc="Landing on a purple Star tile triggers the Game Corner roulette for 1 of 5 game-changing mystery powerups!"
                   />
 
                   {/* Mini Powerup Showcase Grid */}

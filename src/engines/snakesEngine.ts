@@ -408,14 +408,73 @@ export function applySnakesDiceRoll(
       const chosenKind =
         ALL_RANDOM_TWISTS[Math.floor(rng() * ALL_RANDOM_TWISTS.length)];
 
+      const resolveZoomiesLanding = (boostTarget: number) => {
+        finalTile = boostTarget;
+        eventKind = 'boost';
+        eventMessage = `Catnip Zoomies! Jumped +4 → Tile ${boostTarget}!`;
+
+        if (boostTarget < maxTile) {
+          const ladderAfter = board.ladders.find((l) => l.from === boostTarget);
+          const snakeAfter = board.snakes.find((s) => s.from === boostTarget);
+          const twistAfter = board.twists.some((t) => t.tile === boostTarget);
+
+          if (ladderAfter) {
+            finalTile = ladderAfter.to;
+            eventKind = 'ladder';
+            eventMessage = `Catnip Zoomies jumped +4 → climbed Ladder ${ladderAfter.from} → ${ladderAfter.to}!`;
+          } else if (snakeAfter) {
+            if (hasShield) {
+              hasShield = false;
+              finalTile = boostTarget;
+              eventKind = 'shield_saved';
+              eventMessage = `Catnip Zoomies jumped +4 into Snake at ${snakeAfter.from}, but Bubble Shield saved you!`;
+            } else {
+              finalTile = snakeAfter.to;
+              eventKind = 'snake';
+              eventMessage = `Catnip Zoomies jumped +4 → eaten by Snake ${snakeAfter.from} → ${snakeAfter.to}!`;
+            }
+          } else if (twistAfter) {
+            const rng2 = createMulberry32(
+              state.boardSeed ^ (boostTarget * 7919) ^ (randomEntropy + 1)
+            );
+            const chainedKind =
+              ALL_RANDOM_TWISTS[Math.floor(rng2() * ALL_RANDOM_TWISTS.length)];
+            if (chainedKind === 'shield') {
+              hasShield = true;
+              eventKind = 'shield_gain';
+              eventMessage = `Catnip Zoomies jumped +4 to Star Tile → gained Bubble Purr Shield!`;
+            } else if (chainedKind === 'double_dice') {
+              myDoubleDiceTurns += 2;
+              eventKind = 'double_dice';
+              eventMessage = `Catnip Zoomies jumped +4 to Star Tile → Twin Paw 2x Dice!`;
+            } else if (chainedKind === 'extra_roll') {
+              grantExtraRoll = true;
+              eventKind = 'extra_roll';
+              eventMessage = `Catnip Zoomies jumped +4 to Star Tile → Lucky Golden Paw! Roll again!`;
+            } else if (chainedKind === 'swap') {
+              const trailingGap = otherTile - boostTarget;
+              if (
+                trailingGap > 0 &&
+                trailingGap <= 24 &&
+                otherTile > 1 &&
+                otherTile < maxTile - 6
+              ) {
+                finalTile = otherTile;
+                nextOtherTile = boostTarget;
+                eventKind = 'swap';
+                eventMessage = `Catnip Zoomies jumped +4 → Switcheroo! Swapped tiles ${boostTarget} ↔ ${otherTile}!`;
+              }
+            }
+          }
+        }
+      };
+
       if (chosenKind === 'double_dice') {
         myDoubleDiceTurns += 2;
         eventKind = 'double_dice';
         eventMessage = `Twin Paw Dice! Roll 2 dice at once for 2 turns!`;
       } else if (chosenKind === 'boost') {
-        finalTile = Math.min(maxTile, walkLandingTile + 4);
-        eventKind = 'boost';
-        eventMessage = `Catnip Zoomies! Jumped +4 → Tile ${finalTile}!`;
+        resolveZoomiesLanding(Math.min(maxTile, walkLandingTile + 4));
       } else if (chosenKind === 'shield') {
         hasShield = true;
         eventKind = 'shield_gain';
@@ -438,9 +497,7 @@ export function applySnakesDiceRoll(
           eventKind = 'swap';
           eventMessage = `Switcheroo! Swapped tiles ${walkLandingTile} ↔ ${otherTile}!`;
         } else {
-          finalTile = Math.min(maxTile, walkLandingTile + 4);
-          eventKind = 'boost';
-          eventMessage = `Catnip Zoomies! Jumped +4 → Tile ${finalTile}!`;
+          resolveZoomiesLanding(Math.min(maxTile, walkLandingTile + 4));
         }
       }
     }
