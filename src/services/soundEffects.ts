@@ -416,14 +416,44 @@ export function playDoodleStrokePop(): void {
 }
 
 export function playDoodleCorrectGuess(): void {
-  playTone(523.25, 659.25, 0.08, 'triangle', 0.48, 0);
-  playTone(659.25, 783.99, 0.09, 'sine', 0.50, 0.06);
-  playTone(783.99, 1046.5, 0.16, 'sine', 0.55, 0.13);
+  // Joyful celebratory victory song for correct guess (~1.55s melody + sparkle cascade)
+  const victoryMelody: readonly [number, number, number, OscillatorType, number][] = [
+    // [freqStart, freqEnd, durationSec, type, delaySec]
+    [523.25, 523.25, 0.10, 'triangle', 0.00], // C5
+    [659.25, 659.25, 0.10, 'triangle', 0.09], // E5
+    [783.99, 783.99, 0.10, 'triangle', 0.18], // G5
+    [1046.50, 1046.50, 0.16, 'sine', 0.27],  // C6
+    [987.77, 987.77, 0.10, 'sine', 0.44],    // B5
+    [1046.50, 1046.50, 0.14, 'sine', 0.54],  // C6
+    [1174.66, 1174.66, 0.12, 'sine', 0.68],  // D6
+    [1318.51, 1318.51, 0.28, 'triangle', 0.80], // E6 (High triumphant peak)
+    // Harmonized sparkle chords
+    [783.99, 783.99, 0.35, 'sine', 1.05],    // G5 harmony
+    [1046.50, 1046.50, 0.35, 'triangle', 1.05], // C6 harmony
+    [1318.51, 1318.51, 0.38, 'sine', 1.12],  // E6 sparkle
+    [1567.98, 1567.98, 0.38, 'sine', 1.12],  // G6 sparkle
+    [2093.00, 2093.00, 0.30, 'triangle', 1.25], // C7 bell ring
+  ];
+
+  victoryMelody.forEach(([start, end, dur, type, delay]) => {
+    playTone(start, end, dur, type, 0.48, delay);
+  });
   playCatMeow();
 }
 
 export function playDoodleWrongGuess(): void {
-  playTone(340, 260, 0.12, 'sawtooth', 0.45, 0);
+  // Comical bouncy "try again / wrong guess" motif (~0.55s)
+  const wrongMotif: readonly [number, number, number, OscillatorType, number][] = [
+    // [freqStart, freqEnd, durationSec, type, delaySec]
+    [329.63, 311.13, 0.11, 'sawtooth', 0.00], // E4 -> Eb4
+    [277.18, 261.63, 0.12, 'sawtooth', 0.10], // C#4 -> C4
+    [246.94, 233.08, 0.14, 'triangle', 0.21], // B3 -> Bb3
+    [220.00, 196.00, 0.22, 'triangle', 0.34], // A3 -> G3 slide
+  ];
+
+  wrongMotif.forEach(([start, end, dur, type, delay]) => {
+    playTone(start, end, dur, type, 0.42, delay);
+  });
 }
 
 export function playDoodleClear(): void {
