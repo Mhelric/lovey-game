@@ -5,6 +5,7 @@ import {
   CloseIcon,
   CrownIcon,
   DoodleClashIcon,
+  BilliardsBallIcon,
   DoubleHeartIcon,
   SnakeLadderIcon,
   SparkleIcon,
@@ -49,12 +50,14 @@ export function CoupleScoreboardModal({
     (roomData.p1_dama_wins || 0) +
     (roomData.p1_snakes_wins || 0) +
     (roomData.p1_uno_wins || 0) +
-    (roomData.p1_doodle_wins || 0);
+    (roomData.p1_doodle_wins || 0) +
+    (roomData.p1_billiards_wins || 0);
   const p2Total =
     (roomData.p2_dama_wins || 0) +
     (roomData.p2_snakes_wins || 0) +
     (roomData.p2_uno_wins || 0) +
-    (roomData.p2_doodle_wins || 0);
+    (roomData.p2_doodle_wins || 0) +
+    (roomData.p2_billiards_wins || 0);
 
   const p1DisplayName = roomData.p1_avatar.name || 'Lovey 1';
   const p2DisplayName =
@@ -124,7 +127,8 @@ export function CoupleScoreboardModal({
               <CrownIcon size={12} /> {roomData.p1_dama_wins || 0} •{' '}
               <SnakeLadderIcon size={12} /> {roomData.p1_snakes_wins || 0} •{' '}
               <UnoCardsIcon size={12} /> {roomData.p1_uno_wins || 0} •{' '}
-              <DoodleClashIcon size={12} /> {roomData.p1_doodle_wins || 0}
+              <DoodleClashIcon size={12} /> {roomData.p1_doodle_wins || 0} •{' '}
+              <BilliardsBallIcon size={12} /> {roomData.p1_billiards_wins || 0}
             </span>
           </div>
 
@@ -152,7 +156,8 @@ export function CoupleScoreboardModal({
               <CrownIcon size={12} /> {roomData.p2_dama_wins || 0} •{' '}
               <SnakeLadderIcon size={12} /> {roomData.p2_snakes_wins || 0} •{' '}
               <UnoCardsIcon size={12} /> {roomData.p2_uno_wins || 0} •{' '}
-              <DoodleClashIcon size={12} /> {roomData.p2_doodle_wins || 0}
+              <DoodleClashIcon size={12} /> {roomData.p2_doodle_wins || 0} •{' '}
+              <BilliardsBallIcon size={12} /> {roomData.p2_billiards_wins || 0}
             </span>
           </div>
         </div>
@@ -182,6 +187,8 @@ export function CoupleScoreboardModal({
                         <UnoCardsIcon size={16} />
                       ) : item.game_mode === 'doodle' ? (
                         <DoodleClashIcon size={16} />
+                      ) : item.game_mode === 'billiards' ? (
+                        <BilliardsBallIcon size={16} />
                       ) : (
                         <SnakeLadderIcon size={16} />
                       )}

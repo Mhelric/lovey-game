@@ -69,6 +69,8 @@ export function loadHotspotRoom(hostAvatar?: CatAvatarConfig): CoupleRoomRow {
     p2_uno_wins: 0,
     p1_doodle_wins: 0,
     p2_doodle_wins: 0,
+    p1_billiards_wins: 0,
+    p2_billiards_wins: 0,
     current_mode: 'dama',
     updated_at: new Date().toISOString(),
   };
@@ -121,6 +123,9 @@ export function recordHotspotMatchWin(
       room[k] = (room[k] || 0) + 1;
     } else if (mode === 'doodle') {
       const k = winner === 'p1' ? 'p1_doodle_wins' : 'p2_doodle_wins';
+      room[k] = (room[k] || 0) + 1;
+    } else if (mode === 'billiards') {
+      const k = winner === 'p1' ? 'p1_billiards_wins' : 'p2_billiards_wins';
       room[k] = (room[k] || 0) + 1;
     }
   }

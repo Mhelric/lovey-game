@@ -53,6 +53,18 @@ alter table if exists public.active_matches add constraint active_matches_game_m
 alter table if exists public.match_history drop constraint if exists match_history_game_mode_check;
 alter table if exists public.match_history add constraint match_history_game_mode_check check (game_mode in ('dama', 'snakes', 'uno'));
 
+-- 4b. Cat Uno / Doodle Clash / Cat Billiards win counters + allowed game modes
+alter table if exists public.couple_rooms add column if not exists p1_doodle_wins integer not null default 0;
+alter table if exists public.couple_rooms add column if not exists p2_doodle_wins integer not null default 0;
+alter table if exists public.couple_rooms add column if not exists p1_billiards_wins integer not null default 0;
+alter table if exists public.couple_rooms add column if not exists p2_billiards_wins integer not null default 0;
+alter table if exists public.couple_rooms drop constraint if exists couple_rooms_current_mode_check;
+alter table if exists public.couple_rooms add constraint couple_rooms_current_mode_check check (current_mode in ('dama', 'snakes', 'uno', 'doodle', 'billiards'));
+alter table if exists public.active_matches drop constraint if exists active_matches_game_mode_check;
+alter table if exists public.active_matches add constraint active_matches_game_mode_check check (game_mode in ('dama', 'snakes', 'uno', 'doodle', 'billiards'));
+alter table if exists public.match_history drop constraint if exists match_history_game_mode_check;
+alter table if exists public.match_history add constraint match_history_game_mode_check check (game_mode in ('dama', 'snakes', 'uno', 'doodle', 'billiards'));
+
 -- 5. Enable Row Level Security (Open anonymous access scoped by room_code for frictionless 2-player couple login)
 alter table public.couple_rooms enable row level security;
 alter table public.active_matches enable row level security;

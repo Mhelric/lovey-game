@@ -18,6 +18,7 @@ import {
   CrownIcon,
   DiceFaceSvg,
   DoodleClashIcon,
+  BilliardsBallIcon,
   LightbulbIcon,
   PawIcon,
   PowerupIllustrationSvg,
@@ -64,6 +65,7 @@ interface CatCustomizerModalProps {
   hasSavedSnakes?: boolean;
   hasSavedUno?: boolean;
   hasSavedDoodle?: boolean;
+  hasSavedBilliards?: boolean;
   savedSnakesMaxTile?: SnakesMaxTile;
 }
 
@@ -125,6 +127,7 @@ export function CatCustomizerModal({
   hasSavedSnakes = false,
   hasSavedUno = false,
   hasSavedDoodle = false,
+  hasSavedBilliards = false,
   savedSnakesMaxTile = 100,
 }: CatCustomizerModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('profile');
@@ -152,6 +155,7 @@ export function CatCustomizerModal({
     if (mode === 'dama') return Boolean(hasSavedDama);
     if (mode === 'uno') return Boolean(hasSavedUno);
     if (mode === 'doodle') return Boolean(hasSavedDoodle);
+    if (mode === 'billiards') return Boolean(hasSavedBilliards);
     const tileMatch = (savedSnakesMaxTile ?? 100) === (tiles ?? 100);
     return Boolean(hasSavedSnakes && tileMatch);
   };
@@ -165,6 +169,8 @@ export function CatCustomizerModal({
       ? 'Cat Uno'
       : mode === 'doodle'
       ? 'Doodle Clash'
+      : mode === 'billiards'
+      ? 'Cat Billiards'
       : `Snakes & Ladders (${targetMaxTile ?? 100})`
   ) => {
     playTapPop();
@@ -548,8 +554,8 @@ export function CatCustomizerModal({
                 <div className="cozy-section">
                   <span className="cozy-label">Switch Game Mode</span>
                   <div className="game-picker-modal-grid" style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {/* Top Grid: Dama, Uno, Doodle */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px' }}>
+                    {/* Top Grid: Dama, Uno, Doodle, Billiards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px' }}>
                       <button
                         type="button"
                         className={`match-mode-card ${
@@ -579,6 +585,16 @@ export function CatCustomizerModal({
                       >
                         <DoodleClashIcon size={20} />
                         <span>Doodle</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`match-mode-card ${
+                          currentMode === 'billiards' ? 'active' : ''
+                        }`}
+                        onClick={() => handleRequestSwitchGame('billiards', undefined, 'Cat Billiards')}
+                      >
+                        <BilliardsBallIcon size={20} />
+                        <span>Billiards</span>
                       </button>
                     </div>
 
@@ -870,6 +886,40 @@ export function CatCustomizerModal({
                     icon={<SparkleIcon size={16} />}
                     title="Points Duel for the Cat Doodle Trophy"
                     desc="Solve the word to earn +3 pts (Easy/Med) or +5 pts (Hard/Final)! Drawer earns +1 pt per wrong guess. Highest score after 8 rounds wins the Cat Doodle Trophy!"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 5: CAT BILLIARDS */}
+              <div className="rules-section-box billiards-theme">
+                <div className="rules-section-banner">
+                  <BilliardsBallIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">Cat Billiards (8-Ball Pool)</h3>
+                    <span className="rules-section-sub">
+                      Solids vs Stripes • Ball in Hand on Fouls • Sink the 8 Last
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <RuleRow
+                    color="sky"
+                    icon={<BilliardsBallIcon size={16} />}
+                    title="Aim, Charge &amp; Strike"
+                    desc="Tap or slide on the table to aim (fine-tune with ⟲ ⟳). Tap SHOOT to swing the power meter, then tap STRIKE to hit. Sink a ball of your group to shoot again!"
+                  />
+                  <RuleRow
+                    color="purple"
+                    icon={<PawIcon size={16} />}
+                    title="Solids vs Stripes"
+                    desc="The table is open after the break. The first player to legally sink a ball claims that group (Solids 1–7 or Stripes 9–15); your partner gets the other."
+                  />
+                  <RuleRow
+                    color="gold"
+                    icon={<SparkleIcon size={16} />}
+                    title="Fouls &amp; the 8-Ball"
+                    desc="Scratching, missing every ball, or hitting the wrong group first gives your partner Ball in Hand. Clear your group, then sink the 8 to win — sinking it early (or scratching on it) loses the match!"
                   />
                 </div>
               </div>

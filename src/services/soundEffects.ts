@@ -96,7 +96,12 @@ export function setSoundMuted(muted: boolean): boolean {
    - 'dama'  : Groovy Playful Cat Duel Showdown Theme
    - 'snakes': Whimsical Carnival Adventure March Theme
    ========================================================================== */
-export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno' | 'doodle';
+export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno' | 'doodle' | 'billiards';
+
+const BILLIARDS_MELODY: readonly [number, number][] = [
+  [523, 175], [0, 0], [622, 0], [659, 175], [784, 0], [0, 233], [659, 0], [587, 0],
+  [523, 220], [0, 0], [440, 0], [494, 220], [523, 0], [0, 196], [587, 0], [0, 0],
+];
 
 const DOODLE_MELODY: readonly [number, number][] = [
   [587, 294], [659, 0], [784, 392], [880, 0],
@@ -144,6 +149,7 @@ const BGM_CONFIGS: Record<
     bVol: number;
   }
 > = {
+  billiards: { stepMs: 230, melody: BILLIARDS_MELODY, lType: 'sine', lVol: 0.075, bType: 'triangle', bVol: 0.08 },
   doodle: { stepMs: 185, melody: DOODLE_MELODY, lType: 'triangle', lVol: 0.08, bType: 'sine', bVol: 0.07 },
   uno: { stepMs: 180, melody: UNO_MELODY, lType: 'triangle', lVol: 0.075, bType: 'square', bVol: 0.05 },
   dama: { stepMs: 195, melody: DAMA_MELODY, lType: 'square', lVol: 0.065, bType: 'triangle', bVol: 0.08 },
@@ -409,6 +415,25 @@ export function playUnoCall(): void {
 export function playColorSelect(): void {
   playTone(659.25, 880.0, 0.08, 'sine', 0.42, 0);
   playTone(880.0, 1046.5, 0.1, 'triangle', 0.45, 0.06);
+}
+
+/* Cat Billiards SFX (intensity v = impact speed in table units/s) */
+export function playBallClack(v = 60): void {
+  const g = Math.min(0.5, 0.12 + v / 400);
+  playTone(2100, 1500, 0.035, 'triangle', g, 0);
+}
+
+export function playRailThud(v = 40): void {
+  playTone(170, 110, 0.07, 'sine', Math.min(0.45, 0.1 + v / 450), 0);
+}
+
+export function playPocketDrop(): void {
+  playTone(320, 150, 0.12, 'triangle', 0.45, 0);
+  playTone(210, 120, 0.1, 'sine', 0.35, 0.08);
+}
+
+export function playCueStrike(power = 0.5): void {
+  playTone(900, 500, 0.05, 'triangle', 0.25 + power * 0.25, 0);
 }
 
 export function playDoodleStrokePop(): void {

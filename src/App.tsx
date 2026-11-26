@@ -25,6 +25,7 @@ import {
   TimerClockIcon,
   TrophyIcon,
   UnoCardsIcon,
+  BilliardsBallIcon,
 } from './components/ArcadeIcons';
 
 
@@ -39,6 +40,12 @@ import {
   hasAnyPlayableCard,
   UnoGameState,
 } from './engines/unoEngine';
+import {
+  billiardsPlayerTag,
+  BilliardsGameState,
+  createInitialBilliardsState,
+  isBilliardsMatchActive,
+} from './engines/billiardsSetup';
 import { HomeMenuView } from './components/HomeMenuView';
 import { QuickChatBar } from './components/QuickChatBar';
 import {
@@ -90,6 +97,7 @@ const GAME_DISPLAY_NAMES: Record<GameMode, string> = {
   snakes: 'Snakes & Ladders',
   uno: 'Cat Uno',
   doodle: 'Doodle Clash',
+  billiards: 'Cat Billiards',
 };
 
 /**
@@ -508,6 +516,26 @@ function mergeDoodleSavestate(
 
 
 
+const billiardsScore = (s: BilliardsGameState) => s.shotCount + (s.winner ? 1000 : 0);
+
+function mergeBilliardsSavestate(
+  l: BilliardsGameState,
+  inc?: BilliardsGameState,
+  isPlayingLive = false
+): BilliardsGameState {
+  if (!inc || !Array.isArray(inc.balls)) return l;
+  if (l.matchSeed === inc.matchSeed) return billiardsScore(inc) >= billiardsScore(l) ? inc : l;
+  const lActive = isBilliardsMatchActive(l);
+  const incActive = isBilliardsMatchActive(inc);
+  if (lActive && !incActive) return l;
+  if (!lActive && incActive) return inc;
+  if (lActive && incActive) {
+    if (isPlayingLive) return l;
+    return billiardsScore(inc) >= billiardsScore(l) ? inc : l;
+  }
+  return inc.matchSeed === 202613 ? l : inc;
+}
+
 function loadSavedMyAvatar(): CatAvatarConfig {
   try {
     const raw = localStorage.getItem(STORAGE_MY_AVATAR_KEY);
@@ -584,6 +612,8 @@ export function App() {
       p2_uno_wins: 0,
       p1_doodle_wins: 0,
       p2_doodle_wins: 0,
+      p1_billiards_wins: 0,
+      p2_billiards_wins: 0,
       current_mode: savedSession?.mode ?? 'dama',
       updated_at: new Date().toISOString(),
     };
@@ -609,6 +639,12 @@ export function App() {
     if (saved && typeof saved.matchSeed === 'number') return saved;
     return createInitialDoodleState(202612, 'p1');
   });
+  const [billiardsState, setBilliardsState] = useState<BilliardsGameState>(() => {
+    const saved = loadLocalGameSavestate<BilliardsGameState>(roomCode, 'billiards');
+    if (saved && Array.isArray(saved.balls)) return saved;
+    return createInitialBilliardsState();
+  });
+  const [billiardsAnimating, setBilliardsAnimating] = useState(false);
   // Reload always on the menu as requested
   const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>('menu');
   const activeScreenRef = useRef<'menu' | 'play'>('menu');
@@ -622,7 +658,9 @@ export function App() {
       const savedSnakes = loadLocalGameSavestate<SnakesGameState>(roomCode, 'snakes');
       const savedUno = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno');
       const savedDoodle = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle');
+      const savedBilliards = loadLocalGameSavestate<BilliardsGameState>(roomCode, 'billiards');
       return Boolean(
+        (savedSession.mode === 'billiards' && isBilliardsMatchActive(savedBilliards)) ||
         (savedSession.mode === 'dama' && isDamaMatchActive(savedDama)) ||
         (savedSession.mode === 'snakes' && isSnakesMatchActive(savedSnakes)) ||
         (savedSession.mode === 'uno' && isUnoMatchActive(savedUno)) ||
@@ -717,6 +755,7 @@ export function App() {
   const [SnakesBoardComp, setSnakesBoardComp] = useState<any>(null);
   const [UnoBoardComp, setUnoBoardComp] = useState<any>(null);
   const [DoodleBoardComp, setDoodleBoardComp] = useState<any>(null);
+  const [BilliardsBoardComp, setBilliardsBoardComp] = useState<any>(null);
 
   useEffect(() => {
     if (roomData.current_mode === 'dama' && !DamaBoardComp) {
@@ -735,8 +774,12 @@ export function App() {
       import('./components/DoodleBoardView').then((m) => {
         setDoodleBoardComp(() => m.DoodleBoardView);
       });
+    } else if (roomData.current_mode === 'billiards' && !BilliardsBoardComp) {
+      import('./components/BilliardsBoardView').then((m) => {
+        setBilliardsBoardComp(() => m.BilliardsBoardView);
+      });
     }
-  }, [roomData.current_mode, DamaBoardComp, SnakesBoardComp, UnoBoardComp, DoodleBoardComp]);
+  }, [roomData.current_mode, DamaBoardComp, SnakesBoardComp, UnoBoardComp, DoodleBoardComp, BilliardsBoardComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   // Turn timer is turned OFF by default as requested
@@ -778,6 +821,8 @@ export function App() {
   unoStateRef.current = unoState;
   const doodleStateRef = useRef<DoodleGameState>(doodleState);
   doodleStateRef.current = doodleState;
+  const billiardsStateRef = useRef<BilliardsGameState>(billiardsState);
+  billiardsStateRef.current = billiardsState;
   const roomDataRef = useRef<CoupleRoomRow>(roomData);
   roomDataRef.current = roomData;
 
@@ -794,6 +839,10 @@ export function App() {
     saveLocalGameSavestate(roomCode, 'uno', unoState, passAndPlay);
     saveLocalGameSavestate(roomCode, 'doodle', doodleState, passAndPlay);
   }, [roomCode, doodleState, passAndPlay]);
+
+  useEffect(() => {
+    saveLocalGameSavestate(roomCode, 'billiards', billiardsState, passAndPlay);
+  }, [roomCode, billiardsState, passAndPlay]);
 
   useEffect(() => {
     saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode, passAndPlay);
@@ -835,6 +884,8 @@ export function App() {
       setBgMusicTrack('uno');
     } else if (roomData.current_mode === 'doodle') {
       setBgMusicTrack('doodle');
+    } else if (roomData.current_mode === 'billiards') {
+      setBgMusicTrack('billiards');
     } else {
       setBgMusicTrack('dama');
     }
@@ -885,6 +936,10 @@ export function App() {
     const localDoodle = loadLocalGameSavestate<DoodleGameState>(targetRoom, 'doodle');
     if (localDoodle && typeof localDoodle.matchSeed === 'number') {
       setDoodleState((prev) => mergeDoodleSavestate(prev, localDoodle));
+    }
+    const localBilliards = loadLocalGameSavestate<BilliardsGameState>(targetRoom, 'billiards');
+    if (localBilliards && Array.isArray(localBilliards.balls)) {
+      setBilliardsState((prev) => mergeBilliardsSavestate(prev, localBilliards));
     }
 
     const [row, matchRow] = await Promise.all([
@@ -975,6 +1030,7 @@ export function App() {
             snakesState: snakesStateRef.current,
             unoState: unoStateRef.current,
             doodleState: doodleStateRef.current,
+            billiardsState: billiardsStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -990,6 +1046,7 @@ export function App() {
             damaState: damaStateRef.current,
             snakesState: snakesStateRef.current,
             doodleState: doodleStateRef.current,
+            billiardsState: billiardsStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -1035,6 +1092,10 @@ export function App() {
           if (inDoodle && typeof inDoodle.matchSeed === 'number') {
             setDoodleState((prev) => mergeDoodleSavestate(prev, inDoodle, isLive));
           }
+          const inBilliards = event.billiardsState as BilliardsGameState | undefined;
+          if (inBilliards && Array.isArray(inBilliards.balls)) {
+            setBilliardsState((prev) => mergeBilliardsSavestate(prev, inBilliards, isLive));
+          }
           // If the Host is in active match ('play'), automatically hop straight onto the active board (Instant Rejoin)
           if (
             event.isPlaying &&
@@ -1042,6 +1103,7 @@ export function App() {
             (event.currentMode === 'dama' ||
               event.currentMode === 'snakes' ||
               event.currentMode === 'uno' ||
+              event.currentMode === 'billiards' ||
               event.currentMode === 'doodle')
           ) {
             setRoomData((prev) => ({
@@ -1054,6 +1116,7 @@ export function App() {
             (event.currentMode === 'dama' ||
               event.currentMode === 'snakes' ||
               event.currentMode === 'uno' ||
+              event.currentMode === 'billiards' ||
               event.currentMode === 'doodle') &&
             activeScreenRef.current === 'menu'
           ) {
@@ -1101,6 +1164,11 @@ export function App() {
             if (incoming && typeof incoming.matchSeed === 'number') {
               setDoodleState(incoming);
             }
+          } else if (event.gameMode === 'billiards') {
+            const incoming = event.stateJson as BilliardsGameState;
+            if (incoming && Array.isArray(incoming.balls)) {
+              setBilliardsState(incoming);
+            }
           }
           if (event.winner === 'p1' || event.winner === 'p2') {
             const winKey = `${event.winner}_${event.gameMode}_wins` as keyof CoupleRoomRow;
@@ -1116,7 +1184,7 @@ export function App() {
                   p2_avatar: prev.p2_avatar,
                   current_mode: prev.current_mode || event.gameMode,
                 };
-                (['dama', 'snakes', 'doodle'] as const).forEach((gm) => {
+                (['dama', 'snakes', 'doodle', 'billiards'] as const).forEach((gm) => {
                   (['p1', 'p2'] as const).forEach((ps) => {
                     const k = `${ps}_${gm}_wins` as keyof CoupleRoomRow;
                     (next as any)[k] = Math.max((prev[k] as number) || 0, (r[k] as number) || 0);
@@ -1240,6 +1308,11 @@ export function App() {
       const maybeDoodle = matchRow.state_json as DoodleGameState;
       if (maybeDoodle && typeof maybeDoodle.matchSeed === 'number') {
         setDoodleState((prev) => mergeDoodleSavestate(prev, maybeDoodle));
+      }
+    } else if (matchRow.game_mode === 'billiards') {
+      const maybeBilliards = matchRow.state_json as BilliardsGameState;
+      if (Array.isArray(maybeBilliards?.balls)) {
+        setBilliardsState((prev) => mergeBilliardsSavestate(prev, maybeBilliards));
       }
     }
   }, []);
@@ -1385,6 +1458,9 @@ export function App() {
       } else if (mode === 'doodle') {
         const dl = activeMatch.state_json as DoodleGameState;
         if (dl && typeof dl.matchSeed === 'number') setDoodleState(dl);
+      } else if (mode === 'billiards') {
+        const bl = activeMatch.state_json as BilliardsGameState;
+        if (Array.isArray(bl?.balls)) setBilliardsState(bl);
       }
       setActiveScreen('play');
     }
@@ -1547,6 +1623,13 @@ export function App() {
           : createInitialUnoState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
         setUnoState(nextUno);
         saveLocalGameSavestate('', 'uno', nextUno, true);
+      } else if (selectedMode === 'billiards') {
+        const saved = loadLocalGameSavestate<BilliardsGameState>('', 'billiards', true);
+        const nextBilliards = !forceNewMatch && saved && isBilliardsMatchActive(saved)
+          ? saved
+          : createInitialBilliardsState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+        setBilliardsState(nextBilliards);
+        saveLocalGameSavestate('', 'billiards', nextBilliards, true);
       } else {
         await loadExternalDoodleDictionary();
         const saved = loadLocalGameSavestate<DoodleGameState>('', 'doodle', true);
@@ -1576,6 +1659,12 @@ export function App() {
         : createInitialUnoState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
       setUnoState(nextUno);
       broadcastAndPersistMatch('uno', nextUno.turn, nextUno.matchSeed, nextUno, nextUno.winner);
+    } else if (selectedMode === 'billiards') {
+      const nextBilliards = !forceNewMatch && isBilliardsMatchActive(billiardsState)
+        ? billiardsState
+        : createInitialBilliardsState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+      setBilliardsState(nextBilliards);
+      broadcastAndPersistMatch('billiards', nextBilliards.turn, nextBilliards.matchSeed, nextBilliards, nextBilliards.winner);
     } else {
       await loadExternalDoodleDictionary();
       const nextDoodle = !forceNewMatch && isDoodleMatchActive(doodleState)
@@ -1784,6 +1873,21 @@ export function App() {
     );
   };
 
+  const handleCommitBilliardsState = async (nextState: BilliardsGameState) => {
+    setBilliardsState(nextState);
+    await broadcastAndPersistMatch('billiards', nextState.turn, nextState.matchSeed, nextState, nextState.winner);
+    if (nextState.winner) {
+      await commitGameWin('billiards', nextState.winner, `Cat Billiards (${nextState.shotCount} shots)`);
+    }
+  };
+
+  const handleResetBilliardsMatch = async () => {
+    playTapPop();
+    const fresh = createInitialBilliardsState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
+    setBilliardsState(fresh);
+    await broadcastAndPersistMatch('billiards', fresh.turn, fresh.matchSeed, fresh, null);
+  };
+
   const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
     const reaction: FloatingReaction = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1812,6 +1916,8 @@ export function App() {
       handleResetUnoMatch();
     } else if (roomData.current_mode === 'doodle') {
       handleResetDoodleMatch();
+    } else if (roomData.current_mode === 'billiards') {
+      handleResetBilliardsMatch();
     } else {
       handleNewSnakesSeedMatch(
         snakesState.twistsEnabled,
@@ -1873,12 +1979,16 @@ export function App() {
       ? roomData.p1_dama_wins
       : roomData.current_mode === 'doodle'
       ? roomData.p1_doodle_wins || 0
+      : roomData.current_mode === 'billiards'
+      ? roomData.p1_billiards_wins || 0
       : roomData.p1_snakes_wins;
   const p2Wins =
     roomData.current_mode === 'dama'
       ? roomData.p2_dama_wins
       : roomData.current_mode === 'doodle'
       ? roomData.p2_doodle_wins || 0
+      : roomData.current_mode === 'billiards'
+      ? roomData.p2_billiards_wins || 0
       : roomData.p2_snakes_wins;
 
   // Authoritative avatars (our own slot always uses our device's myAvatar)
@@ -1911,6 +2021,8 @@ export function App() {
       ? doodleState.turn
       : roomData.current_mode === 'uno'
       ? unoState.turn
+      : roomData.current_mode === 'billiards'
+      ? billiardsState.turn
       : snakesState.turn;
 
   const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
@@ -1955,6 +2067,8 @@ export function App() {
       ? unoState.winner
       : roomData.current_mode === 'doodle'
       ? doodleState.winner
+      : roomData.current_mode === 'billiards'
+      ? billiardsState.winner
       : snakesState.winner;
 
   const handleToggleTimer = () => {
@@ -1991,6 +2105,8 @@ export function App() {
       ? unoState.lastAction?.id ?? ''
       : roomData.current_mode === 'doodle'
       ? `${doodleState.round}-${doodleState.phase}-${doodleState.strokes.length}-${doodleState.guesses.length}`
+      : roomData.current_mode === 'billiards'
+      ? billiardsState.lastShot?.id ?? ''
       : snakesState.lastAnimation?.id ?? '';
 
   useEffect(() => {
@@ -2099,6 +2215,11 @@ export function App() {
           handleCommitUnoState(next);
         }
       }
+    } else if (mode === 'billiards') {
+      if (!billiardsAnimating && (passAndPlay || mySlot === billiardsState.turn)) {
+        const snapshot = billiardsState;
+        import('./engines/billiardsEngine').then((m) => handleCommitBilliardsState(m.performAutoShot(snapshot)));
+      }
     } else if (mode === 'doodle') {
       if (doodleState.phase === 'word_selection' && doodleState.wordChoices.length > 0) {
         const next = applySelectDoodleWord(doodleState, doodleState.wordChoices[0]);
@@ -2110,6 +2231,8 @@ export function App() {
     damaState,
     snakesState,
     doodleState,
+    billiardsState,
+    billiardsAnimating,
     passAndPlay,
     mySlot,
     activeTurnSlot,
@@ -2163,6 +2286,7 @@ export function App() {
   const hasSaved1PhoneSnakes = Boolean(saved1PhoneSnakes && isSnakesMatchActive(saved1PhoneSnakes));
   const hasSaved1PhoneUno = Boolean(saved1PhoneUno && isUnoMatchActive(saved1PhoneUno));
   const hasSaved1PhoneDoodle = Boolean(saved1PhoneDoodle && isDoodleMatchActive(saved1PhoneDoodle));
+  const hasSaved1PhoneBilliards = isBilliardsMatchActive(loadLocalGameSavestate<BilliardsGameState>('', 'billiards', true));
 
   return (
     <main className="arcade-shell">
@@ -2181,6 +2305,7 @@ export function App() {
           hasSavedSnakes={isJoinedWithPartner && isSnakesMatchActive(snakesState)}
           hasSavedUno={isJoinedWithPartner && isUnoMatchActive(unoState)}
           hasSavedDoodle={isJoinedWithPartner && isDoodleMatchActive(doodleState)}
+          hasSavedBilliards={isJoinedWithPartner && isBilliardsMatchActive(billiardsState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           passAndPlay={passAndPlay}
           onTogglePassAndPlay={handleTogglePassAndPlay}
@@ -2196,6 +2321,7 @@ export function App() {
           hasSaved1PhoneSnakes={hasSaved1PhoneSnakes}
           hasSaved1PhoneUno={hasSaved1PhoneUno}
           hasSaved1PhoneDoodle={hasSaved1PhoneDoodle}
+          hasSaved1PhoneBilliards={hasSaved1PhoneBilliards}
           saved1PhoneSnakesMaxTile={saved1PhoneSnakes?.maxTile ?? 100}
           chatMessages={chatMessages}
           onOpenSettings={() => setCustomizerOpen(true)}
@@ -2235,6 +2361,11 @@ export function App() {
                 <>
                   <DoodleClashIcon size={16} />
                   <span>Doodle Clash</span>
+                </>
+              ) : roomData.current_mode === 'billiards' ? (
+                <>
+                  <BilliardsBallIcon size={16} />
+                  <span>Cat Billiards</span>
                 </>
               ) : (
                 <>
@@ -2339,6 +2470,19 @@ export function App() {
                   }}
                 />
               ) : null
+            ) : roomData.current_mode === 'billiards' ? (
+              BilliardsBoardComp ? (
+                <BilliardsBoardComp
+                  gameState={billiardsState}
+                  mySlot={mySlot}
+                  p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
+                  p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+                  passAndPlay={passAndPlay}
+                  isPaused={isGamePaused || isShufflingActive}
+                  onCommitState={handleCommitBilliardsState}
+                  onAnimatingChange={setBilliardsAnimating}
+                />
+              ) : null
             ) : SnakesBoardComp ? (
               <SnakesBoardComp
                 gameState={snakesState}
@@ -2369,6 +2513,8 @@ export function App() {
                   ? `uno-${unoState.matchSeed}`
                   : roomData.current_mode === 'doodle'
                   ? `doodle-${doodleState.matchSeed}`
+                  : roomData.current_mode === 'billiards'
+                  ? `billiards-${billiardsState.matchSeed}`
                   : `snakes-${snakesState.boardSeed}`
               }
               isFreshMatch={
@@ -2390,6 +2536,8 @@ export function App() {
                     !doodleState.winner &&
                     doodleState.p1Score === 0 &&
                     doodleState.p2Score === 0
+                  : roomData.current_mode === 'billiards'
+                  ? billiardsState.shotCount === 0 && !billiardsState.winner
                   : !snakesState.lastAnimation &&
                     !snakesState.winner &&
                     snakesState.p1Tile === 1 &&
@@ -2402,7 +2550,7 @@ export function App() {
             />
 
             {/* Unified Victory Celebration Overlay for All Games! */}
-            {currentWinner && (
+            {currentWinner && !(roomData.current_mode === 'billiards' && billiardsAnimating) && (
               <div className="victory-overlay-card">
                 <ConfettiCelebrationOverlay />
                 <CoupleCatsSceneSvg
@@ -2423,6 +2571,8 @@ export function App() {
                             ? 'Wins Cat Dama!'
                             : roomData.current_mode === 'doodle'
                             ? 'Wins the Cat Doodle Trophy!'
+                            : roomData.current_mode === 'billiards'
+                            ? 'Wins Cat Billiards!'
                             : `Reached ${snakesState.maxTile ?? 100}!`
                         }`}
                   </span>
@@ -2460,6 +2610,8 @@ export function App() {
                     </>
                   ) : roomData.current_mode === 'doodle' ? (
                     `${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
+                  ) : roomData.current_mode === 'billiards' ? (
+                    billiardsPlayerTag(billiardsState, slot)
                   ) : roomData.current_mode === 'uno' ? (
                     (() => {
                       const hand = isP1 ? unoState.p1Hand : unoState.p2Hand;
@@ -2488,7 +2640,7 @@ export function App() {
                         active ? 'active-turn' : 'dim-turn'
                       }`}
                     >
-                      {active && roomData.current_mode !== 'doodle' && (
+                      {active && roomData.current_mode !== 'doodle' && roomData.current_mode !== 'billiards' && (
                         <span
                           className={`turn-speech-bubble ${
                             timerEnabled && timeRemaining <= 5
@@ -2591,6 +2743,7 @@ export function App() {
           hasSavedSnakes={passAndPlay ? hasSaved1PhoneSnakes : (isJoinedWithPartner && isSnakesMatchActive(snakesState))}
           hasSavedUno={passAndPlay ? hasSaved1PhoneUno : (isJoinedWithPartner && isUnoMatchActive(unoState))}
           hasSavedDoodle={passAndPlay ? hasSaved1PhoneDoodle : (isJoinedWithPartner && isDoodleMatchActive(doodleState))}
+          hasSavedBilliards={passAndPlay ? hasSaved1PhoneBilliards : (isJoinedWithPartner && isBilliardsMatchActive(billiardsState))}
           savedSnakesMaxTile={passAndPlay ? (saved1PhoneSnakes?.maxTile ?? 100) : (snakesState.maxTile ?? 100)}
         />
       )}

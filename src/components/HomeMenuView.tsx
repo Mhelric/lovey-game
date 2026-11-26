@@ -22,6 +22,7 @@ import {
   SnakeLadderIcon,
   SparkleIcon,
   UnoCardsIcon,
+  BilliardsBallIcon,
 } from './ArcadeIcons';
 import { QuickChatBar } from './QuickChatBar';
 import { normalizeRoomCode } from '../services/supabaseService';
@@ -38,6 +39,7 @@ interface HomeMenuViewProps {
   hasSavedSnakes: boolean;
   hasSavedUno?: boolean;
   hasSavedDoodle?: boolean;
+  hasSavedBilliards?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   passAndPlay?: boolean;
@@ -54,6 +56,7 @@ interface HomeMenuViewProps {
   hasSaved1PhoneSnakes?: boolean;
   hasSaved1PhoneUno?: boolean;
   hasSaved1PhoneDoodle?: boolean;
+  hasSaved1PhoneBilliards?: boolean;
   saved1PhoneSnakesMaxTile?: SnakesMaxTile;
   onOpenSettings: () => void;
   onChangeMyRoomCode: (newCode: string) => Promise<void>;
@@ -79,6 +82,7 @@ export function HomeMenuView({
   hasSavedSnakes,
   hasSavedUno = false,
   hasSavedDoodle = false,
+  hasSavedBilliards = false,
   savedSnakesMaxTile,
   chatMessages,
   passAndPlay = false,
@@ -95,6 +99,7 @@ export function HomeMenuView({
   hasSaved1PhoneSnakes = false,
   hasSaved1PhoneUno = false,
   hasSaved1PhoneDoodle = false,
+  hasSaved1PhoneBilliards = false,
   saved1PhoneSnakesMaxTile = 100,
   onOpenSettings,
   onChangeMyRoomCode,
@@ -201,6 +206,7 @@ export function HomeMenuView({
     if (mode === 'dama') return passAndPlay ? !!hasSaved1PhoneDama : !!(hasSavedDama && isJoined);
     if (mode === 'uno') return passAndPlay ? !!hasSaved1PhoneUno : !!(hasSavedUno && isJoined);
     if (mode === 'doodle') return passAndPlay ? !!hasSaved1PhoneDoodle : !!(hasSavedDoodle && isJoined);
+    if (mode === 'billiards') return passAndPlay ? !!hasSaved1PhoneBilliards : !!(hasSavedBilliards && isJoined);
     const tileMatch = (passAndPlay ? saved1PhoneSnakesMaxTile : savedSnakesMaxTile) === tiles;
     return passAndPlay ? !!(hasSaved1PhoneSnakes && tileMatch) : !!(hasSavedSnakes && isJoined && tileMatch);
   };
@@ -370,7 +376,9 @@ export function HomeMenuView({
                 ((roomData.p1_uno_wins as number) || 0) +
                 ((roomData.p2_uno_wins as number) || 0) +
                 ((roomData.p1_doodle_wins as number) || 0) +
-                ((roomData.p2_doodle_wins as number) || 0) >
+                ((roomData.p2_doodle_wins as number) || 0) +
+                (roomData.p1_billiards_wins || 0) +
+                (roomData.p2_billiards_wins || 0) >
               0
             }
             size={206}
@@ -935,6 +943,18 @@ export function HomeMenuView({
                 <span className="role-sub-label">Draw &amp; Guess Duel</span>
               </button>
 
+              {/* 4. Cat Billiards Card */}
+              <button
+                type="button"
+                className={`game-pick-btn billiards-pick sticker-press ${isOnlineSolo ? 'disabled-pick' : ''}`}
+                disabled={isOnlineSolo}
+                onClick={() => handleGameCardClick('billiards')}
+              >
+                <BilliardsBallIcon size={26} />
+                <span className="role-main-label">Cat Billiards</span>
+                <span className="role-sub-label">8-Ball Pool Duel</span>
+              </button>
+
               {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
               <div className={`game-pick-btn snakes-pick-card ${isOnlineSolo ? 'disabled-pick' : ''}`}>
                 <button
@@ -986,6 +1006,8 @@ export function HomeMenuView({
             ? 'Cat Uno'
             : savedConfirmState.mode === 'doodle'
             ? 'Doodle Clash'
+            : savedConfirmState.mode === 'billiards'
+            ? 'Cat Billiards'
             : `Snakes & Ladders (${savedConfirmState.snakesTiles ?? 100})`;
         return (
           <div

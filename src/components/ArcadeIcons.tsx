@@ -748,6 +748,21 @@ export function SnakeLadderIcon({ size = 18 }: IconProps) {
   );
 }
 
+/**
+ * Cat Billiards Game Mode Icon: Kawaii 8-Ball with little cat ears
+ */
+export function BilliardsBallIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 26 26" width={size} height={size} className={className} aria-hidden="true">
+      <path d="M5.5 9 L6.5 2.8 L10.8 6.2 Z M20.5 9 L19.5 2.8 L15.2 6.2 Z" fill="#2A1824" stroke="#5B2A4E" strokeWidth="1.6" strokeLinejoin="round" />
+      <circle cx="13" cy="14.5" r="9.5" fill="#2A1824" stroke="#5B2A4E" strokeWidth="2" />
+      <circle cx="13" cy="13.5" r="4.4" fill="#ffffff" />
+      <text x="13" y="16" textAnchor="middle" fontSize="6.4" fontWeight="800" fill="#2A1824" fontFamily="system-ui, sans-serif">8</text>
+      <ellipse cx="8.6" cy="10.2" rx="1.6" ry="1" fill="#ffffff" opacity="0.45" transform="rotate(-35 8.6 10.2)" />
+    </svg>
+  );
+}
+
 export function UnoCardsIcon({ size = 18, className }: IconProps) {
   return (
     <svg

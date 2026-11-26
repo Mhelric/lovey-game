@@ -4,6 +4,7 @@ import {
   CloseIcon,
   CrownIcon,
   DoodleClashIcon,
+  BilliardsBallIcon,
   PawIcon,
   SnakeLadderIcon,
   SparkleIcon,
@@ -120,6 +121,30 @@ const DOODLE_STEPS: readonly TutorialStep[] = [
   },
 ];
 
+const BILLIARDS_STEPS: readonly TutorialStep[] = [
+  {
+    badge: 'Cat Billiards • Step 1 of 3',
+    title: 'Aim, Charge & Strike',
+    description:
+      'Tap or slide on the table to aim — the dotted line shows where the cue ball goes. Fine-tune with ⟲ ⟳, tap SHOOT to swing the power meter, then STRIKE!',
+    tip: 'The yellow line shows where the object ball will roll after contact.',
+  },
+  {
+    badge: 'Cat Billiards • Step 2 of 3',
+    title: 'Solids vs Stripes',
+    description:
+      'After the break the table is open. Sink a ball to claim its group: Solids (1–7) or Stripes (9–15). Sinking one of yours lets you shoot again!',
+    tip: 'Scratch, miss everything, or hit the wrong group first = Ball in Hand for your partner.',
+  },
+  {
+    badge: 'Cat Billiards • Step 3 of 3',
+    title: 'Sink the 8-Ball Last',
+    description:
+      'Clear all 7 of your balls, then sink the black 8-ball to win the match!',
+    tip: 'Careful: sinking the 8 early — or scratching while potting it — loses the game!',
+  },
+];
+
 function TutorialIllustrationSvg({
   gameMode,
   stepIndex,
@@ -221,6 +246,37 @@ function TutorialIllustrationSvg({
           >
             4 Rounds Duel
           </text>
+        </>
+      ) : gameMode === 'billiards' ? (
+        <>
+          <rect x="30" y="14" width="120" height="68" rx="9" fill="#B9733F" stroke="#5B2A4E" strokeWidth="2" />
+          <rect x="37" y="21" width="106" height="54" rx="3" fill="#2FAE7A" />
+          {[
+            [37, 21],
+            [90, 21],
+            [143, 21],
+            [37, 75],
+            [90, 75],
+            [143, 75],
+          ].map(([x, y], i) => (
+            <circle key={i} cx={x} cy={y} r="4.2" fill="#1B0F17" />
+          ))}
+          {stepIndex === 0 && (
+            <line x1="60" y1="56" x2="108" y2="42" stroke="#ffffff" strokeWidth="1.6" strokeDasharray="3 2.5" />
+          )}
+          <circle cx="60" cy="56" r="5" fill="#FFFDF5" stroke="#2E1D27" strokeWidth="1" />
+          {stepIndex === 1 ? (
+            <>
+              <circle cx="104" cy="40" r="5" fill="#F5C518" stroke="#2E1D27" strokeWidth="1" />
+              <circle cx="118" cy="56" r="5" fill="#FFFDF5" stroke="#2E1D27" strokeWidth="1" />
+              <rect x="113" y="53.5" width="10" height="5" fill="#1E5BD6" />
+            </>
+          ) : (
+            <>
+              <circle cx="112" cy="40" r="5" fill="#1A1A1A" stroke="#2E1D27" strokeWidth="1" />
+              <circle cx="112" cy="40" r="2" fill="#ffffff" />
+            </>
+          )}
         </>
       ) : gameMode === 'uno' ? (
         <>
@@ -455,6 +511,8 @@ export function DamaTutorialModal({
       ? UNO_STEPS
       : gameMode === 'doodle'
       ? DOODLE_STEPS
+      : gameMode === 'billiards'
+      ? BILLIARDS_STEPS
       : DAMA_STEPS;
   const current = steps[step] || steps[0];
 
@@ -480,6 +538,8 @@ export function DamaTutorialModal({
                   ? 'Cat Uno'
                   : gameMode === 'doodle'
                   ? 'Doodle Clash'
+                  : gameMode === 'billiards'
+                  ? 'Cat Billiards'
                   : 'Cat Dama'}
               </span>
             </h2>
@@ -550,6 +610,8 @@ export function DamaTutorialModal({
                 <UnoCardsIcon size={16} />
               ) : gameMode === 'doodle' ? (
                 <DoodleClashIcon size={16} />
+              ) : gameMode === 'billiards' ? (
+                <BilliardsBallIcon size={16} />
               ) : (
                 <CrownIcon size={16} />
               )}
