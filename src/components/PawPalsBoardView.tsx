@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import { RealtimeBroadcastEvent } from '../services/supabaseService';
 import { PAWPALS_LEVEL_COUNT, PawPalsState } from '../engines/pawpalsSetup';
@@ -65,6 +65,8 @@ interface Snap {
   x: number;
   y: number;
   f: number;
+  ol?: number;
+  lo?: number[];
 }
 
 type FxKind = 'dust' | 'poof' | 'spark';
@@ -135,6 +137,8 @@ export function PawPalsBoardView({
   const commitRef = useRef(onCommitState);
   commitRef.current = onCommitState;
   const commitTimerRef = useRef<number | null>(null);
+  const introTimerRef = useRef<number | null>(null);
+  const resetKeyRef = useRef<string>('');
 
   const myElRef = useRef<SVGGElement | null>(null);
   const myBodyRef = useRef<SVGGElement | null>(null);
@@ -169,26 +173,6 @@ export function PawPalsBoardView({
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
 
-  // Reset local simulation whenever a new level starts
-  useEffect(() => {
-    catRef.current = createCat(level.spawns[mySlot]);
-    worldRef.current = createWorld(level);
-    snapsRef.current = [];
-    collectedRef.current = new Set();
-    setCollected([]);
-    setOpenKey('');
-    setPartnerSeen(false);
-    setBedStatus({ me: false, partner: false });
-    setFx([]);
-    if (!finished) {
-      setIntro(levelIdx);
-      const t = window.setTimeout(() => setIntro((v) => (v === levelIdx ? null : v)), 2300);
-      if (gameState.level > 0) playPowerupReveal();
-      return () => window.clearTimeout(t);
-    }
-    return undefined;
-  }, [levelIdx, gameState.matchSeed]);
-
   useEffect(() => {
     if (finished) playVictoryFanfare();
   }, [finished]);
@@ -196,6 +180,7 @@ export function PawPalsBoardView({
   useEffect(
     () => () => {
       if (commitTimerRef.current) window.clearTimeout(commitTimerRef.current);
+      if (introTimerRef.current) window.clearTimeout(introTimerRef.current);
     },
     []
   );
@@ -205,13 +190,24 @@ export function PawPalsBoardView({
     () =>
       subscribeRealtime((ev) => {
         if (ev.type === 'pawpals_pos') {
-          if (ev.slot === mySlot || ev.lv !== stateRef.current.level) return;
+          if (ev.slot === mySlot || ev.lv !== stateRef.current.level) {
+            return;
+          }
           const buf = snapsRef.current;
-          buf.push({ at: performance.now(), x: ev.x, y: ev.y, f: ev.f });
+          buf.push({
+            at: performance.now(),
+            x: ev.x,
+            y: ev.y,
+            f: ev.f,
+            ol: ev.ol,
+            lo: ev.lo,
+          });
           if (buf.length > 30) buf.splice(0, buf.length - 30);
           setPartnerSeen(true);
         } else if (ev.type === 'pawpals_treat') {
-          if (ev.lv !== stateRef.current.level || collectedRef.current.has(ev.id)) return;
+          if (ev.lv !== stateRef.current.level || collectedRef.current.has(ev.id)) {
+            return;
+          }
           collectedRef.current.add(ev.id);
           setCollected([...collectedRef.current]);
           playCatMeow();
@@ -220,8 +216,58 @@ export function PawPalsBoardView({
     [mySlot]
   );
 
-  // Main loop: fixed-step physics for MY cat, interpolation for the partner's cat
-  useEffect(() => {
+  // Synchronous layout reset + fixed-step simulation loop per level/seed so stale rAF frames
+  // can never fire across level transitions or rematches.
+  useLayoutEffect(() => {
+    const resetKey = `${levelIdx}:${gameState.matchSeed}:${mySlot}`;
+    if (resetKeyRef.current !== resetKey) {
+      resetKeyRef.current = resetKey;
+      if (commitTimerRef.current !== null) {
+        window.clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+      }
+      if (introTimerRef.current !== null) {
+        window.clearTimeout(introTimerRef.current);
+        introTimerRef.current = null;
+      }
+
+      catRef.current = createCat(level.spawns[mySlot]);
+      worldRef.current = createWorld(level);
+      snapsRef.current = [];
+      collectedRef.current = new Set();
+      clearedRef.current = -1;
+      setCollected([]);
+      setOpenKey('');
+      setPartnerSeen(false);
+      setBedStatus({ me: false, partner: false });
+      setFx([]);
+
+      const mySp = level.spawns[mySlot];
+      const pSp = level.spawns[partnerSlot];
+      myElRef.current?.setAttribute('transform', `translate(${n3(mySp.x + CAT_W / 2)} ${n3(mySp.y + CAT_H)})`);
+      partnerElRef.current?.setAttribute('transform', `translate(${n3(pSp.x + CAT_W / 2)} ${n3(pSp.y + CAT_H)})`);
+      level.lifts.forEach((_, i) => {
+        liftElRefs.current[i]?.setAttribute('transform', 'translate(0 0)');
+      });
+
+      if (!finished) {
+        setIntro(levelIdx);
+        introTimerRef.current = window.setTimeout(() => {
+          introTimerRef.current = null;
+          setIntro((v) => (v === levelIdx ? null : v));
+        }, 2300);
+        if (gameState.level > 0) playPowerupReveal();
+      } else {
+        setIntro(null);
+      }
+    }
+
+    if (finished) return undefined;
+
+    let disposed = false;
+    const simLevel = gameState.level;
+    const simSeed = gameState.matchSeed;
+    let effectCleared = false;
     let raf = 0;
     let last = performance.now();
     let acc = 0;
@@ -229,13 +275,15 @@ export function PawPalsBoardView({
     let seq = 0;
     let lastBed = '';
     let landT = 0;
-    // Partner motion estimate (for squash & stretch)
+    // Partner motion estimate (for squash & stretch + lift-relative alignment)
     let pPrev: { x: number; y: number } | null = null;
     let pVy = 0;
     let pVx = 0;
     let pLandT = 0;
+    let pRideLift = -1;
+    let pLastDelta = 0;
 
-    const partnerPos = (now: number): Snap | null => {
+    const snapAt = (now: number): { a: Snap; b: Snap; k: number } | null => {
       const buf = snapsRef.current;
       if (!buf.length) return null;
       const t = now - INTERP_DELAY_MS;
@@ -244,10 +292,83 @@ export function PawPalsBoardView({
         const b = buf[i];
         if (a.at <= t && t <= b.at) {
           const k = b.at === a.at ? 1 : (t - a.at) / (b.at - a.at);
-          return { at: t, x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, f: b.f };
+          return { a, b, k };
         }
       }
-      return t < buf[0].at ? buf[0] : buf[buf.length - 1];
+      const edge = t < buf[0].at ? buf[0] : buf[buf.length - 1];
+      return { a: edge, b: edge, k: 1 };
+    };
+
+    const resolvePartner = (
+      pair: { a: Snap; b: Snap; k: number } | null,
+      dtReal: number
+    ): (Snap & { onAnyLift: boolean }) | null => {
+      if (!pair) return null;
+      const { a, b, k } = pair;
+      // Avoid interpolating a long streak through walls when partner respawns at spawn
+      const teleported = Math.hypot(b.x - a.x, b.y - a.y) > 2.5;
+      const rx = teleported ? b.x : a.x + (b.x - a.x) * k;
+      const ryRaw = teleported ? b.y : a.y + (b.y - a.y) * k;
+
+      if (teleported) {
+        pRideLift = -1;
+        pLastDelta = 0;
+      }
+
+      if (level.lifts.length === 0) {
+        return { at: a.at + (b.at - a.at) * k, x: rx, y: ryRaw, f: b.f, onAnyLift: false };
+      }
+
+      const overLiftCol = (x: number, idx: number): boolean => {
+        const lift = level.lifts[idx];
+        return Boolean(lift && x + CAT_W > lift.col - 0.15 && x < lift.col + lift.w + 0.15);
+      };
+
+      const snapY = (s: Snap, rideIdx: number): number => {
+        if (s.ol !== undefined && s.ol >= 0 && level.lifts[s.ol]) {
+          return liftSurface(level, worldRef.current, s.ol) - CAT_H;
+        }
+        if (rideIdx >= 0 && overLiftCol(s.x, rideIdx) && level.lifts[rideIdx]) {
+          const lift = level.lifts[rideIdx];
+          const remoteY = lift.top - (s.lo?.[rideIdx] ?? worldRef.current.liftOffset[rideIdx]);
+          if (s.y + CAT_H <= remoteY + 0.25) {
+            return s.y + (liftSurface(level, worldRef.current, rideIdx) - remoteY);
+          }
+        }
+        return s.y;
+      };
+
+      const aLift = !teleported && a.ol !== undefined && a.ol >= 0 ? a.ol : -1;
+      const bLift = b.ol !== undefined && b.ol >= 0 ? b.ol : -1;
+
+      if (bLift >= 0) {
+        pRideLift = bLift;
+      } else if (aLift >= 0) {
+        pRideLift = aLift;
+      } else if (pRideLift >= 0) {
+        const lift = level.lifts[pRideLift];
+        const bRemoteY = lift ? lift.top - (b.lo?.[pRideLift] ?? worldRef.current.liftOffset[pRideLift]) : 0;
+        if (!lift || !overLiftCol(rx, pRideLift) || b.y + CAT_H > bRemoteY + 0.25) {
+          pRideLift = -1;
+        }
+      }
+
+      let ry: number;
+      if (aLift >= 0 || bLift >= 0 || pRideLift >= 0) {
+        const ay = teleported ? snapY(b, pRideLift) : snapY(a, pRideLift);
+        const by = snapY(b, pRideLift);
+        ry = teleported ? by : ay + (by - ay) * k;
+        pLastDelta = ry - ryRaw;
+      } else {
+        if (pLastDelta !== 0 && dtReal > 0) {
+          const decay = 6 * dtReal;
+          pLastDelta = Math.abs(pLastDelta) <= decay ? 0 : pLastDelta - Math.sign(pLastDelta) * decay;
+        }
+        ry = ryRaw + pLastDelta;
+      }
+
+      const onAnyLift = bLift >= 0 || (!teleported && k < 0.99 && aLift >= 0 && bLift === aLift);
+      return { at: a.at + (b.at - a.at) * k, x: rx, y: ry, f: b.f, onAnyLift };
     };
 
     const bodyTransform = (
@@ -280,12 +401,16 @@ export function PawPalsBoardView({
     };
 
     const frame = (now: number) => {
+      if (disposed) return;
+      const st = stateRef.current;
+      if (st.level !== simLevel || st.matchSeed !== simSeed || finishedRef.current) return;
+
       const dtReal = Math.min(0.1, (now - last) / 1000);
       last = now;
       const t = now / 1000;
-      const st = stateRef.current;
-      const playing = !pausedRef.current && !finishedRef.current && clearedRef.current !== st.level;
-      const partner = partnerPos(now);
+      const playing = !pausedRef.current && !effectCleared && clearedRef.current !== st.level;
+      const interpPair = snapAt(now);
+      const latestPartner = snapsRef.current.length ? snapsRef.current[snapsRef.current.length - 1] : null;
       const cat = catRef.current;
 
       if (playing) {
@@ -296,7 +421,7 @@ export function PawPalsBoardView({
           steps++;
           const wasAir = !cat.grounded;
           const vyBefore = cat.vy;
-          const pressed = pressedPlates(level, partner ? [cat, partner] : [cat]);
+          const pressed = pressedPlates(level, latestPartner ? [cat, latestPartner] : [cat]);
           const carry = updateWorld(level, worldRef.current, pressed, STEP);
           if (stepCat(cat, inputRef.current, level, worldRef.current, mySlot, STEP, carry) === 'hurt') {
             playDizzySlide();
@@ -322,7 +447,7 @@ export function PawPalsBoardView({
             collectedRef.current.add(id);
             setCollected([...collectedRef.current]);
             playCatMeow();
-            sendRealtime({ type: 'pawpals_treat', slot: mySlot, lv: st.level, id });
+            sendRealtime({ type: 'pawpals_treat', slot: mySlot, lv: st.level, seed: st.matchSeed, id });
           }
         }
         if (steps >= 10) acc = 0;
@@ -330,6 +455,7 @@ export function PawPalsBoardView({
         acc = 0;
       }
 
+      const partner = resolvePartner(interpPair, dtReal);
       const c = catRef.current;
       // ---- Visuals (direct DOM writes — no re-render per frame) ----
       const key = Object.keys(worldRef.current.open)
@@ -347,13 +473,13 @@ export function PawPalsBoardView({
         if (pPrev && dtReal > 0) {
           const vy = (partner.y - pPrev.y) / dtReal;
           const vx = (partner.x - pPrev.x) / dtReal;
-          if (pVy > 6 && Math.abs(vy) < 1) pLandT = LAND_SQUASH;
+          if (pVy > 6 && (partner.onAnyLift || Math.abs(vy) < 1)) pLandT = LAND_SQUASH;
           pVy = pVy * 0.5 + vy * 0.5;
           pVx = pVx * 0.5 + vx * 0.5;
         }
         pPrev = { x: partner.x, y: partner.y };
         pLandT = Math.max(0, pLandT - dtReal);
-        const pGrounded = Math.abs(pVy) < 1.2;
+        const pGrounded = partner.onAnyLift || Math.abs(pVy) < 1.2;
         partnerElRef.current?.setAttribute(
           'transform',
           `translate(${n3(partner.x + CAT_W / 2)} ${n3(partner.y + CAT_H)})`
@@ -380,7 +506,8 @@ export function PawPalsBoardView({
         setBedStatus({ me: meIn, partner: partnerIn });
         if (meIn && partnerIn && !finishedRef.current) playAscensionChime();
       }
-      if (meIn && partnerIn && playing && mySlot === 'p1' && clearedRef.current !== st.level) {
+      if (meIn && partnerIn && playing && !effectCleared && mySlot === 'p1' && clearedRef.current !== st.level) {
+        effectCleared = true;
         clearedRef.current = st.level;
         const results = [...st.results, { treats: collectedRef.current.size }];
         const nextLevel = st.level + 1;
@@ -403,17 +530,31 @@ export function PawPalsBoardView({
           type: 'pawpals_pos',
           slot: mySlot,
           lv: st.level,
+          seed: st.matchSeed,
           x: Math.round(c.x * 100) / 100,
           y: Math.round(c.y * 100) / 100,
           f: c.facing,
           seq: seq++,
+          ...(level.lifts.length > 0
+            ? {
+                ol: c.onLift,
+                lo: worldRef.current.liftOffset.map((v) => Math.round(v * 100) / 100),
+              }
+            : {}),
         });
       }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [level, mySlot]);
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      if (commitTimerRef.current !== null) {
+        window.clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+      }
+    };
+  }, [level, levelIdx, gameState.level, gameState.matchSeed, finished, mySlot, partnerSlot]);
 
   // Keyboard (desktop / testing)
   useEffect(() => {

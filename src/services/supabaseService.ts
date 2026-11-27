@@ -350,12 +350,15 @@ export type RealtimeBroadcastEvent =
       type: 'pawpals_pos';
       slot: PlayerSlot;
       lv: number;
+      seed?: number;
       x: number;
       y: number;
       f: number;
       seq: number;
+      ol?: number;
+      lo?: number[];
     }
-  | { type: 'pawpals_treat'; slot: PlayerSlot; lv: number; id: number }
+  | { type: 'pawpals_treat'; slot: PlayerSlot; lv: number; seed?: number; id: number }
   | { type: 'doodle_stroke'; stroke: unknown; sender: PlayerSlot }
   | { type: 'doodle_clear'; sender: PlayerSlot }
   | { type: 'doodle_guess'; guess: string; sender: PlayerSlot }

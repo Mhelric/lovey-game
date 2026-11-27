@@ -545,13 +545,23 @@ function mergeBilliardsSavestate(
   return inc.matchSeed === 202613 ? l : inc;
 }
 
-function mergePawPalsSavestate(l: PawPalsState, inc?: PawPalsState): PawPalsState {
+function mergePawPalsSavestate(
+  l: PawPalsState,
+  inc?: PawPalsState,
+  isPlayingLive = false
+): PawPalsState {
   if (!inc || typeof inc.level !== 'number') return l;
-  if (l.matchSeed === inc.matchSeed) return inc.level >= l.level ? inc : l;
+  if (l.matchSeed === inc.matchSeed) {
+    if (l.winner && !inc.winner) return l;
+    return inc.level >= l.level ? inc : l;
+  }
+  if (inc.matchSeed === 202614 && l.matchSeed !== 202614) return l;
+  if (l.matchSeed === 202614 && inc.matchSeed !== 202614) return inc;
   const lActive = isPawPalsMatchActive(l);
   const incActive = isPawPalsMatchActive(inc);
   if (lActive && !incActive) return l;
-  if (!lActive && incActive) return inc;
+  if (!lActive && incActive) return isPlayingLive ? l : inc;
+  if (isPlayingLive) return l;
   return inc.level >= l.level ? inc : l;
 }
 
@@ -1144,7 +1154,7 @@ export function App() {
           }
           const inPawPals = event.pawpalsState as PawPalsState | undefined;
           if (inPawPals && typeof inPawPals.level === 'number') {
-            setPawPalsState((prev) => mergePawPalsSavestate(prev, inPawPals));
+            setPawPalsState((prev) => mergePawPalsSavestate(prev, inPawPals, isLive));
           }
           // If the Host is in active match ('play'), automatically hop straight onto the active board (Instant Rejoin)
           if (
@@ -1972,7 +1982,10 @@ export function App() {
 
   const handleResetPawPalsMatch = async () => {
     playTapPop();
-    const fresh = createInitialPawPalsState(Math.floor(100000 + Math.random() * 899999));
+    const nextSeed = pawpalsState.winner
+      ? pawpalsState.matchSeed + 1
+      : Math.floor(100000 + Math.random() * 899999);
+    const fresh = createInitialPawPalsState(nextSeed);
     setPawPalsState(fresh);
     await broadcastAndPersistMatch('pawpals', 'p1', fresh.matchSeed, fresh, null);
   };
