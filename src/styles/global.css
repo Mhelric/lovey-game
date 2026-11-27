@@ -7592,3 +7592,557 @@ body {
 .game-pick-btn.billiards-pick {
   background: #E6F7EF;
 }
+
+/* ==========================================================================
+   PAW PALS (2-phone co-op platformer)
+   ========================================================================== */
+.game-pick-btn.pawpals-pick {
+  grid-column: 1 / -1;
+  min-height: 72px !important;
+  background: linear-gradient(90deg, #E3F4FF 0%, #FFE6EF 100%);
+}
+
+.pawpals-stage {
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* ---- HUD ---- */
+.pawpals-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+  flex-shrink: 0;
+}
+
+.pawpals-level-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 3px 12px 3px 3px;
+  background: #FFFDF8;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 2.5px 0 var(--ink);
+}
+
+.pawpals-level-num {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  background: linear-gradient(135deg, #38BDF8 0%, #FF7AA5 100%);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.pawpals-level-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+.pawpals-level-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pawpals-level-pips {
+  display: flex;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.pawpals-level-pips i {
+  width: 12px;
+  height: 5px;
+  border-radius: 3px;
+  background: #F1DDE8;
+}
+
+.pawpals-level-pips i.done {
+  background: #FF7AA5;
+}
+
+.pawpals-level-pips i.now {
+  background: #38BDF8;
+  animation: pp-pip 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes pp-pip {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+
+.pawpals-fish-chip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 4px 9px;
+  background: #FFFDF8;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 2.5px 0 var(--ink);
+}
+
+.pawpals-fish-chip span {
+  display: flex;
+}
+
+.pawpals-fish-chip span.got {
+  animation: pp-fish-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pp-fish-in {
+  from { transform: scale(0.3) rotate(-20deg); }
+  to { transform: scale(1) rotate(0); }
+}
+
+/* ---- Board ---- */
+.pawpals-board-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+
+.pawpals-frame {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 20;
+  width: min(calc(100cqw - 6px), calc(80cqh - 10px));
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--ink);
+  overflow: hidden;
+  background: #FFF6EE;
+}
+
+.pawpals-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Own compositor layer: cat movement never repaints the level art */
+.pawpals-live {
+  will-change: transform;
+}
+
+/* Water crest bob */
+.pp-wave {
+  animation: pp-wave 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes pp-wave {
+  from { transform: translateY(-0.03px); }
+  to { transform: translateY(0.05px); }
+}
+
+/* Zzz over the bed */
+.pp-zzz {
+  opacity: 0;
+  animation: pp-zzz 2.6s ease-out infinite;
+}
+
+.pp-zzz-2 {
+  animation-delay: 1.3s;
+}
+
+@keyframes pp-zzz {
+  0% { opacity: 0; transform: translate(0, 0); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(0.45px, -0.9px); }
+}
+
+/* Gates slide up into their header when opened */
+.pp-gate-body {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  transition: transform 0.24s cubic-bezier(0.34, 1.3, 0.64, 1), opacity 0.24s ease;
+}
+
+.pp-gate.open .pp-gate-body {
+  transform: scaleY(0.06);
+  opacity: 0.5;
+}
+
+/* Plates sink when pressed */
+.pp-plate-btn {
+  transition: transform 0.1s ease-out;
+}
+
+.pp-plate.on .pp-plate-btn {
+  transform: translateY(0.13px);
+}
+
+/* Treats bob, then pop when collected */
+.pp-treat {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: pp-bob 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes pp-bob {
+  from { transform: translateY(-0.07px) rotate(-6deg); }
+  to { transform: translateY(0.07px) rotate(6deg); }
+}
+
+.pp-treat.got {
+  animation: pp-treat-pop 0.45s ease-out forwards;
+}
+
+@keyframes pp-treat-pop {
+  0% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.5) translateY(-0.2px); opacity: 1; }
+  100% { transform: scale(0.4) translateY(-0.8px); opacity: 0; }
+}
+
+/* Cats */
+.pp-ghost {
+  opacity: 0.45;
+}
+
+.pp-you {
+  animation: pp-you 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pp-you {
+  from { transform: translateY(-0.06px); }
+  to { transform: translateY(0.06px); }
+}
+
+/* Effects */
+.pp-fx {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.pp-fx-dust {
+  animation: pp-dust 0.45s ease-out forwards;
+}
+
+@keyframes pp-dust {
+  from { transform: scale(0.4); opacity: 0.95; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+
+.pp-fx-poof {
+  transform-origin: 50% 50%;
+  animation: pp-poof 0.6s ease-out forwards;
+}
+
+@keyframes pp-poof {
+  0% { transform: scale(0.4); opacity: 1; }
+  60% { transform: scale(1.15); opacity: 0.9; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.pp-fx-spark {
+  transform-origin: 50% 50%;
+  animation: pp-spark 0.6s ease-out forwards;
+}
+
+@keyframes pp-spark {
+  0% { transform: scale(0) rotate(0); opacity: 1; }
+  50% { transform: scale(1.2) rotate(45deg); opacity: 1; }
+  100% { transform: scale(0.6) rotate(90deg); opacity: 0; }
+}
+
+/* ---- Overlays ---- */
+.pawpals-intro {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 10px 22px 12px;
+  background: #FFFDF8;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: pp-intro 2.3s ease forwards;
+}
+
+@keyframes pp-intro {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  20% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.95); }
+}
+
+.pawpals-intro-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #FF6F9C;
+}
+
+.pawpals-intro-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.pawpals-clear {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(255, 214, 228, 0.35);
+  animation: pp-fade-in 0.3s ease;
+}
+
+@keyframes pp-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pawpals-clear-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 22px;
+  background: #FFFDF8;
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 4px 0 var(--ink);
+  animation: pp-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pp-pop-in {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.pawpals-clear-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.pawpals-clear-fish {
+  display: flex;
+  gap: 4px;
+}
+
+.pp-heart {
+  position: absolute;
+  bottom: 28%;
+  font-size: 22px;
+  color: #FF6F9C;
+  opacity: 0;
+  animation: pp-heart 1.5s ease-out infinite;
+}
+
+.pp-heart.h1 { left: 28%; }
+.pp-heart.h2 { left: 50%; animation-delay: 0.4s; font-size: 28px; }
+.pp-heart.h3 { left: 70%; animation-delay: 0.8s; }
+
+@keyframes pp-heart {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-90px) scale(1.1); }
+}
+
+.pawpals-toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  max-width: 88%;
+  width: max-content;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+  color: #ffffff;
+  background: #FF6F9C;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 2.5px 0 var(--ink);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: pp-toast 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pp-toast {
+  from { transform: translate(-50%, -14px) scale(0.8); opacity: 0; }
+  to { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+.pawpals-bed-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  max-width: 88%;
+  width: max-content;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--ink);
+  background: #FFFDF8;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* ---- Controls ---- */
+.pawpals-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 390px;
+  flex-shrink: 0;
+  padding: 0 2px 4px;
+  box-sizing: border-box;
+}
+
+.pawpals-dpad {
+  display: flex;
+  gap: 8px;
+}
+
+.pawpals-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 64px;
+  height: 58px;
+  padding: 0;
+  color: var(--ink);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF0F5 100%);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+
+.pawpals-btn.is-down,
+.pawpals-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.pawpals-btn.pawpals-jump {
+  width: 96px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #FF9DBE 0%, #FF6F9C 100%);
+}
+
+.pawpals-role {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 12px;
+  border: 2px dashed rgba(91, 42, 78, 0.35);
+  line-height: 1.15;
+}
+
+.pawpals-role.p1 {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.pawpals-role.p2 {
+  background: rgba(255, 122, 165, 0.12);
+}
+
+.pawpals-role-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.pawpals-role-hint {
+  max-width: 100%;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pawpals-need-two {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 280px;
+  margin: auto;
+  padding: 18px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--ink);
+  background: #FFFDF5;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 3px 0 var(--ink);
+}

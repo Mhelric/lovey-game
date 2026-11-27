@@ -26,6 +26,7 @@ import {
   TrophyIcon,
   UnoCardsIcon,
   BilliardsBallIcon,
+  PawPalsIcon,
 } from './components/ArcadeIcons';
 
 
@@ -46,6 +47,13 @@ import {
   createInitialBilliardsState,
   isBilliardsMatchActive,
 } from './engines/billiardsSetup';
+import {
+  createInitialPawPalsState,
+  isPawPalsMatchActive,
+  pawPalsTag,
+  PAWPALS_LEVEL_COUNT,
+  PawPalsState,
+} from './engines/pawpalsSetup';
 import { HomeMenuView } from './components/HomeMenuView';
 import { QuickChatBar } from './components/QuickChatBar';
 import {
@@ -98,6 +106,7 @@ const GAME_DISPLAY_NAMES: Record<GameMode, string> = {
   uno: 'Cat Uno',
   doodle: 'Doodle Clash',
   billiards: 'Cat Billiards',
+  pawpals: 'Paw Pals',
 };
 
 /**
@@ -536,6 +545,16 @@ function mergeBilliardsSavestate(
   return inc.matchSeed === 202613 ? l : inc;
 }
 
+function mergePawPalsSavestate(l: PawPalsState, inc?: PawPalsState): PawPalsState {
+  if (!inc || typeof inc.level !== 'number') return l;
+  if (l.matchSeed === inc.matchSeed) return inc.level >= l.level ? inc : l;
+  const lActive = isPawPalsMatchActive(l);
+  const incActive = isPawPalsMatchActive(inc);
+  if (lActive && !incActive) return l;
+  if (!lActive && incActive) return inc;
+  return inc.level >= l.level ? inc : l;
+}
+
 function loadSavedMyAvatar(): CatAvatarConfig {
   try {
     const raw = localStorage.getItem(STORAGE_MY_AVATAR_KEY);
@@ -645,6 +664,12 @@ export function App() {
     return createInitialBilliardsState();
   });
   const [billiardsAnimating, setBilliardsAnimating] = useState(false);
+  const [pawpalsState, setPawPalsState] = useState<PawPalsState>(() => {
+    const saved = loadLocalGameSavestate<PawPalsState>(roomCode, 'pawpals');
+    if (saved && typeof saved.level === 'number') return saved;
+    return createInitialPawPalsState();
+  });
+  const pawpalsListenersRef = useRef(new Set<(ev: RealtimeBroadcastEvent) => void>());
   // Reload always on the menu as requested
   const [activeScreen, setActiveScreen] = useState<'menu' | 'play'>('menu');
   const activeScreenRef = useRef<'menu' | 'play'>('menu');
@@ -659,7 +684,9 @@ export function App() {
       const savedUno = loadLocalGameSavestate<UnoGameState>(roomCode, 'uno');
       const savedDoodle = loadLocalGameSavestate<DoodleGameState>(roomCode, 'doodle');
       const savedBilliards = loadLocalGameSavestate<BilliardsGameState>(roomCode, 'billiards');
+      const savedPawPals = loadLocalGameSavestate<PawPalsState>(roomCode, 'pawpals');
       return Boolean(
+        (savedSession.mode === 'pawpals' && isPawPalsMatchActive(savedPawPals)) ||
         (savedSession.mode === 'billiards' && isBilliardsMatchActive(savedBilliards)) ||
         (savedSession.mode === 'dama' && isDamaMatchActive(savedDama)) ||
         (savedSession.mode === 'snakes' && isSnakesMatchActive(savedSnakes)) ||
@@ -756,6 +783,7 @@ export function App() {
   const [UnoBoardComp, setUnoBoardComp] = useState<any>(null);
   const [DoodleBoardComp, setDoodleBoardComp] = useState<any>(null);
   const [BilliardsBoardComp, setBilliardsBoardComp] = useState<any>(null);
+  const [PawPalsBoardComp, setPawPalsBoardComp] = useState<any>(null);
 
   useEffect(() => {
     if (roomData.current_mode === 'dama' && !DamaBoardComp) {
@@ -778,8 +806,12 @@ export function App() {
       import('./components/BilliardsBoardView').then((m) => {
         setBilliardsBoardComp(() => m.BilliardsBoardView);
       });
+    } else if (roomData.current_mode === 'pawpals' && !PawPalsBoardComp) {
+      import('./components/PawPalsBoardView').then((m) => {
+        setPawPalsBoardComp(() => m.PawPalsBoardView);
+      });
     }
-  }, [roomData.current_mode, DamaBoardComp, SnakesBoardComp, UnoBoardComp, DoodleBoardComp, BilliardsBoardComp]);
+  }, [roomData.current_mode, DamaBoardComp, SnakesBoardComp, UnoBoardComp, DoodleBoardComp, BilliardsBoardComp, PawPalsBoardComp]);
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
 
   // Turn timer is turned OFF by default as requested
@@ -823,6 +855,8 @@ export function App() {
   doodleStateRef.current = doodleState;
   const billiardsStateRef = useRef<BilliardsGameState>(billiardsState);
   billiardsStateRef.current = billiardsState;
+  const pawpalsStateRef = useRef<PawPalsState>(pawpalsState);
+  pawpalsStateRef.current = pawpalsState;
   const roomDataRef = useRef<CoupleRoomRow>(roomData);
   roomDataRef.current = roomData;
 
@@ -843,6 +877,10 @@ export function App() {
   useEffect(() => {
     saveLocalGameSavestate(roomCode, 'billiards', billiardsState, passAndPlay);
   }, [roomCode, billiardsState, passAndPlay]);
+
+  useEffect(() => {
+    if (!passAndPlay) saveLocalGameSavestate(roomCode, 'pawpals', pawpalsState, false);
+  }, [roomCode, pawpalsState, passAndPlay]);
 
   useEffect(() => {
     saveLocalActiveSession(roomCode, activeScreen, roomData.current_mode, passAndPlay);
@@ -886,6 +924,8 @@ export function App() {
       setBgMusicTrack('doodle');
     } else if (roomData.current_mode === 'billiards') {
       setBgMusicTrack('billiards');
+    } else if (roomData.current_mode === 'pawpals') {
+      setBgMusicTrack('pawpals');
     } else {
       setBgMusicTrack('dama');
     }
@@ -940,6 +980,10 @@ export function App() {
     const localBilliards = loadLocalGameSavestate<BilliardsGameState>(targetRoom, 'billiards');
     if (localBilliards && Array.isArray(localBilliards.balls)) {
       setBilliardsState((prev) => mergeBilliardsSavestate(prev, localBilliards));
+    }
+    const localPawPals = loadLocalGameSavestate<PawPalsState>(targetRoom, 'pawpals');
+    if (localPawPals && typeof localPawPals.level === 'number') {
+      setPawPalsState((prev) => mergePawPalsSavestate(prev, localPawPals));
     }
 
     const [row, matchRow] = await Promise.all([
@@ -1031,6 +1075,7 @@ export function App() {
             unoState: unoStateRef.current,
             doodleState: doodleStateRef.current,
             billiardsState: billiardsStateRef.current,
+            pawpalsState: pawpalsStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -1047,6 +1092,7 @@ export function App() {
             snakesState: snakesStateRef.current,
             doodleState: doodleStateRef.current,
             billiardsState: billiardsStateRef.current,
+            pawpalsState: pawpalsStateRef.current,
             currentMode: roomDataRef.current.current_mode,
             isPlaying: activeScreenRef.current === 'play',
             timerConfig: {
@@ -1096,6 +1142,10 @@ export function App() {
           if (inBilliards && Array.isArray(inBilliards.balls)) {
             setBilliardsState((prev) => mergeBilliardsSavestate(prev, inBilliards, isLive));
           }
+          const inPawPals = event.pawpalsState as PawPalsState | undefined;
+          if (inPawPals && typeof inPawPals.level === 'number') {
+            setPawPalsState((prev) => mergePawPalsSavestate(prev, inPawPals));
+          }
           // If the Host is in active match ('play'), automatically hop straight onto the active board (Instant Rejoin)
           if (
             event.isPlaying &&
@@ -1104,6 +1154,7 @@ export function App() {
               event.currentMode === 'snakes' ||
               event.currentMode === 'uno' ||
               event.currentMode === 'billiards' ||
+              event.currentMode === 'pawpals' ||
               event.currentMode === 'doodle')
           ) {
             setRoomData((prev) => ({
@@ -1117,6 +1168,7 @@ export function App() {
               event.currentMode === 'snakes' ||
               event.currentMode === 'uno' ||
               event.currentMode === 'billiards' ||
+              event.currentMode === 'pawpals' ||
               event.currentMode === 'doodle') &&
             activeScreenRef.current === 'menu'
           ) {
@@ -1169,6 +1221,13 @@ export function App() {
             if (incoming && Array.isArray(incoming.balls)) {
               setBilliardsState(incoming);
             }
+          } else if (event.gameMode === 'pawpals') {
+            const incoming = event.stateJson as PawPalsState;
+            if (incoming && typeof incoming.level === 'number') {
+              setPawPalsState((prev) =>
+                prev.matchSeed === incoming.matchSeed && prev.level > incoming.level ? prev : incoming
+              );
+            }
           }
           if (event.winner === 'p1' || event.winner === 'p2') {
             const winKey = `${event.winner}_${event.gameMode}_wins` as keyof CoupleRoomRow;
@@ -1194,6 +1253,8 @@ export function App() {
               });
             });
           }
+        } else if (event.type === 'pawpals_pos' || event.type === 'pawpals_treat') {
+          pawpalsListenersRef.current.forEach((cb) => cb(event));
         } else if (event.type === 'doodle_stroke') {
           const stroke = event.stroke as DoodleStroke;
           if (stroke && Array.isArray(stroke.points)) {
@@ -1313,6 +1374,11 @@ export function App() {
       const maybeBilliards = matchRow.state_json as BilliardsGameState;
       if (Array.isArray(maybeBilliards?.balls)) {
         setBilliardsState((prev) => mergeBilliardsSavestate(prev, maybeBilliards));
+      }
+    } else if (matchRow.game_mode === 'pawpals') {
+      const maybePawPals = matchRow.state_json as PawPalsState;
+      if (maybePawPals && typeof maybePawPals.level === 'number') {
+        setPawPalsState((prev) => mergePawPalsSavestate(prev, maybePawPals));
       }
     }
   }, []);
@@ -1461,6 +1527,9 @@ export function App() {
       } else if (mode === 'billiards') {
         const bl = activeMatch.state_json as BilliardsGameState;
         if (Array.isArray(bl?.balls)) setBilliardsState(bl);
+      } else if (mode === 'pawpals') {
+        const pp = activeMatch.state_json as PawPalsState;
+        if (pp && typeof pp.level === 'number') setPawPalsState(pp);
       }
       setActiveScreen('play');
     }
@@ -1595,6 +1664,8 @@ export function App() {
     snakesMaxTile: SnakesMaxTile = 100,
     forceNewMatch = false
   ) => {
+    // Paw Pals is a real-time 2-phone co-op game — never launch it in 1-phone mode
+    if (selectedMode === 'pawpals' && soloPractice) return;
     playTapPop();
     setPassAndPlay(soloPractice);
     setRoomData((prev) => ({ ...prev, current_mode: selectedMode }));
@@ -1665,6 +1736,12 @@ export function App() {
         : createInitialBilliardsState(Math.floor(100000 + Math.random() * 899999), pickFairStartingTurn());
       setBilliardsState(nextBilliards);
       broadcastAndPersistMatch('billiards', nextBilliards.turn, nextBilliards.matchSeed, nextBilliards, nextBilliards.winner);
+    } else if (selectedMode === 'pawpals') {
+      const nextPawPals = !forceNewMatch && isPawPalsMatchActive(pawpalsState)
+        ? pawpalsState
+        : createInitialPawPalsState(Math.floor(100000 + Math.random() * 899999));
+      setPawPalsState(nextPawPals);
+      broadcastAndPersistMatch('pawpals', 'p1', nextPawPals.matchSeed, nextPawPals, nextPawPals.winner);
     } else {
       await loadExternalDoodleDictionary();
       const nextDoodle = !forceNewMatch && isDoodleMatchActive(doodleState)
@@ -1888,6 +1965,28 @@ export function App() {
     await broadcastAndPersistMatch('billiards', fresh.turn, fresh.matchSeed, fresh, null);
   };
 
+  const handleCommitPawPalsState = async (nextState: PawPalsState) => {
+    setPawPalsState(nextState);
+    await broadcastAndPersistMatch('pawpals', 'p1', nextState.matchSeed, nextState, nextState.winner);
+  };
+
+  const handleResetPawPalsMatch = async () => {
+    playTapPop();
+    const fresh = createInitialPawPalsState(Math.floor(100000 + Math.random() * 899999));
+    setPawPalsState(fresh);
+    await broadcastAndPersistMatch('pawpals', 'p1', fresh.matchSeed, fresh, null);
+  };
+
+  const pawpalsSend = useCallback((ev: RealtimeBroadcastEvent) => {
+    channelRef.current?.sendBroadcast(ev);
+  }, []);
+  const pawpalsSubscribe = useCallback((cb: (ev: RealtimeBroadcastEvent) => void) => {
+    pawpalsListenersRef.current.add(cb);
+    return () => {
+      pawpalsListenersRef.current.delete(cb);
+    };
+  }, []);
+
   const handleSendReaction = (content: string, kind: 'emoji' | 'chat') => {
     const reaction: FloatingReaction = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -1918,6 +2017,8 @@ export function App() {
       handleResetDoodleMatch();
     } else if (roomData.current_mode === 'billiards') {
       handleResetBilliardsMatch();
+    } else if (roomData.current_mode === 'pawpals') {
+      handleResetPawPalsMatch();
     } else {
       handleNewSnakesSeedMatch(
         snakesState.twistsEnabled,
@@ -2023,6 +2124,8 @@ export function App() {
       ? unoState.turn
       : roomData.current_mode === 'billiards'
       ? billiardsState.turn
+      : roomData.current_mode === 'pawpals'
+      ? 'p1'
       : snakesState.turn;
 
   const [turnBubbleText, setTurnBubbleText] = useState('Your turn!');
@@ -2069,6 +2172,8 @@ export function App() {
       ? doodleState.winner
       : roomData.current_mode === 'billiards'
       ? billiardsState.winner
+      : roomData.current_mode === 'pawpals'
+      ? pawpalsState.winner
       : snakesState.winner;
 
   const handleToggleTimer = () => {
@@ -2122,6 +2227,7 @@ export function App() {
   useEffect(() => {
     if (
       !timerEnabled ||
+      roomData.current_mode === 'pawpals' ||
       activeScreen !== 'play' ||
       currentWinner ||
       isShufflingActive ||
@@ -2140,7 +2246,7 @@ export function App() {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [timerEnabled, activeScreen, currentWinner, isShufflingActive, isGamePaused]);
+  }, [timerEnabled, activeScreen, currentWinner, isShufflingActive, isGamePaused, roomData.current_mode]);
 
   const executeAutoRandomMove = useCallback(() => {
     const mode = roomData.current_mode;
@@ -2306,6 +2412,7 @@ export function App() {
           hasSavedUno={isJoinedWithPartner && isUnoMatchActive(unoState)}
           hasSavedDoodle={isJoinedWithPartner && isDoodleMatchActive(doodleState)}
           hasSavedBilliards={isJoinedWithPartner && isBilliardsMatchActive(billiardsState)}
+          hasSavedPawPals={isJoinedWithPartner && isPawPalsMatchActive(pawpalsState)}
           savedSnakesMaxTile={snakesState.maxTile ?? 100}
           passAndPlay={passAndPlay}
           onTogglePassAndPlay={handleTogglePassAndPlay}
@@ -2366,6 +2473,11 @@ export function App() {
                 <>
                   <BilliardsBallIcon size={16} />
                   <span>Cat Billiards</span>
+                </>
+              ) : roomData.current_mode === 'pawpals' ? (
+                <>
+                  <PawPalsIcon size={16} />
+                  <span>Paw Pals</span>
                 </>
               ) : (
                 <>
@@ -2483,6 +2595,24 @@ export function App() {
                   onAnimatingChange={setBilliardsAnimating}
                 />
               ) : null
+            ) : roomData.current_mode === 'pawpals' ? (
+              passAndPlay ? (
+                <div className="pawpals-need-two">
+                  <PawPalsIcon size={44} />
+                  <p>Paw Pals needs 2 phones — one cat each. Switch off 1-Phone mode and invite your partner!</p>
+                </div>
+              ) : PawPalsBoardComp ? (
+                <PawPalsBoardComp
+                  gameState={pawpalsState}
+                  mySlot={mySlot}
+                  p1Avatar={{ ...effectiveP1Avatar, name: p1DisplayName }}
+                  p2Avatar={{ ...effectiveP2Avatar, name: p2DisplayName }}
+                  isPaused={isGamePaused}
+                  onCommitState={handleCommitPawPalsState}
+                  sendRealtime={pawpalsSend}
+                  subscribeRealtime={pawpalsSubscribe}
+                />
+              ) : null
             ) : SnakesBoardComp ? (
               <SnakesBoardComp
                 gameState={snakesState}
@@ -2515,6 +2645,8 @@ export function App() {
                   ? `doodle-${doodleState.matchSeed}`
                   : roomData.current_mode === 'billiards'
                   ? `billiards-${billiardsState.matchSeed}`
+                  : roomData.current_mode === 'pawpals'
+                  ? `pawpals-${pawpalsState.matchSeed}`
                   : `snakes-${snakesState.boardSeed}`
               }
               isFreshMatch={
@@ -2538,6 +2670,8 @@ export function App() {
                     doodleState.p2Score === 0
                   : roomData.current_mode === 'billiards'
                   ? billiardsState.shotCount === 0 && !billiardsState.winner
+                  : roomData.current_mode === 'pawpals'
+                  ? false
                   : !snakesState.lastAnimation &&
                     !snakesState.winner &&
                     snakesState.p1Tile === 1 &&
@@ -2564,7 +2698,9 @@ export function App() {
                 <div className="victory-title">
                   <CrownIcon size={20} />
                   <span>
-                    {currentWinner === 'draw'
+                    {roomData.current_mode === 'pawpals'
+                      ? `You both cleared Paw Pals! 🐟 ${pawpalsState.results.reduce((n, r) => n + r.treats, 0)}`
+                      : currentWinner === 'draw'
                       ? 'Tie! Both Win the Cat Doodle Trophy!'
                       : `${currentWinner === 'p1' ? p1DisplayName : p2DisplayName} ${
                           roomData.current_mode === 'dama'
@@ -2599,7 +2735,7 @@ export function App() {
             >
               {(['p1', 'p2'] as const).map((slot, idx) => {
                 const isP1 = slot === 'p1';
-                const active = activeTurnSlot === slot;
+                const active = roomData.current_mode === 'pawpals' || activeTurnSlot === slot;
                 const av = isP1 ? effectiveP1Avatar : effectiveP2Avatar;
                 const name = isP1 ? p1DisplayName : p2DisplayName;
                 const online = isP1 ? p1Online : p2Online;
@@ -2612,6 +2748,8 @@ export function App() {
                     `${isP1 ? doodleState.p1Score : doodleState.p2Score} pts`
                   ) : roomData.current_mode === 'billiards' ? (
                     billiardsPlayerTag(billiardsState, slot)
+                  ) : roomData.current_mode === 'pawpals' ? (
+                    pawPalsTag(pawpalsState, slot)
                   ) : roomData.current_mode === 'uno' ? (
                     (() => {
                       const hand = isP1 ? unoState.p1Hand : unoState.p2Hand;
@@ -2631,7 +2769,9 @@ export function App() {
                       <div className="bottom-score-center">
                         <TrophyIcon size={14} />
                         <span className="bottom-score-digits">
-                          {p1Wins} : {p2Wins}
+                          {roomData.current_mode === 'pawpals'
+                            ? `${Math.min(pawpalsState.results.length, PAWPALS_LEVEL_COUNT)}/${PAWPALS_LEVEL_COUNT}`
+                            : `${p1Wins} : ${p2Wins}`}
                         </span>
                       </div>
                     )}
@@ -2640,7 +2780,7 @@ export function App() {
                         active ? 'active-turn' : 'dim-turn'
                       }`}
                     >
-                      {active && roomData.current_mode !== 'doodle' && roomData.current_mode !== 'billiards' && (
+                      {active && roomData.current_mode !== 'doodle' && roomData.current_mode !== 'billiards' && roomData.current_mode !== 'pawpals' && (
                         <span
                           className={`turn-speech-bubble ${
                             timerEnabled && timeRemaining <= 5
@@ -2744,6 +2884,8 @@ export function App() {
           hasSavedUno={passAndPlay ? hasSaved1PhoneUno : (isJoinedWithPartner && isUnoMatchActive(unoState))}
           hasSavedDoodle={passAndPlay ? hasSaved1PhoneDoodle : (isJoinedWithPartner && isDoodleMatchActive(doodleState))}
           hasSavedBilliards={passAndPlay ? hasSaved1PhoneBilliards : (isJoinedWithPartner && isBilliardsMatchActive(billiardsState))}
+          hasSavedPawPals={!passAndPlay && isJoinedWithPartner && isPawPalsMatchActive(pawpalsState)}
+          passAndPlay={passAndPlay}
           savedSnakesMaxTile={passAndPlay ? (saved1PhoneSnakes?.maxTile ?? 100) : (snakesState.maxTile ?? 100)}
         />
       )}

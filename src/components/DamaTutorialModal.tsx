@@ -5,6 +5,7 @@ import {
   CrownIcon,
   DoodleClashIcon,
   BilliardsBallIcon,
+  PawPalsIcon,
   PawIcon,
   SnakeLadderIcon,
   SparkleIcon,
@@ -145,6 +146,30 @@ const BILLIARDS_STEPS: readonly TutorialStep[] = [
   },
 ];
 
+const PAWPALS_STEPS: readonly TutorialStep[] = [
+  {
+    badge: 'Paw Pals • Step 1 of 3',
+    title: 'One Cat Each',
+    description:
+      'Hold ◀ ▶ to run and JUMP to hop. The host is Splash 💧 who can swim through water; the partner is Fluff 🧶 who can bounce over yarn.',
+    tip: 'Splash gets tangled in yarn and Fluff hates water — thorns hurt both of you!',
+  },
+  {
+    badge: 'Paw Pals • Step 2 of 3',
+    title: 'Hold the Door',
+    description:
+      'Colored plates open the matching gate or raise the matching lift — only while a cat stands on them. One of you holds the plate so the other can pass!',
+    tip: 'Talk it out (or use the chat stickers) to plan who goes first.',
+  },
+  {
+    badge: 'Paw Pals • Step 3 of 3',
+    title: 'Snuggle in the Bed',
+    description:
+      'Both cats must curl up in the pink cat bed together to clear the level. Grab the 🐟 treats along the way!',
+    tip: 'Clear all 5 levels together to win. Paw Pals needs 2 phones.',
+  },
+];
+
 function TutorialIllustrationSvg({
   gameMode,
   stepIndex,
@@ -245,6 +270,32 @@ function TutorialIllustrationSvg({
             fontWeight="800"
           >
             4 Rounds Duel
+          </text>
+        </>
+      ) : gameMode === 'pawpals' ? (
+        <>
+          <rect x="20" y="10" width="140" height="76" rx="8" fill="#FFF1F6" stroke="#5B2A4E" strokeWidth="2" />
+          <rect x="20" y="70" width="140" height="16" fill="#C08457" stroke="#5B2A4E" strokeWidth="2" />
+          {stepIndex === 0 && (
+            <>
+              <rect x="70" y="62" width="24" height="8" fill="#4FC3F7" />
+              <circle cx="116" cy="65" r="4" fill="#FF8FB1" stroke="#D9386A" strokeWidth="1" />
+              <circle cx="124" cy="66" r="3.6" fill="#FFB3C8" stroke="#D9386A" strokeWidth="1" />
+            </>
+          )}
+          {stepIndex === 1 && (
+            <>
+              <rect x="56" y="66" width="18" height="4" rx="1.5" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1" />
+              <rect x="104" y="40" width="10" height="30" rx="2" fill="#FFBE0B" stroke="#5B2A4E" strokeWidth="1.5" opacity="0.3" />
+            </>
+          )}
+          {stepIndex === 2 && (
+            <rect x="110" y="58" width="36" height="12" rx="4" fill="#FF9EBB" stroke="#5B2A4E" strokeWidth="1.5" />
+          )}
+          <circle cx={stepIndex === 2 ? 120 : 52} cy="58" r="9" fill="#38BDF8" stroke="#5B2A4E" strokeWidth="1.6" />
+          <circle cx={stepIndex === 2 ? 136 : 90} cy="58" r="9" fill="#FF8FB1" stroke="#5B2A4E" strokeWidth="1.6" />
+          <text x="90" y="30" textAnchor="middle" fill="#5B2A4E" fontSize="9" fontWeight="900">
+            {stepIndex === 0 ? 'Splash 💧  &  Fluff 🧶' : stepIndex === 1 ? 'Hold the plate!' : 'Snuggle time 💞'}
           </text>
         </>
       ) : gameMode === 'billiards' ? (
@@ -513,6 +564,8 @@ export function DamaTutorialModal({
       ? DOODLE_STEPS
       : gameMode === 'billiards'
       ? BILLIARDS_STEPS
+      : gameMode === 'pawpals'
+      ? PAWPALS_STEPS
       : DAMA_STEPS;
   const current = steps[step] || steps[0];
 
@@ -540,6 +593,8 @@ export function DamaTutorialModal({
                   ? 'Doodle Clash'
                   : gameMode === 'billiards'
                   ? 'Cat Billiards'
+                  : gameMode === 'pawpals'
+                  ? 'Paw Pals'
                   : 'Cat Dama'}
               </span>
             </h2>
@@ -612,6 +667,8 @@ export function DamaTutorialModal({
                 <DoodleClashIcon size={16} />
               ) : gameMode === 'billiards' ? (
                 <BilliardsBallIcon size={16} />
+              ) : gameMode === 'pawpals' ? (
+                <PawPalsIcon size={16} />
               ) : (
                 <CrownIcon size={16} />
               )}

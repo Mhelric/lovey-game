@@ -96,7 +96,14 @@ export function setSoundMuted(muted: boolean): boolean {
    - 'dama'  : Groovy Playful Cat Duel Showdown Theme
    - 'snakes': Whimsical Carnival Adventure March Theme
    ========================================================================== */
-export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno' | 'doodle' | 'billiards';
+export type BgmTrack = 'menu' | 'dama' | 'snakes' | 'uno' | 'doodle' | 'billiards' | 'pawpals';
+
+const PAWPALS_MELODY: readonly [number, number][] = [
+  [659, 262], [784, 0], [880, 349], [784, 0], [659, 262], [0, 0], [587, 294], [659, 0],
+  [523, 262], [587, 0], [659, 330], [784, 0], [880, 349], [0, 0], [784, 392], [0, 0],
+  [659, 262], [784, 0], [1047, 349], [880, 0], [784, 392], [659, 0], [587, 294], [523, 0],
+  [587, 294], [659, 0], [784, 392], [659, 0], [523, 262], [0, 0], [523, 262], [0, 0],
+];
 
 const BILLIARDS_MELODY: readonly [number, number][] = [
   [523, 175], [0, 0], [622, 0], [659, 175], [784, 0], [0, 233], [659, 0], [587, 0],
@@ -149,6 +156,7 @@ const BGM_CONFIGS: Record<
     bVol: number;
   }
 > = {
+  pawpals: { stepMs: 200, melody: PAWPALS_MELODY, lType: 'triangle', lVol: 0.075, bType: 'sine', bVol: 0.07 },
   billiards: { stepMs: 230, melody: BILLIARDS_MELODY, lType: 'sine', lVol: 0.075, bType: 'triangle', bVol: 0.08 },
   doodle: { stepMs: 185, melody: DOODLE_MELODY, lType: 'triangle', lVol: 0.08, bType: 'sine', bVol: 0.07 },
   uno: { stepMs: 180, melody: UNO_MELODY, lType: 'triangle', lVol: 0.075, bType: 'square', bVol: 0.05 },

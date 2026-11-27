@@ -1286,3 +1286,22 @@ export function DevicePhoneIcon({ size = 16, className }: IconProps) {
     </svg>
   );
 }
+
+/** Paw Pals — a blue paw (Splash) and a pink paw (Fluff) side by side */
+export function PawPalsIcon({ size = 18, className }: IconProps) {
+  const paw = (x: number, y: number, fill: string) => (
+    <g transform={`translate(${x} ${y})`} fill={fill} stroke="#5B2A4E" strokeWidth="1.1">
+      <ellipse cx="0" cy="3.2" rx="3.6" ry="2.9" />
+      <circle cx="-3.6" cy="-1.2" r="1.5" />
+      <circle cx="-1.2" cy="-3" r="1.5" />
+      <circle cx="1.4" cy="-3" r="1.5" />
+      <circle cx="3.8" cy="-1.2" r="1.5" />
+    </g>
+  );
+  return (
+    <svg viewBox="0 0 26 26" width={size} height={size} className={className} aria-hidden="true">
+      {paw(8, 9.5, '#38BDF8')}
+      {paw(18, 15.5, '#FF8FB1')}
+    </svg>
+  );
+}

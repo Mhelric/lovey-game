@@ -1,4 +1,4 @@
-export type GameMode = 'dama' | 'snakes' | 'uno' | 'doodle' | 'billiards';
+export type GameMode = 'dama' | 'snakes' | 'uno' | 'doodle' | 'billiards' | 'pawpals';
 
 export type PlayerSlot = 'p1' | 'p2';
 

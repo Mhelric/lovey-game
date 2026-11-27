@@ -19,6 +19,7 @@ import {
   DiceFaceSvg,
   DoodleClashIcon,
   BilliardsBallIcon,
+  PawPalsIcon,
   LightbulbIcon,
   PawIcon,
   PowerupIllustrationSvg,
@@ -66,6 +67,9 @@ interface CatCustomizerModalProps {
   hasSavedUno?: boolean;
   hasSavedDoodle?: boolean;
   hasSavedBilliards?: boolean;
+  hasSavedPawPals?: boolean;
+  /** 1-phone (pass & play) mode — Paw Pals is unavailable there */
+  passAndPlay?: boolean;
   savedSnakesMaxTile?: SnakesMaxTile;
 }
 
@@ -128,6 +132,8 @@ export function CatCustomizerModal({
   hasSavedUno = false,
   hasSavedDoodle = false,
   hasSavedBilliards = false,
+  hasSavedPawPals = false,
+  passAndPlay = false,
   savedSnakesMaxTile = 100,
 }: CatCustomizerModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('profile');
@@ -156,6 +162,7 @@ export function CatCustomizerModal({
     if (mode === 'uno') return Boolean(hasSavedUno);
     if (mode === 'doodle') return Boolean(hasSavedDoodle);
     if (mode === 'billiards') return Boolean(hasSavedBilliards);
+    if (mode === 'pawpals') return Boolean(hasSavedPawPals);
     const tileMatch = (savedSnakesMaxTile ?? 100) === (tiles ?? 100);
     return Boolean(hasSavedSnakes && tileMatch);
   };
@@ -171,6 +178,8 @@ export function CatCustomizerModal({
       ? 'Doodle Clash'
       : mode === 'billiards'
       ? 'Cat Billiards'
+      : mode === 'pawpals'
+      ? 'Paw Pals'
       : `Snakes & Ladders (${targetMaxTile ?? 100})`
   ) => {
     playTapPop();
@@ -596,6 +605,19 @@ export function CatCustomizerModal({
                         <BilliardsBallIcon size={20} />
                         <span>Billiards</span>
                       </button>
+                      <button
+                        type="button"
+                        className={`match-mode-card ${
+                          currentMode === 'pawpals' ? 'active' : ''
+                        }`}
+                        style={{ gridColumn: '1 / -1', opacity: passAndPlay ? 0.45 : 1 }}
+                        disabled={passAndPlay}
+                        title={passAndPlay ? 'Paw Pals needs 2 phones' : undefined}
+                        onClick={() => handleRequestSwitchGame('pawpals', undefined, 'Paw Pals')}
+                      >
+                        <PawPalsIcon size={20} />
+                        <span>{passAndPlay ? 'Paw Pals (2 phones only)' : 'Paw Pals'}</span>
+                      </button>
                     </div>
 
                     {/* Bottom Row: Snakes & Ladders with 100/150 Pills */}
@@ -920,6 +942,40 @@ export function CatCustomizerModal({
                     icon={<SparkleIcon size={16} />}
                     title="Fouls &amp; the 8-Ball"
                     desc="Scratching, missing every ball, or hitting the wrong group first gives your partner Ball in Hand. Clear your group, then sink the 8 to win — sinking it early (or scratching on it) loses the match!"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 6: PAW PALS */}
+              <div className="rules-section-box billiards-theme">
+                <div className="rules-section-banner">
+                  <PawPalsIcon size={20} />
+                  <div>
+                    <h3 className="rules-section-title">Paw Pals (Co-op Platformer)</h3>
+                    <span className="rules-section-sub">
+                      2 Phones Only • 5 Levels • Work Together
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rules-items-list">
+                  <RuleRow
+                    color="sky"
+                    icon={<PawPalsIcon size={16} />}
+                    title="One Cat Each"
+                    desc="The host plays Splash 💧 (swims through water but gets tangled in yarn). The partner plays Fluff 🧶 (bounces over yarn but hates water). Thorns hurt both cats!"
+                  />
+                  <RuleRow
+                    color="purple"
+                    icon={<PawIcon size={16} />}
+                    title="Plates, Gates &amp; Lifts"
+                    desc="Standing on a colored plate opens the matching gate or raises the matching lift — but only while someone stays on it. Take turns holding the door for each other!"
+                  />
+                  <RuleRow
+                    color="gold"
+                    icon={<SparkleIcon size={16} />}
+                    title="Snuggle in the Bed"
+                    desc="Both cats must curl up in the cat bed together to clear a level. Grab the 🐟 treats on the way for bragging rights. Clear all 5 levels to win together!"
                   />
                 </div>
               </div>

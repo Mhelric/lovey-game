@@ -23,6 +23,7 @@ import {
   SparkleIcon,
   UnoCardsIcon,
   BilliardsBallIcon,
+  PawPalsIcon,
 } from './ArcadeIcons';
 import { QuickChatBar } from './QuickChatBar';
 import { normalizeRoomCode } from '../services/supabaseService';
@@ -40,6 +41,7 @@ interface HomeMenuViewProps {
   hasSavedUno?: boolean;
   hasSavedDoodle?: boolean;
   hasSavedBilliards?: boolean;
+  hasSavedPawPals?: boolean;
   savedSnakesMaxTile: SnakesMaxTile;
   chatMessages: FloatingReaction[];
   passAndPlay?: boolean;
@@ -83,6 +85,7 @@ export function HomeMenuView({
   hasSavedUno = false,
   hasSavedDoodle = false,
   hasSavedBilliards = false,
+  hasSavedPawPals = false,
   savedSnakesMaxTile,
   chatMessages,
   passAndPlay = false,
@@ -206,6 +209,7 @@ export function HomeMenuView({
     if (mode === 'dama') return passAndPlay ? !!hasSaved1PhoneDama : !!(hasSavedDama && isJoined);
     if (mode === 'uno') return passAndPlay ? !!hasSaved1PhoneUno : !!(hasSavedUno && isJoined);
     if (mode === 'doodle') return passAndPlay ? !!hasSaved1PhoneDoodle : !!(hasSavedDoodle && isJoined);
+    if (mode === 'pawpals') return !passAndPlay && !!(hasSavedPawPals && isJoined);
     if (mode === 'billiards') return passAndPlay ? !!hasSaved1PhoneBilliards : !!(hasSavedBilliards && isJoined);
     const tileMatch = (passAndPlay ? saved1PhoneSnakesMaxTile : savedSnakesMaxTile) === tiles;
     return passAndPlay ? !!(hasSaved1PhoneSnakes && tileMatch) : !!(hasSavedSnakes && isJoined && tileMatch);
@@ -213,6 +217,7 @@ export function HomeMenuView({
 
   const handleGameCardClick = (mode: GameMode, tiles: SnakesMaxTile = snakesTiles) => {
     if (isOnlineSolo) return;
+    if (mode === 'pawpals' && passAndPlay) return;
     playTapPop();
     if (hasSavedMode(mode, tiles)) {
       setSavedConfirmState({ mode, snakesTiles: tiles });
@@ -955,6 +960,18 @@ export function HomeMenuView({
                 <span className="role-sub-label">8-Ball Pool Duel</span>
               </button>
 
+              {/* 5. Paw Pals Card (real-time co-op — 2 phones only) */}
+              <button
+                type="button"
+                className={`game-pick-btn pawpals-pick sticker-press ${isOnlineSolo || passAndPlay ? 'disabled-pick' : ''}`}
+                disabled={isOnlineSolo || passAndPlay}
+                onClick={() => handleGameCardClick('pawpals')}
+              >
+                <PawPalsIcon size={26} />
+                <span className="role-main-label">Paw Pals</span>
+                <span className="role-sub-label">{passAndPlay ? '2 Phones Only' : 'Co-op Platformer • 5 Levels'}</span>
+              </button>
+
               {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}
               <div className={`game-pick-btn snakes-pick-card ${isOnlineSolo ? 'disabled-pick' : ''}`}>
                 <button
@@ -1008,6 +1025,8 @@ export function HomeMenuView({
             ? 'Doodle Clash'
             : savedConfirmState.mode === 'billiards'
             ? 'Cat Billiards'
+            : savedConfirmState.mode === 'pawpals'
+            ? 'Paw Pals'
             : `Snakes & Ladders (${savedConfirmState.snakesTiles ?? 100})`;
         return (
           <div
