@@ -11,6 +11,8 @@ export const PLATE_COLORS: Record<string, { main: string; light: string; dark: s
   A: { main: '#FFC94A', light: '#FFE59A', dark: '#E09A12' },
   B: { main: '#B794F6', light: '#DCCBFF', dark: '#8B5CF6' },
   C: { main: '#4FD1A5', light: '#AEF0D6', dark: '#1FA67A' },
+  K: { main: '#FF7AA5', light: '#FFC4D8', dark: '#D9386A' },
+  M: { main: '#38BDF8', light: '#B0E8FF', dark: '#0284C7' },
 };
 export const SPLASH_COLOR = '#38BDF8';
 export const FLUFF_COLOR = '#FF7AA5';
@@ -175,6 +177,31 @@ export function StaticLevelArt({ level, idPrefix }: { level: ParsedLevel; idPref
     )
     .join('');
 
+  // ---- Co-op signal wires connecting plates/bells to gates, lifts & bridges ----
+  const wiresByLetter = new Map<string, string>();
+  const addWire = (letter: string, x1: number, y1: number, x2: number, y2: number) => {
+    const seg =
+      Math.abs(y1 - y2) < 0.08
+        ? `M${f(x1)} ${f(y1)}H${f(x2)}`
+        : `M${f(x1)} ${f(y1)}V${f(y2)}H${f(x2)}`;
+    wiresByLetter.set(letter, (wiresByLetter.get(letter) ?? '') + seg);
+  };
+  const triggers = [
+    ...level.plates.map((p) => ({ letter: p.letter, x: p.col + 0.5, y: p.row + 0.8 })),
+    ...level.bells.map((b) => ({ letter: b.letter, x: b.col + 0.5, y: b.row + 0.5 })),
+  ];
+  for (const tr of triggers) {
+    for (const gt of level.gates) {
+      if (gt.letter === tr.letter) addWire(tr.letter, tr.x, tr.y, gt.col + 0.5, gt.row + 0.5);
+    }
+    for (const l of level.lifts) {
+      if (l.plate.toUpperCase() === tr.letter) addWire(tr.letter, tr.x, tr.y, l.col + l.w / 2, l.top + 0.2);
+    }
+    for (const br of level.bridges) {
+      if (br.plate.toUpperCase() === tr.letter) addWire(tr.letter, tr.x, tr.y, br.col + br.w / 2, br.row + 0.18);
+    }
+  }
+
   const P = idPrefix;
   return (
     <>
@@ -209,6 +236,24 @@ export function StaticLevelArt({ level, idPrefix }: { level: ParsedLevel; idPref
       {rails && (
         <path d={rails} stroke="#D8C4EA" stroke-width={0.09} stroke-dasharray="0.18 0.14" stroke-linecap="round" fill="none" />
       )}
+
+      {/* Subtle colored wires connecting switches to matching gates, lifts & bridges */}
+      {[...wiresByLetter.entries()].map(([letter, d]) => {
+        const col = PLATE_COLORS[letter];
+        return col ? (
+          <path
+            key={`wire-${letter}`}
+            d={d}
+            stroke={col.dark}
+            stroke-width={0.07}
+            stroke-dasharray="0.16 0.18"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity={0.34}
+            fill="none"
+          />
+        ) : null;
+      })}
 
       {/* Water */}
       {waterBody && (

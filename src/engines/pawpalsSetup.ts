@@ -7,7 +7,7 @@ import { PlayerSlot } from '../types/arcade';
  * Only level progress is persisted / match-synced. Cat positions stream over the
  * realtime channel as ephemeral `pawpals_pos` broadcasts.
  */
-export const PAWPALS_LEVEL_COUNT = 5;
+export const PAWPALS_LEVEL_COUNT = 10;
 
 export interface PawPalsLevelResult {
   treats: number;

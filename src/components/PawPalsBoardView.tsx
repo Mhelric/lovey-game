@@ -3,6 +3,7 @@ import { CatAvatarConfig, PlayerSlot } from '../types/arcade';
 import { RealtimeBroadcastEvent } from '../services/supabaseService';
 import { PAWPALS_LEVEL_COUNT, PawPalsState } from '../engines/pawpalsSetup';
 import {
+  bellsTouched,
   CAT_H,
   CAT_W,
   CatBody,
@@ -193,6 +194,16 @@ export function PawPalsBoardView({
           if (ev.slot === mySlot || ev.lv !== stateRef.current.level) {
             return;
           }
+          if (ev.la && ev.la.length) {
+            let added = false;
+            for (const letter of ev.la) {
+              if (!worldRef.current.latched[letter]) {
+                worldRef.current.latched[letter] = true;
+                added = true;
+              }
+            }
+            if (added) playPowerupReveal();
+          }
           const buf = snapsRef.current;
           buf.push({
             at: performance.now(),
@@ -211,6 +222,13 @@ export function PawPalsBoardView({
           collectedRef.current.add(ev.id);
           setCollected([...collectedRef.current]);
           playCatMeow();
+        } else if (ev.type === 'pawpals_latch') {
+          if (ev.lv !== stateRef.current.level || worldRef.current.latched[ev.letter]) {
+            return;
+          }
+          worldRef.current.latched[ev.letter] = true;
+          playPowerupReveal();
+          showToastRef.current('🔔 Cat Bell unlocked!');
         }
       }),
     [mySlot]
@@ -423,7 +441,8 @@ export function PawPalsBoardView({
           const vyBefore = cat.vy;
           const pressed = pressedPlates(level, latestPartner ? [cat, latestPartner] : [cat]);
           const carry = updateWorld(level, worldRef.current, pressed, STEP);
-          if (stepCat(cat, inputRef.current, level, worldRef.current, mySlot, STEP, carry) === 'hurt') {
+          const outcome = stepCat(cat, inputRef.current, level, worldRef.current, mySlot, STEP, carry);
+          if (outcome === 'hurt') {
             playDizzySlide();
             spawnFxRef.current('poof', cat.x + CAT_W / 2, cat.y + CAT_H / 2);
             showToastRef.current(
@@ -438,9 +457,22 @@ export function PawPalsBoardView({
             spawnFxRef.current('spark', sp.x + CAT_W / 2, sp.y + CAT_H / 2);
             break;
           }
+          if (outcome === 'bounce') {
+            playTapPop();
+            spawnFxRef.current('dust', cat.x + CAT_W / 2, cat.y + CAT_H);
+          }
           if (wasAir && cat.grounded && vyBefore > 7) {
             landT = LAND_SQUASH;
             if (vyBefore > 11) spawnFxRef.current('dust', cat.x + CAT_W / 2, cat.y + CAT_H);
+          }
+          for (const letter of bellsTouched(cat, level)) {
+            if (worldRef.current.latched[letter]) continue;
+            worldRef.current.latched[letter] = true;
+            worldRef.current.open[letter] = true;
+            playPowerupReveal();
+            spawnFxRef.current('spark', cat.x + CAT_W / 2, cat.y + CAT_H / 2);
+            showToastRef.current('🔔 Cat Bell unlocked!');
+            sendRealtime({ type: 'pawpals_latch', slot: mySlot, lv: st.level, letter });
           }
           for (const id of treatsTouched(cat, level)) {
             if (collectedRef.current.has(id)) continue;
@@ -458,8 +490,12 @@ export function PawPalsBoardView({
       const partner = resolvePartner(interpPair, dtReal);
       const c = catRef.current;
       // ---- Visuals (direct DOM writes — no re-render per frame) ----
-      const key = Object.keys(worldRef.current.open)
-        .filter((k) => worldRef.current.open[k])
+      const combinedOpen: Record<string, boolean> = {
+        ...worldRef.current.open,
+        ...worldRef.current.latched,
+      };
+      const key = Object.keys(combinedOpen)
+        .filter((k) => combinedOpen[k])
         .sort()
         .join('');
       setOpenKey((prev) => (prev === key ? prev : key));
@@ -526,6 +562,7 @@ export function PawPalsBoardView({
       // Stream my position (~15 Hz)
       if (now - lastSend >= SEND_MS && !finishedRef.current) {
         lastSend = now;
+        const latches = Object.keys(worldRef.current.latched).filter((k) => worldRef.current.latched[k]);
         sendRealtime({
           type: 'pawpals_pos',
           slot: mySlot,
@@ -541,6 +578,7 @@ export function PawPalsBoardView({
                 lo: worldRef.current.liftOffset.map((v) => Math.round(v * 100) / 100),
               }
             : {}),
+          ...(latches.length > 0 ? { la: latches } : {}),
         });
       }
       raf = requestAnimationFrame(frame);
@@ -756,6 +794,87 @@ export function PawPalsBoardView({
               );
             })}
 
+            {/* Bridges (dashed outline when inactive, solid walkway when active) */}
+            {level.bridges.map((br, i) => {
+              const letter = br.plate.toUpperCase();
+              const col = PLATE_COLORS[letter];
+              const isActive = open.has(letter);
+              const dots = Math.max(1, Math.floor(br.w));
+              return (
+                <g key={`br-${i}`} className={`pp-bridge ${isActive ? 'on' : ''}`}>
+                  <rect
+                    x={br.col + 0.04}
+                    y={br.row + 0.02}
+                    width={br.w - 0.08}
+                    height={0.32}
+                    rx={0.14}
+                    fill={col.main}
+                    stroke={INK}
+                    stroke-width={0.055}
+                    className="pp-bridge-solid"
+                  />
+                  {isActive && (
+                    <>
+                      <rect x={br.col + 0.16} y={br.row + 0.07} width={br.w - 0.32} height={0.06} rx={0.03} fill={col.light} />
+                      {Array.from({ length: dots }, (_, k) => (
+                        <circle key={k} cx={br.col + 0.5 + k} cy={br.row + 0.22} r={0.055} fill={col.dark} />
+                      ))}
+                    </>
+                  )}
+                  {!isActive && (
+                    <rect
+                      x={br.col + 0.06}
+                      y={br.row + 0.04}
+                      width={br.w - 0.12}
+                      height={0.28}
+                      rx={0.12}
+                      fill={col.light}
+                      fill-opacity={0.18}
+                      stroke={col.dark}
+                      stroke-width={0.06}
+                      stroke-dasharray="0.22 0.16"
+                    />
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Bouncy paw cushions */}
+            {level.cushions.map((cu) => (
+              <g key={`cu-${cu.id}`} className="pp-cushion" transform={`translate(${cu.col} ${cu.row})`}>
+                <path d="M0.26 0.96L0.74 0.84M0.74 0.96L0.26 0.84" stroke="#B794F6" stroke-width={0.07} stroke-linecap="round" />
+                <rect x={0.12} y={0.56} width={0.76} height={0.32} rx={0.14} fill="#FF8FB1" stroke={INK} stroke-width={0.055} />
+                <rect x={0.22} y={0.61} width={0.56} height={0.07} rx={0.035} fill="#FFC4D6" />
+                <path d="M0.5 0.65l0.14 0.14h-0.28Z" fill="#FFFDF5" />
+              </g>
+            ))}
+
+            {/* Hanging Cat Bells (permanent latch once touched) */}
+            {level.bells.map((b) => {
+              const col = PLATE_COLORS[b.letter];
+              const isRung = open.has(b.letter);
+              return (
+                <g
+                  key={`bl-${b.col}-${b.row}`}
+                  className={`pp-bell ${isRung ? 'on' : ''}`}
+                  transform={`translate(${b.col + 0.5} ${b.row + 0.48})`}
+                >
+                  {isRung && <circle r={0.44} fill="#FFF3B0" opacity={0.75} />}
+                  <line x1={0} y1={-0.48} x2={0} y2={-0.25} stroke={INK} stroke-width={0.05} />
+                  <path
+                    d="M-0.22 -0.14l0.06 -0.15l0.1 0.09h0.12l0.1 -0.09l0.06 0.15c0.09 0.08 0.12 0.24 0.14 0.34h-0.72c0.02 -0.1 0.05 -0.26 0.14 -0.34Z"
+                    fill={isRung ? col.main : '#FFFDF5'}
+                    stroke={INK}
+                    stroke-width={0.055}
+                    stroke-linejoin="round"
+                  />
+                  <circle cx={0} cy={0.26} r={0.075} fill={col.dark} stroke={INK} stroke-width={0.04} />
+                  <circle cx={-0.08} cy={0.01} r={0.032} fill={INK} />
+                  <circle cx={0.08} cy={0.01} r={0.032} fill={INK} />
+                </g>
+              );
+            })}
+
             {/* Pressure plates */}
             {level.plates.map((p) => {
               const col = PLATE_COLORS[p.letter];
@@ -869,6 +988,7 @@ export function PawPalsBoardView({
             <div className="pawpals-intro" key={`intro-${intro}`}>
               <span className="pawpals-intro-kicker">Level {intro + 1} of {PAWPALS_LEVEL_COUNT}</span>
               <span className="pawpals-intro-title">{level.name}</span>
+              <span className="pawpals-intro-hint">{level.hint}</span>
             </div>
           )}
 

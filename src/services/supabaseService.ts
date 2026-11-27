@@ -357,8 +357,10 @@ export type RealtimeBroadcastEvent =
       seq: number;
       ol?: number;
       lo?: number[];
+      la?: string[];
     }
   | { type: 'pawpals_treat'; slot: PlayerSlot; lv: number; seed?: number; id: number }
+  | { type: 'pawpals_latch'; slot: PlayerSlot; lv: number; letter: string }
   | { type: 'doodle_stroke'; stroke: unknown; sender: PlayerSlot }
   | { type: 'doodle_clear'; sender: PlayerSlot }
   | { type: 'doodle_guess'; guess: string; sender: PlayerSlot }

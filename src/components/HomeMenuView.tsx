@@ -969,7 +969,7 @@ export function HomeMenuView({
               >
                 <PawPalsIcon size={26} />
                 <span className="role-main-label">Paw Pals</span>
-                <span className="role-sub-label">{passAndPlay ? '2 Phones Only' : 'Co-op Platformer • 5 Levels'}</span>
+                <span className="role-sub-label">{passAndPlay ? '2 Phones Only' : 'Co-op Platformer • 10 Levels'}</span>
               </button>
 
               {/* 4. Snakes & Ladders Card with 100 / 150 Mode Switch */}

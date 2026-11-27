@@ -953,7 +953,7 @@ export function CatCustomizerModal({
                   <div>
                     <h3 className="rules-section-title">Paw Pals (Co-op Platformer)</h3>
                     <span className="rules-section-sub">
-                      2 Phones Only • 5 Levels • Work Together
+                      2 Phones Only • 10 Levels • Co-op Adventure
                     </span>
                   </div>
                 </div>
@@ -963,19 +963,19 @@ export function CatCustomizerModal({
                     color="sky"
                     icon={<PawPalsIcon size={16} />}
                     title="One Cat Each"
-                    desc="The host plays Splash 💧 (swims through water but gets tangled in yarn). The partner plays Fluff 🧶 (bounces over yarn but hates water). Thorns hurt both cats!"
+                    desc="Host plays Splash 💧 (swims through water, avoids yarn). Partner plays Fluff 🧶 (crosses yarn, avoids water). Thorns hurt both!"
                   />
                   <RuleRow
                     color="purple"
                     icon={<PawIcon size={16} />}
-                    title="Plates, Gates &amp; Lifts"
-                    desc="Standing on a colored plate opens the matching gate or raises the matching lift — but only while someone stays on it. Take turns holding the door for each other!"
+                    title="Hold Plates vs Hanging Cat Bells"
+                    desc="Colored plates hold open matching gates, lifts, or dashed bridges only while someone stands on them. Hanging Cat Bells 🔔 stay unlocked forever once touched!"
                   />
                   <RuleRow
-                    color="gold"
+                    color="coral"
                     icon={<SparkleIcon size={16} />}
-                    title="Snuggle in the Bed"
-                    desc="Both cats must curl up in the cat bed together to clear a level. Grab the 🐟 treats on the way for bragging rights. Clear all 5 levels to win together!"
+                    title="Bouncy Cushions &amp; Cat Bed"
+                    desc="Step on bouncy paw cushions to jump extra high! Work together, collect 🐟 treats, and curl up in the cat bed to clear all 10 levels."
                   />
                 </div>
               </div>

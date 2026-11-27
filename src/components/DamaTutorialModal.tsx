@@ -149,24 +149,24 @@ const BILLIARDS_STEPS: readonly TutorialStep[] = [
 const PAWPALS_STEPS: readonly TutorialStep[] = [
   {
     badge: 'Paw Pals • Step 1 of 3',
-    title: 'One Cat Each',
+    title: 'One Cat Each & Bouncy Cushions',
     description:
-      'Hold ◀ ▶ to run and JUMP to hop. The host is Splash 💧 who can swim through water; the partner is Fluff 🧶 who can bounce over yarn.',
+      'Hold ◀ ▶ to run and JUMP to hop. The host is Splash 💧 who can swim through water; the partner is Fluff 🧶 who can bounce over yarn. Bouncy cushions launch you high!',
     tip: 'Splash gets tangled in yarn and Fluff hates water — thorns hurt both of you!',
   },
   {
     badge: 'Paw Pals • Step 2 of 3',
-    title: 'Hold the Door',
+    title: 'Hold Plates & Hanging Cat Bells',
     description:
-      'Colored plates open the matching gate or raise the matching lift — only while a cat stands on them. One of you holds the plate so the other can pass!',
-    tip: 'Talk it out (or use the chat stickers) to plan who goes first.',
+      'Floor plates hold matching gates, lifts, or dashed light bridges open while stood on (follow the dotted wires!). Hanging Cat Bells 🔔 stay unlocked forever once touched!',
+    tip: 'Use plates for co-op turns, and ring Cat Bells to open shortcuts permanently.',
   },
   {
     badge: 'Paw Pals • Step 3 of 3',
     title: 'Snuggle in the Bed',
     description:
       'Both cats must curl up in the pink cat bed together to clear the level. Grab the 🐟 treats along the way!',
-    tip: 'Clear all 5 levels together to win. Paw Pals needs 2 phones.',
+    tip: 'Clear all 10 levels together to win. Paw Pals needs 2 phones.',
   },
 ];
 

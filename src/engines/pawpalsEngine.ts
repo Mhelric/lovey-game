@@ -10,10 +10,13 @@ import { PlayerSlot } from '../types/arcade';
  *   W  water  – hurts Fluff (p2), Splash swims through it
  *   Y  yarn   – hurts Splash (p1), Fluff walks through it
  *   T  thorns – hurts both
+ *   ^  bouncy paw cushion – launches either cat high up (~4.75 tiles)
  *   E  cat bed (both cats must rest here together to clear the level)
  *   f  fish treat (shared)
- *   a b c  pressure plates      A B C  gates (open while ANY plate of the same letter is pressed)
- * Lifts are listed per level and rise while their plate letter is pressed.
+ *   a b c  hold plates (open matching Gate/Lift/Bridge while pressed)
+ *   k m    cat bells (permanently unlock matching Gate/Lift/Bridge once touched)
+ *   A B C K M  gates
+ * Lifts & co-op light bridges are listed per level and activate from their plate/bell letter.
  */
 
 export const COLS = 16;
@@ -24,6 +27,7 @@ export const CAT_H = 0.78;
 const GRAVITY = 40;
 const JUMP_V = 14;
 const JUMP_CUT_V = 5;
+const BOUNCE_V = 19.5;
 const RUN_SPEED = 6.2;
 const RUN_ACCEL = 70;
 const MAX_FALL = 18;
@@ -37,20 +41,35 @@ export interface LiftDef {
   w: number;
   /** y of the lift surface when fully down */
   top: number;
-  /** tiles it rises when its plate is pressed */
+  /** tiles it rises when its plate/bell is active */
   rise: number;
+  plate: string;
+}
+
+export interface BridgeDef {
+  col: number;
+  /** y of the bridge walking surface when active */
+  row: number;
+  w: number;
   plate: string;
 }
 
 export interface LevelDef {
   name: string;
+  hint: string;
   rows: string[];
   lifts: LiftDef[];
+  bridges?: BridgeDef[];
 }
+
+const isHoldPlateChar = (ch: string) => ch >= 'a' && ch <= 'c';
+const isBellChar = (ch: string) => ch === 'k' || ch === 'm';
+const isGateChar = (ch: string) => (ch >= 'A' && ch <= 'C') || ch === 'K' || ch === 'M';
 
 export const LEVELS: readonly LevelDef[] = [
   {
     name: 'Two Paths',
+    hint: 'Splash swims water • Fluff crosses yarn',
     lifts: [],
     rows: [
       '################',
@@ -77,6 +96,7 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     name: 'Pressure Paws',
+    hint: 'Stand on yellow plate to open the gate',
     lifts: [],
     rows: [
       '################',
@@ -103,6 +123,7 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     name: 'Lift Off',
+    hint: 'Hold purple plate to raise the lift',
     lifts: [{ col: 13, w: 2, top: 19, rise: 10, plate: 'b' }],
     rows: [
       '################',
@@ -129,6 +150,7 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     name: 'Helping Paws',
+    hint: 'Hold plates to unlock each other’s gates',
     lifts: [],
     rows: [
       '################',
@@ -155,6 +177,7 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     name: 'Cat-astrophe Castle',
+    hint: 'Plates, gates & lifts — all together!',
     lifts: [{ col: 13, w: 2, top: 19, rise: 10, plate: 'b' }],
     rows: [
       '################',
@@ -179,6 +202,155 @@ export const LEVELS: readonly LevelDef[] = [
       '################',
     ],
   },
+  {
+    name: 'Springy Paws',
+    hint: 'Bounce on paw cushions to reach high ledges!',
+    lifts: [],
+    rows: [
+      '################',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..f....EEE...f#',
+      '#..#############',
+      '#.....#........#',
+      '#.....B........#',
+      '#^..b.B..b.....#',
+      '#.########.....#',
+      '#.....#........#',
+      '#.....A........#',
+      '#..f..A.YY.^a..#',
+      '#..##########..#',
+      '#..............#',
+      '#..............#',
+      '#^.21.WWWWWW..^#',
+      '################',
+    ],
+  },
+  {
+    name: 'Bridge of Trust',
+    hint: 'Hold plates to build dashed light bridges!',
+    lifts: [],
+    bridges: [
+      { col: 4, row: 17, w: 6, plate: 'c' },
+      { col: 4, row: 11, w: 6, plate: 'b' },
+      { col: 4, row: 7, w: 6, plate: 'a' },
+    ],
+    rows: [
+      '################',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#......f.......#',
+      '#.a........aEE.#',
+      '####......######',
+      '#....TTTTT.....#',
+      '#...######.....#',
+      '#.....f........#',
+      '#.##......#....#',
+      '#b..YYYYYY.....#',
+      '############...#',
+      '#..............#',
+      '#..........###.#',
+      '#......f.......#',
+      '#..#......#..###',
+      '#12.WWWWWW.c...#',
+      '################',
+    ],
+  },
+  {
+    name: 'Ring the Cat Bell!',
+    hint: 'Touch a hanging Cat Bell to unlock it forever!',
+    lifts: [],
+    bridges: [{ col: 5, row: 11, w: 5, plate: 'm' }],
+    rows: [
+      '################',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#...f...f...EE.#',
+      '#..#############',
+      '#..............#',
+      '#..............#',
+      '#^.............#',
+      '#####.....##...#',
+      '#....#.........#',
+      '#....K.........#',
+      '#....K.WWWW.m^.#',
+      '#..###########.#',
+      '#..............#',
+      '#.#...........##',
+      '#12..YYYYY.f.k.#',
+      '################',
+    ],
+  },
+  {
+    name: 'Skyward Springs',
+    hint: 'Spring over thorns, ride the lift & ring the bell',
+    lifts: [{ col: 13, w: 2, top: 19, rise: 6, plate: 'b' }],
+    bridges: [
+      { col: 6, row: 13, w: 3, plate: 'a' },
+      { col: 6, row: 5, w: 4, plate: 'k' },
+    ],
+    rows: [
+      '################',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#....f....EEE..#',
+      '#...##....###..#',
+      '#..............#',
+      '#..............#',
+      '#.^...f.WWWWk.^#',
+      '#..#############',
+      '#..............#',
+      '#..............#',
+      '#^.a.f...ab....#',
+      '######...####..#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#12..^.TT.b....#',
+      '################',
+    ],
+  },
+  {
+    name: 'Grand Lovey Finale',
+    hint: 'Final stage! Use every co-op skill to reunite',
+    lifts: [{ col: 13, w: 2, top: 15, rise: 8, plate: 'b' }],
+    bridges: [
+      { col: 6, row: 15, w: 2, plate: 'c' },
+      { col: 5, row: 5, w: 4, plate: 'a' },
+    ],
+    rows: [
+      '################',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#....f.........#',
+      '###......#.....#',
+      '#EEKaWWWW.bf...#',
+      '#############..#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..............#',
+      '#..fk.....b.c..#',
+      '#..###..#####..#',
+      '#..............#',
+      '#..............#',
+      '#^.WWW.12.YYY.^#',
+      '################',
+    ],
+  },
 ];
 
 export interface Tile {
@@ -188,31 +360,51 @@ export interface Tile {
 
 export interface ParsedLevel {
   name: string;
+  hint: string;
   grid: string[][];
   spawns: Record<PlayerSlot, { x: number; y: number }>;
   plates: (Tile & { letter: string })[];
+  bells: (Tile & { letter: string })[];
   gates: (Tile & { letter: string })[];
+  cushions: (Tile & { id: number })[];
   treats: (Tile & { id: number })[];
   lifts: LiftDef[];
+  bridges: BridgeDef[];
 }
 
 export function parseLevel(def: LevelDef): ParsedLevel {
   const grid = def.rows.map((r) => r.split(''));
   const spawns = { p1: { x: 1, y: 1 }, p2: { x: 2, y: 1 } } as ParsedLevel['spawns'];
   const plates: ParsedLevel['plates'] = [];
+  const bells: ParsedLevel['bells'] = [];
   const gates: ParsedLevel['gates'] = [];
+  const cushions: ParsedLevel['cushions'] = [];
   const treats: ParsedLevel['treats'] = [];
   grid.forEach((row, r) =>
     row.forEach((ch, c) => {
       const foot = { x: c + (1 - CAT_W) / 2, y: r + 1 - CAT_H };
       if (ch === '1') spawns.p1 = foot;
       else if (ch === '2') spawns.p2 = foot;
-      else if (ch >= 'a' && ch <= 'c') plates.push({ col: c, row: r, letter: ch.toUpperCase() });
-      else if (ch >= 'A' && ch <= 'C') gates.push({ col: c, row: r, letter: ch });
+      else if (isHoldPlateChar(ch)) plates.push({ col: c, row: r, letter: ch.toUpperCase() });
+      else if (isBellChar(ch)) bells.push({ col: c, row: r, letter: ch.toUpperCase() });
+      else if (isGateChar(ch)) gates.push({ col: c, row: r, letter: ch });
+      else if (ch === '^') cushions.push({ col: c, row: r, id: cushions.length });
       else if (ch === 'f') treats.push({ col: c, row: r, id: treats.length });
     })
   );
-  return { name: def.name, grid, spawns, plates, gates, treats, lifts: def.lifts };
+  return {
+    name: def.name,
+    hint: def.hint,
+    grid,
+    spawns,
+    plates,
+    bells,
+    gates,
+    cushions,
+    treats,
+    lifts: def.lifts,
+    bridges: def.bridges ?? [],
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -220,8 +412,10 @@ export function parseLevel(def: LevelDef): ParsedLevel {
 /* -------------------------------------------------------------------------- */
 
 export interface WorldState {
-  /** gate letter → open */
+  /** gate/bridge/lift letter → open (includes held plates + latched bells) */
   open: Record<string, boolean>;
+  /** permanently latched bells (uppercase letters) */
+  latched: Record<string, boolean>;
   /** per lift: current rise offset (0..rise) */
   liftOffset: number[];
 }
@@ -232,6 +426,7 @@ export interface CatBody {
   vx: number;
   vy: number;
   grounded: boolean;
+  bounced: boolean;
   facing: 1 | -1;
   coyote: number;
   jumpBuffer: number;
@@ -253,6 +448,7 @@ export function createCat(spawn: { x: number; y: number }): CatBody {
     vx: 0,
     vy: 0,
     grounded: true,
+    bounced: false,
     facing: 1,
     coyote: 0,
     jumpBuffer: 0,
@@ -262,7 +458,7 @@ export function createCat(spawn: { x: number; y: number }): CatBody {
 }
 
 export function createWorld(level: ParsedLevel): WorldState {
-  return { open: {}, liftOffset: level.lifts.map(() => 0) };
+  return { open: {}, latched: {}, liftOffset: level.lifts.map(() => 0) };
 }
 
 export function liftSurface(level: ParsedLevel, world: WorldState, i: number): number {
@@ -291,6 +487,13 @@ export function pressedPlates(level: ParsedLevel, cats: { x: number; y: number }
   return out;
 }
 
+/** Bell letters touched by a cat (permanently latch open once touched) */
+export function bellsTouched(cat: { x: number; y: number }, level: ParsedLevel): string[] {
+  return level.bells
+    .filter((b) => overlaps(cat.x, cat.y, CAT_W, CAT_H, b.col + 0.12, b.row + 0.08, 0.76, 0.85))
+    .map((b) => b.letter);
+}
+
 /**
  * Advances lifts toward their targets. Returns per-lift surface y-delta (negative = moved up)
  * so the caller can carry a rider.
@@ -301,9 +504,13 @@ export function updateWorld(
   pressed: Record<string, boolean>,
   dt: number
 ): number[] {
-  world.open = pressed;
+  const combined: Record<string, boolean> = { ...world.latched };
+  for (const k of Object.keys(pressed)) {
+    if (pressed[k]) combined[k] = true;
+  }
+  world.open = combined;
   return level.lifts.map((l, i) => {
-    const target = pressed[l.plate.toUpperCase()] ? l.rise : 0;
+    const target = combined[l.plate.toUpperCase()] ? l.rise : 0;
     const cur = world.liftOffset[i];
     const step = LIFT_SPEED * dt;
     const next = cur < target ? Math.min(target, cur + step) : Math.max(target, cur - step);
@@ -316,14 +523,14 @@ function solidTile(level: ParsedLevel, world: WorldState, c: number, r: number, 
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return true;
   const ch = level.grid[r][c];
   if (ch === '#') return true;
-  if (ch >= 'A' && ch <= 'C') return !world.open[ch] && !ghost.has(r * COLS + c);
+  if (isGateChar(ch)) return !world.open[ch] && !ghost.has(r * COLS + c);
   return false;
 }
 
-export type StepOutcome = 'ok' | 'hurt';
+export type StepOutcome = 'ok' | 'hurt' | 'bounce';
 
 /**
- * One fixed physics step for a single cat. `kind` decides which liquid hurts it.
+ * One fixed physics step for a single cat. `slot` decides which liquid hurts it.
  * `carry` = surface delta from updateWorld for the lift the cat stands on.
  */
 export function stepCat(
@@ -351,21 +558,23 @@ export function stepCat(
   cat.vx = cat.vx < target ? Math.min(target, cat.vx + dv) : Math.max(target, cat.vx - dv);
   if (dir !== 0) cat.facing = dir as 1 | -1;
 
-  // Jump (buffer + coyote time + variable height)
+  // Jump (buffer + coyote time + variable height, unless cushion-bounced)
   if (input.jump && !cat.jumpWasDown) cat.jumpBuffer = JUMP_BUFFER;
   else cat.jumpBuffer = Math.max(0, cat.jumpBuffer - dt);
   cat.coyote = cat.grounded ? COYOTE : Math.max(0, cat.coyote - dt);
   if (cat.jumpBuffer > 0 && cat.coyote > 0) {
     cat.vy = -JUMP_V;
+    cat.bounced = false;
     cat.jumpBuffer = 0;
     cat.coyote = 0;
     cat.grounded = false;
     cat.onLift = -1;
   }
-  if (!input.jump && cat.vy < -JUMP_CUT_V) cat.vy = -JUMP_CUT_V;
+  if (!cat.bounced && !input.jump && cat.vy < -JUMP_CUT_V) cat.vy = -JUMP_CUT_V;
   cat.jumpWasDown = input.jump;
 
   cat.vy = Math.min(MAX_FALL, cat.vy + GRAVITY * dt);
+  if (cat.vy >= 0) cat.bounced = false;
 
   // Move X
   let nx = cat.x + cat.vx * dt;
@@ -409,6 +618,24 @@ export function stepCat(
         break;
       }
     }
+    // Active co-op light bridges (one-way platforms flush with row `b.row`)
+    for (const b of level.bridges) {
+      if (!world.open[b.plate.toUpperCase()]) continue;
+      const s = b.row;
+      if (
+        cat.x + CAT_W > b.col &&
+        cat.x < b.col + b.w &&
+        prevBottom <= s + 0.08 &&
+        ny + CAT_H >= s &&
+        ny + CAT_H <= s + 0.55
+      ) {
+        if (s - CAT_H <= ny) {
+          ny = s - CAT_H;
+          cat.vy = 0;
+          cat.grounded = true;
+        }
+      }
+    }
     // One-way lift platforms
     level.lifts.forEach((l, i) => {
       const s = liftSurface(level, world, i);
@@ -438,6 +665,19 @@ export function stepCat(
     }
   }
   cat.y = ny;
+
+  // Bouncy paw cushions launch high (skip while already skyrocketing upward)
+  if (!cat.bounced && cat.vy >= -2) {
+    for (const cu of level.cushions) {
+      if (overlaps(cat.x, cat.y, CAT_W, CAT_H, cu.col + 0.12, cu.row + 0.52, 0.76, 0.48)) {
+        cat.vy = -BOUNCE_V;
+        cat.grounded = false;
+        cat.onLift = -1;
+        cat.bounced = true;
+        return 'bounce';
+      }
+    }
+  }
 
   return isHurt(cat, level, slot) ? 'hurt' : 'ok';
 }
